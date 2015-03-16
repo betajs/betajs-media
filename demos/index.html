@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<script src="assets/jquery-1.9.1.min.js"></script>
+		<script src="assets/beta.js"></script>
+		<script src="assets/beta-browser.js"></script>
+		<script src="assets/betajs-flash.js"></script>
+		<script src="../dist/betajs-media.js"></script>
+	</head>
+	<body>
+		<video autoplay poster="movie.png" style="width:100%;height:100%">
+  			<source src="movie.ogg" type="video/ogg" />
+  			<source src="movie.webm" type="video/webm" />
+			<source src="movie.mp4" type="video/mp4" />
+			<source src="rtmp://localhost:1935/vodtest/_definst_/abc.flv" type="video/flv" />
+		</video>
+
+		<script>
+			BetaJS.Flash.Helper.options = {
+				flashFile: "assets/betajs-flash.swf",
+				forceReload: true
+			};
+			setTimeout(function () {
+				BetaJS.Media.Player.Flash.polyfill($("video").get(0), "videopoly", true);
+			},0);			
+		</script>
+	</body>
+</html>
