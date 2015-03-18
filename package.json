@@ -1,24 +1,28 @@
 {
-  "name": "betajs-media",
-  "version": "0.0.1",
-  "description": "BetaJS-Media is a JavaScript media framework",
-  "homepage": "http://betajs.com",
-  "contributors": [
-  	"Oliver Friedmann"
-  ],
-  "license": "MIT",
-  "devDependencies": {
-    "grunt": "",
-    "grunt-contrib-jshint": "",
-    "grunt-contrib-nodeunit": "",
-    "grunt-contrib-concat": "",
-    "grunt-contrib-uglify": "",
-    "grunt-shell": "",
-    "grunt-contrib-sass": "",
-    "grunt-contrib-cssmin": "",
-    "grunt-contrib-clean": "",
-    "grunt-newer": "",
-    "grunt-preprocess": "",
-    "grunt-git-revision-count": ""
-  }
+	"name": "betajs-media",
+	"version": "0.0.1",
+	"description": "BetaJS-Media is a JavaScript media framework",
+	"homepage": "http://betajs.com",
+	"contributors": ["Oliver Friedmann"],
+	"license": "MIT",
+	"devDependencies": {
+		"grunt": "",
+		"grunt-contrib-jshint": "",
+		"grunt-contrib-nodeunit": "",
+		"grunt-contrib-concat": "",
+		"grunt-contrib-uglify": "",
+		"grunt-shell": "",
+		"grunt-contrib-sass": "",
+		"grunt-contrib-cssmin": "",
+		"grunt-contrib-clean": "",
+		"grunt-newer": "",
+		"grunt-preprocess": "",
+		"grunt-git-revision-count": "",
+		"grunt-closure-tools": "",
+		"grunt-wget": ""
+	},
+	"repository": {
+		"type": "git",
+		"url": "git://github.com/betajs/betajs-media.git"
+	}
 }

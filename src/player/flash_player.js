@@ -32,18 +32,20 @@ Scoped.define("module:Player.Flash", [
 		attach: function (element) {
 			var preferred = [".mp4", ".flv"];
 			var sources = [];
-			for (var i = 0; i < element.childNodes.length; ++i)
+			for (var i = 0; i < element.childNodes.length; ++i) {
 				if (element.childNodes[i].tagName && element.childNodes[i].tagName.toLowerCase() == "source" && element.childNodes[i].src)
 					sources.push(element.childNodes[i].src.toLowerCase());
+			}
 			var source = sources[0];
 			var currentExtIndex = preferred.length - 1;
-			for (var i = sources.length - 1; i >= 0; --i) {
-				for (var j = 0; j <= currentExtIndex; ++j)
+			for (i = sources.length - 1; i >= 0; --i) {
+				for (var j = 0; j <= currentExtIndex; ++j) {
 					if (Strings.ends_with(sources[i], preferred[j])) {
 						source = sources[i];
 						currentExtIndex = j;
 						break;
 					}
+				}
 			}
 			if (source.indexOf("://") == -1)
 				source = document.location.href + "/../" + source;

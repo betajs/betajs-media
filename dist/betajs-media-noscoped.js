@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.1 - 2015-03-15
+betajs-media - v0.0.1 - 2015-03-18
 Copyright (c) Oliver Friedmann
 MIT Software License.
 */
@@ -15,7 +15,7 @@ Scoped.binding("jquery", "global:jQuery");
 Scoped.define("module:", function () {
 	return {
 		guid: "8475efdb-dd7e-402e-9f50-36c76945a692",
-		version: '.1426473310229'
+		version: '1.1426707672777'
 	};
 });
 
@@ -53,18 +53,20 @@ Scoped.define("module:Player.Flash", [
 		attach: function (element) {
 			var preferred = [".mp4", ".flv"];
 			var sources = [];
-			for (var i = 0; i < element.childNodes.length; ++i)
+			for (var i = 0; i < element.childNodes.length; ++i) {
 				if (element.childNodes[i].tagName && element.childNodes[i].tagName.toLowerCase() == "source" && element.childNodes[i].src)
 					sources.push(element.childNodes[i].src.toLowerCase());
+			}
 			var source = sources[0];
 			var currentExtIndex = preferred.length - 1;
-			for (var i = sources.length - 1; i >= 0; --i) {
-				for (var j = 0; j <= currentExtIndex; ++j)
+			for (i = sources.length - 1; i >= 0; --i) {
+				for (var j = 0; j <= currentExtIndex; ++j) {
 					if (Strings.ends_with(sources[i], preferred[j])) {
 						source = sources[i];
 						currentExtIndex = j;
 						break;
 					}
+				}
 			}
 			if (source.indexOf("://") == -1)
 				source = document.location.href + "/../" + source;
@@ -106,6 +108,8 @@ Scoped.define("module:Player.Flash", [
 			element.play = function () {
 				stream.playVoid(playUrl);
 			};
+			
+			// TODO: size, poster, other
 
 		}
 

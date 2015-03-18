@@ -1,10 +1,10 @@
 /*!
-betajs-media - v0.0.1 - 2015-03-15
+betajs-media - v0.0.1 - 2015-03-18
 Copyright (c) Oliver Friedmann
 MIT Software License.
 */
 /*!
-betajs-scoped - v0.0.1 - 2015-02-21
+betajs-scoped - v0.0.1 - 2015-03-17
 Copyright (c) Oliver Friedmann
 MIT Software License.
 */
@@ -12,30 +12,18 @@ var Scoped = (function () {
 var Globals = {
 
 	get : function(key) {
-		try {
-			if (window)
-				return window[key];
-		} catch (e) {
-		}
-		try {
-			if (global)
-				return global[key];
-		} catch (e) {
-		}
+		if (typeof window !== "undefined")
+			return window[key];
+		if (typeof global !== "undefined")
+			return global[key];
 		return null;
 	},
 
 	set : function(key, value) {
-		try {
-			if (window)
-				window[key] = value;
-		} catch (e) {
-		}
-		try {
-			if (global)
-				global[key] = value;
-		} catch (e) {
-		}
+		if (typeof window !== "undefined")
+			window[key] = value;
+		if (typeof global !== "undefined")
+			global[key] = value;
 		return value;
 	},
 	
@@ -288,10 +276,11 @@ function newNamespace (options) {
 				context: context
 			});
 			if (node.lazy.length > 0) {
-				var f = function () {
+				var f = function (node) {
 					if (node.lazy.length > 0) {
 						var lazy = node.lazy.shift();
 						lazy.callback.call(lazy.context || this, node.data);
+						f(node);
 					}
 				};
 				f(node);
@@ -451,6 +440,8 @@ function newScope (parent, parentNamespace, rootNamespace, globalNamespace) {
 				};
 			} else {
 				var binding = bindings[parts[0]];
+				if (!binding)
+					throw ("The namespace '" + parts[0] + "' has not been defined (yet).");
 				return {
 					namespace: binding.namespace,
 					path : binding.path && parts[1] ? binding.path + "." + parts[1] : (binding.path || parts[1])
@@ -531,7 +522,7 @@ var rootScope = newScope(null, rootNamespace, rootNamespace, globalNamespace);
 var Public = Helper.extend(rootScope, {
 		
 	guid: "4b6878ee-cb6a-46b3-94ac-27d91f58d666",
-	version: '5.1424568052349',
+	version: '8.1426613087189',
 		
 	upgrade: Attach.upgrade,
 	attach: Attach.attach,
@@ -545,7 +536,7 @@ Public.exports();
 	return Public;
 }).call(this);
 /*!
-betajs-media - v0.0.1 - 2015-03-15
+betajs-media - v0.0.1 - 2015-03-18
 Copyright (c) Oliver Friedmann
 MIT Software License.
 */
@@ -561,7 +552,7 @@ Scoped.binding("jquery", "global:jQuery");
 Scoped.define("module:", function () {
 	return {
 		guid: "8475efdb-dd7e-402e-9f50-36c76945a692",
-		version: '.1426473310229'
+		version: '1.1426707672777'
 	};
 });
 
@@ -599,18 +590,20 @@ Scoped.define("module:Player.Flash", [
 		attach: function (element) {
 			var preferred = [".mp4", ".flv"];
 			var sources = [];
-			for (var i = 0; i < element.childNodes.length; ++i)
+			for (var i = 0; i < element.childNodes.length; ++i) {
 				if (element.childNodes[i].tagName && element.childNodes[i].tagName.toLowerCase() == "source" && element.childNodes[i].src)
 					sources.push(element.childNodes[i].src.toLowerCase());
+			}
 			var source = sources[0];
 			var currentExtIndex = preferred.length - 1;
-			for (var i = sources.length - 1; i >= 0; --i) {
-				for (var j = 0; j <= currentExtIndex; ++j)
+			for (i = sources.length - 1; i >= 0; --i) {
+				for (var j = 0; j <= currentExtIndex; ++j) {
 					if (Strings.ends_with(sources[i], preferred[j])) {
 						source = sources[i];
 						currentExtIndex = j;
 						break;
 					}
+				}
 			}
 			if (source.indexOf("://") == -1)
 				source = document.location.href + "/../" + source;
@@ -652,6 +645,8 @@ Scoped.define("module:Player.Flash", [
 			element.play = function () {
 				stream.playVoid(playUrl);
 			};
+			
+			// TODO: size, poster, other
 
 		}
 
