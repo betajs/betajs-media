@@ -1,5 +1,5 @@
 /*!
-betajs-flash - v0.0.1 - 2015-03-18
+betajs-flash - v0.0.1 - 2015-03-24
 Copyright (c) Oliver Friedmann
 MIT Software License.
 */
@@ -15,30 +15,41 @@ Scoped.binding("jquery", "global:jQuery");
 Scoped.define("module:", function () {
 	return {
 		guid: "3adc016a-e639-4d1a-b4cb-e90cab02bc4f",
-		version: '3.1426706803693',
+		version: '5.1427217271706',
 		__global: {}
 	};
 });
 
-Scoped.define("module:FlashEmbedding", [ "base:Class", "base:Strings",
-		"base:Async", "base:Functions", "base:Types", "base:Objs", "base:Ids", "module:__global", "module:FlashObjectWrapper", "module:FlashClassWrapper" ], function(Class,
-		Strings, Async, Functions, Types, Objs, Ids, moduleGlobal, FlashObjectWrapper, FlashClassWrapper, scoped) {
+Scoped.define("module:FlashEmbedding", [ "base:Class", "jquery:", "base:Strings",
+		"base:Functions", "base:Types", "base:Objs", "base:Ids", "base:Async", "module:__global",
+		"module:FlashObjectWrapper", "module:FlashClassWrapper", "module:Helper" ], function(Class, $,
+		Strings, Functions, Types, Objs, Ids, Async, moduleGlobal, FlashObjectWrapper, FlashClassWrapper, FlashHelper, scoped) {
 	return Class.extend({
 		scoped : scoped
 	}, function(inherited) {
 		return {
 
-			constructor : function(embedding, options) {
+			constructor : function(container, options, flashOptions) {
 				inherited.constructor.call(this);
-				this.__embedding = embedding;
 				options = options || {};
 				this.__registry = options.registry;
 				this.__wrap = options.wrap;
 				this.__cache = {};
-				this.__callbacks = {};
+				this.__callbacks = {
+					ready: Functions.as_method(this.__ready, this)
+				};
+				this.__namespace = "BetaJS.Flash.__global." + this.cid();
+				this.__is_ready = false;
+				this.__ready_queue = [];
 				this.__wrappers = {};
 				this.__staticWrappers = {};
 				moduleGlobal[this.cid()] = this.__callbacks;
+				flashOptions = Objs.extend({
+					FlashVars: {}
+				}, flashOptions);
+				flashOptions.FlashVars.ready = this.__namespace + ".ready";
+				$(container).html(FlashHelper.embedTemplate(flashOptions));
+				this.__embedding = $(container).find("embed").get(0);
 			},
 			
 			destroy: function () {
@@ -69,7 +80,7 @@ Scoped.define("module:FlashEmbedding", [ "base:Class", "base:Strings",
 					value = this.registerCallback(value);
 				if (Types.is_string(value)) {
 					if (Strings.starts_with(value, "__FLASHCALLBACK__"))
-						value = "BetaJS.Flash.__global." + this.cid() + "." + value;
+						value = this.__namespace + "." + value;
 				}
 				if (FlashObjectWrapper.is_instance_of(value))
 					value = value.__ident;
@@ -81,18 +92,23 @@ Scoped.define("module:FlashEmbedding", [ "base:Class", "base:Strings",
 			unserialize : function(value) {
 				if (Types.is_string(value) && Strings.starts_with(value, "__FLASHERR__"))
 					throw Strings.strip_start(value, "__FLASHERR__");
-				 if (Types.is_string(value) && this.__wrap && Strings.starts_with(value, "__FLASHOBJ__")) {
-					if (!(value in this.__wrappers)) {
+				 if (Types.is_string(value) && Strings.starts_with(value, "__FLASHOBJ__")) {
+					 if (this.__wrap) {
 						var type = Strings.strip_start(value, "__FLASHOBJ__");
 						type = Strings.splitFirst(type, "__").head.replace("::", ".");
-						this.__wrappers[value] = new FlashObjectWrapper(this, value, type);
-					}
-					return this.__wrappers[value];
+						if (type.toLowerCase() != "object") {
+							if (!(value in this.__wrappers))
+								this.__wrappers[value] = new FlashObjectWrapper(this, value, type);
+							return this.__wrappers[value];
+						}
+					 }
 				}
 				return value;
 			},
 
 			invoke : function(method, args) {
+				if (!this.__is_ready)
+					throw "Flash is not ready yet";
 				args = args || [];
 				return this.unserialize(this.__embedding[method].apply(this.__embedding, this.serialize(Functions.getArguments(args))));
 			},
@@ -117,11 +133,19 @@ Scoped.define("module:FlashEmbedding", [ "base:Class", "base:Strings",
 				return this.flashCreate.apply(this, arguments);
 			},
 			
+			newCallback: function () {
+				return this.flashCreateCallbackObject.apply(this, arguments);
+			},
+			
+			flashCreateCallbackObject : function() {
+				return this.invoke("create_callback_object", arguments);
+			},
+			
 			flashCreate : function() {
 				return this.invoke("create", arguments);
 			},
 
-			flashDestroy : function (obj) {
+			flashDestroy : function () {
 				return this.invoke("destroy", arguments);
 			},
 
@@ -164,15 +188,35 @@ Scoped.define("module:FlashEmbedding", [ "base:Class", "base:Strings",
 			flashMain : function() {
 				return this.invokeCached("main");
 			},
+			
+			__ready: function () {
+				if (!this.__is_ready) {
+					this.__is_ready = true;
+					Async.eventually(function () {
+						Objs.iter(this.__ready_queue, function (entry) {
+							entry.callback.call(entry.context || this);
+						}, this);
+					}, this);
+				}
+			},
 
 			ready : function(callback, context) {
-				Async.waitFor(this.flashMain, this, callback, context);
+				if (this.__is_ready) {
+					Async.eventually(function () {
+						callback.call(context || this);
+					}, this);
+				} else {
+					this.__ready_queue.push({
+						callback: callback,
+						context: context
+					});
+				}
 			}
 
 		};
 	});
 });
-Scoped.define("module:Helper", ["base:Time", "base:Objs"], function (Time, Objs) {
+Scoped.define("module:Helper", ["base:Time", "base:Objs", "base:Types", "base:Net.Uri"], function (Time, Objs, Types, Uri) {
 	return {
 		
 		options: {
@@ -255,7 +299,7 @@ Scoped.define("module:Helper", ["base:Time", "base:Objs"], function (Time, Objs)
 				params.push({
 					"objectParam": "FlashVars",
 					"embedKey": "FlashVars",
-					"value": options.FlashVars
+					"value": Types.is_object(options.FlashVars) ? Uri.encodeUriParams(options.FlashVars) : options.FlashVars
 				});
 			}
 			var objectKeys = [];

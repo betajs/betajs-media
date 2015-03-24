@@ -1,12 +1,10 @@
 
 Scoped.define("module:Player.Flash", [
     "base:Flash.FlashClassRegistry",
-    "base:Flash.Helper",
     "base:Flash.FlashEmbedding",
     "base:Browser.Dom",
-    "base:Strings",
-    "jquery:"
-], function (FlashClassRegistry, FlashHelper, FlashEmbedding, Dom, Strings, $) {
+    "base:Strings"
+], function (FlashClassRegistry, FlashEmbedding, Dom, Strings) {
 	return {
 		
 		polyfill: function (element, polyfilltag, force) {
@@ -58,9 +56,7 @@ Scoped.define("module:Player.Flash", [
 				playUrl = spl.tail;
 			}
 			
-			$(element).html(FlashHelper.embedTemplate());
-			
-			var embedding = new FlashEmbedding($(element).find("embed").get(0), {
+			var embedding = new FlashEmbedding(element, {
 				registry: this.__flashRegistrySingleton(),
 				wrap: true
 			});

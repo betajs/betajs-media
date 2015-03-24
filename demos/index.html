@@ -8,12 +8,21 @@
 		<script src="../dist/betajs-media.js"></script>
 	</head>
 	<body>
-		<video autoplay poster="movie.png" style="width:100%;height:100%">
+		<video autoplay poster="movie.png" style="display:block;width:100%;height:100%">
   			<source src="movie.ogg" type="video/ogg" />
   			<source src="movie.webm" type="video/webm" />
 			<source src="movie.mp4" type="video/mp4" />
 			<source src="rtmp://localhost:1935/vodtest/_definst_/abc.flv" type="video/flv" />
 		</video>
+		
+		<!--
+		
+			1) Get actual size
+			2) Get minimal size
+			Ideal Size
+			
+		
+		-->
 
 		<script>
 			BetaJS.Flash.Helper.options = {

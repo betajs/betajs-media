@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.1 - 2015-03-18
+betajs-media - v0.0.1 - 2015-03-24
 Copyright (c) Oliver Friedmann
 MIT Software License.
 */
@@ -536,7 +536,7 @@ Public.exports();
 	return Public;
 }).call(this);
 /*!
-betajs-media - v0.0.1 - 2015-03-18
+betajs-media - v0.0.1 - 2015-03-24
 Copyright (c) Oliver Friedmann
 MIT Software License.
 */
@@ -552,19 +552,17 @@ Scoped.binding("jquery", "global:jQuery");
 Scoped.define("module:", function () {
 	return {
 		guid: "8475efdb-dd7e-402e-9f50-36c76945a692",
-		version: '1.1426707672777'
+		version: '2.1427217445774'
 	};
 });
 
 
 Scoped.define("module:Player.Flash", [
     "base:Flash.FlashClassRegistry",
-    "base:Flash.Helper",
     "base:Flash.FlashEmbedding",
     "base:Browser.Dom",
-    "base:Strings",
-    "jquery:"
-], function (FlashClassRegistry, FlashHelper, FlashEmbedding, Dom, Strings, $) {
+    "base:Strings"
+], function (FlashClassRegistry, FlashEmbedding, Dom, Strings) {
 	return {
 		
 		polyfill: function (element, polyfilltag, force) {
@@ -616,9 +614,7 @@ Scoped.define("module:Player.Flash", [
 				playUrl = spl.tail;
 			}
 			
-			$(element).html(FlashHelper.embedTemplate());
-			
-			var embedding = new FlashEmbedding($(element).find("embed").get(0), {
+			var embedding = new FlashEmbedding(element, {
 				registry: this.__flashRegistrySingleton(),
 				wrap: true
 			});
