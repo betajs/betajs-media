@@ -15,15 +15,18 @@ Scoped.binding("jquery", "global:jQuery");
 Scoped.define("module:", function () {
 	return {
 		guid: "3adc016a-e639-4d1a-b4cb-e90cab02bc4f",
-		version: '5.1427217271706',
-		__global: {}
+		version: '6.1427219789310',
+		__global: {},
+		options: {
+			flashFile: "betajs-flash.swf"
+		}
 	};
 });
 
 Scoped.define("module:FlashEmbedding", [ "base:Class", "jquery:", "base:Strings",
 		"base:Functions", "base:Types", "base:Objs", "base:Ids", "base:Async", "module:__global",
-		"module:FlashObjectWrapper", "module:FlashClassWrapper", "module:Helper" ], function(Class, $,
-		Strings, Functions, Types, Objs, Ids, Async, moduleGlobal, FlashObjectWrapper, FlashClassWrapper, FlashHelper, scoped) {
+		"module:FlashObjectWrapper", "module:FlashClassWrapper", "base:Browser.FlashHelper", "module:" ], function(Class, $,
+		Strings, Functions, Types, Objs, Ids, Async, moduleGlobal, FlashObjectWrapper, FlashClassWrapper, FlashHelper, mod, scoped) {
 	return Class.extend({
 		scoped : scoped
 	}, function(inherited) {
@@ -44,12 +47,11 @@ Scoped.define("module:FlashEmbedding", [ "base:Class", "jquery:", "base:Strings"
 				this.__wrappers = {};
 				this.__staticWrappers = {};
 				moduleGlobal[this.cid()] = this.__callbacks;
-				flashOptions = Objs.extend({
+				flashOptions = Objs.extend(Objs.clone(mod.options, 1), Objs.extend({
 					FlashVars: {}
-				}, flashOptions);
+				}, flashOptions));
 				flashOptions.FlashVars.ready = this.__namespace + ".ready";
-				$(container).html(FlashHelper.embedTemplate(flashOptions));
-				this.__embedding = $(container).find("embed").get(0);
+				this.__embedding = FlashHelper.embedFlashObject(container, flashOptions);
 			},
 			
 			destroy: function () {
@@ -216,108 +218,6 @@ Scoped.define("module:FlashEmbedding", [ "base:Class", "jquery:", "base:Strings"
 		};
 	});
 });
-Scoped.define("module:Helper", ["base:Time", "base:Objs", "base:Types", "base:Net.Uri"], function (Time, Objs, Types, Uri) {
-	return {
-		
-		options: {
-			flashFile: "betajs-flash.swf"
-		},
-		
-		embedTemplate: function (options) {
-			options = Objs.extend(Objs.clone(this.options, 1), options);
-			var params = [];
-			params.push({
-				"objectKey": "classid",
-				"value": "clsid:D27CDB6E-AE6D-11cf-96B8-444553540000"
-			});
-			params.push({
-				"objectKey": "codebase",
-				"value": "http://fpdownload.macromedia.com/get/flashplayer/current/swflash.cab"
-			});
-			params.push({
-				"embedKey": "align",
-				"value": "middle"
-			});
-			params.push({
-				"embedKey": "play",
-				"value": "true"
-			});
-			params.push({
-				"embedKey": "loop",
-				"value": "false"
-			});
-			params.push({
-				"embedKey": "type",
-				"value": "application/x-shockwave-flash"
-			});
-			params.push({
-				"embedKey": "pluginspage",
-				"value": "http://www.adobe.com/go/getflashplayer"
-			});
-			params.push({
-				"objectParam": "quality",
-				"embedKey": "quality",
-				"value": "high"
-			});
-			params.push({
-				"objectParam": "allowScriptAccess",
-				"embedKey": "allowScriptAccess",
-				"value": "always"
-			});
-			params.push({
-				"objectParam": "wmode",
-				"embedKey": "wmode",
-				"value": "opaque"
-			});
-			params.push({
-				"objectParam": "movie",
-				"embedKey": "src",
-				"value": options.flashFile + (options.forceReload ? "?" + Time.now() : "") 
-			});
-			if (options.width) {
-				params.push({
-					"objectKey": "width",
-					"embedKey": "width",
-					"value": options.width
-				});
-			}
-			if (options.height) {
-				params.push({
-					"objectKey": "height",
-					"embedKey": "height",
-					"value": options.height
-				});
-			}
-			if (options.bgcolor) {
-				params.push({
-					"objectParam": "bgcolor",
-					"embedKey": "bgcolor",
-					"value": options.bgcolor
-				});
-			}
-			if (options.FlashVars) {
-				params.push({
-					"objectParam": "FlashVars",
-					"embedKey": "FlashVars",
-					"value": Types.is_object(options.FlashVars) ? Uri.encodeUriParams(options.FlashVars) : options.FlashVars
-				});
-			}
-			var objectKeys = [];
-			var objectParams = [];
-			var embedKeys = [];
-			Objs.iter(params, function (param) {
-				if (param.objectKey)
-					objectKeys.push(param.objectKey + '="' + param.value + '"');
-				if (param.embedKey)
-					embedKeys.push(param.embedKey + '="' + param.value + '"');
-				if (param.objectParam)
-					objectParams.push('<param name="' + param.objectParam + '" value="' + param.value + '" />');
-			}, this);
-			return "<object " + objectKeys.join(" ") + ">" + objectParams.join(" ") + "<embed " + embedKeys.join(" ") + "></embed></object>";
-		}		
-	};
-});
-
 Scoped.define("module:FlashClassRegistry", [ "base:Class" ], function(Class,
 		scoped) {
 	return Class.extend({
