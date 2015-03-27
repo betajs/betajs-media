@@ -1,10 +1,10 @@
 /*!
-betajs - v1.0.0 - 2015-03-17
+betajs - v1.0.0 - 2015-03-26
 Copyright (c) Oliver Friedmann,Victor Lingenthal
 MIT Software License.
 */
 /*!
-betajs-scoped - v0.0.1 - 2015-03-17
+betajs-scoped - v0.0.1 - 2015-03-26
 Copyright (c) Oliver Friedmann
 MIT Software License.
 */
@@ -482,19 +482,20 @@ function newScope (parent, parentNamespace, rootNamespace, globalNamespace) {
 			var deps = [];
 			var environment = {};
 			if (count) {
+				var f = function (value) {
+					if (this.i < deps.length)
+						deps[this.i] = value;
+					count--;
+					if (count === 0) {
+						deps.push(environment);
+						args.callback.apply(args.context || this.ctx, deps);
+					}
+				};
 				for (var i = 0; i < allDependencies.length; ++i) {
 					var ns = this.resolve(allDependencies[i]);
 					if (i < dependencies.length)
 						deps.push(null);
-					ns.namespace.obtain(ns.path, function (value) {
-						if (this.i < deps.length)
-							deps[this.i] = value;
-						count--;
-						if (count === 0) {
-							deps.push(environment);
-							args.callback.apply(args.context || this.ctx, deps);
-						}
-					}, {
+					ns.namespace.obtain(ns.path, f, {
 						ctx: this,
 						i: i
 					});
@@ -522,7 +523,7 @@ var rootScope = newScope(null, rootNamespace, rootNamespace, globalNamespace);
 var Public = Helper.extend(rootScope, {
 		
 	guid: "4b6878ee-cb6a-46b3-94ac-27d91f58d666",
-	version: '8.1426613087189',
+	version: '9.1427403679672',
 		
 	upgrade: Attach.upgrade,
 	attach: Attach.attach,
@@ -536,7 +537,7 @@ Public.exports();
 	return Public;
 }).call(this);
 /*!
-betajs - v1.0.0 - 2015-03-17
+betajs - v1.0.0 - 2015-03-26
 Copyright (c) Oliver Friedmann,Victor Lingenthal
 MIT Software License.
 */
@@ -549,7 +550,7 @@ Scoped.binding("module", "global:BetaJS");
 Scoped.define("module:", function () {
 	return {
 		guid: "71366f7a-7da3-4e55-9a0b-ea0e4e2a9e79",
-		version: '342.1426628076248'
+		version: '345.1427403710989'
 	};
 });
 
@@ -1079,11 +1080,11 @@ Scoped.define("module:Objs", ["module:Types"], function (Types) {
 			var key = null;
 			if (depth && depth > 0) {
 				for (key in obj1) {
-					if (!key in obj2 || !this.equals(obj1[key], obj2[key], depth-1))
+					if (!(key in obj2) || !this.equals(obj1[key], obj2[key], depth-1))
 						return false;
 				}
 				for (key in obj2) {
-					if (!key in obj1)
+					if (!(key in obj1))
 						return false;
 				}
 				return true;
@@ -2106,7 +2107,16 @@ Scoped.define("module:Promise", ["module:Types", "module:Functions", "module:Asy
 				if (this.__ended)
 					return this;
 				if (!Types.is_array(promises))
-					promises = [promises];	
+					promises = [promises];
+				var f = function (error, value) {
+					if (error)
+						this.__errorPromise = promises[this.idx];
+					else {
+						this.promise.__successCount++;
+						this.promise.__values[this.idx] = value;
+					}
+					this.promise.results();
+				};
 				for (var i = 0; i < promises.length; ++i) {
 					var last = this.__promises.length;
 					this.__promises.push(promises[i]);
@@ -2118,15 +2128,7 @@ Scoped.define("module:Promise", ["module:Types", "module:Functions", "module:Asy
 						} else
 							this.__errorPromise = promises[i];
 					} else {
-						promises[i].callback(function (error, value) {
-							if (error)
-								this.__errorPromise = promises[this.idx];
-							else {
-								this.promise.__successCount++;
-								this.promise.__values[this.idx] = value;
-							}
-							this.promise.results();
-						}, {promise: this, idx: last});					
+						promises[i].callback(f, {promise: this, idx: last});					
 					}
 				}
 				return this;
@@ -2777,6 +2779,7 @@ Scoped.define("module:Templates", ["module:Types", "module:Strings"], function (
 			result = "var __t,__p='',__j=Array.prototype.join," +
 			  "echo=function(){__p+=__j.call(arguments,'');};\n" +
 			  result + "return __p;\n";
+			/*jslint evil: true */
 			var func = new Function('obj', 'Helpers', result);
 			var func_call = function(data) {
 				return func.call(this, data, {Strings: Strings});
@@ -3428,9 +3431,9 @@ Scoped.define("module:Lists.ArrayList", ["module:Lists.AbstractList", "module:Id
 				this.__items = [];
 				options = options || {};
 				if ("compare" in options)
-					this._compare = options["compare"];
+					this._compare = options.compare;
 				if ("get_ident" in options)
-					this._get_ident = options["get_ident"];
+					this._get_ident = options.get_ident;
 				inherited.constructor.call(this, objects);
 			},
 			
@@ -3625,11 +3628,7 @@ Scoped.define("module:Events.EventsMixin", [
 			this.__events_mixin_events = this.__events_mixin_events || {};
 			if (events) {
 				events = events.split(this.EVENT_SPLITTER);
-				var event;
-				while (true) {
-					event = events.shift();
-					if (!event)
-						break;
+				Objs.iter(events, function (event) {
 					if (this.__events_mixin_events[event]) {
 						this.__events_mixin_events[event].remove_by_filter(function (object) {
 							var result = (!callback || object.callback == callback) && (!context || object.context == context);
@@ -3643,21 +3642,21 @@ Scoped.define("module:Events.EventsMixin", [
 							this._notify("unregister_event", event);
 						}
 					}
-				}
+				}, this);
 			} else {
-				for (event in this.__events_mixin_events) {
-					this.__events_mixin_events[event].remove_by_filter(function (object) {
+				Objs.iter(this.__events_mixin_events, function (evntobj, evnt) {
+					evntobj.remove_by_filter(function (object) {
 						var result = (!callback || object.callback == callback) && (!context || object.context == context);
 						if (result && this.__destroy_event_object)
 							this.__destroy_event_object(object);
 						return result;
 					});
-					if (this.__events_mixin_events[event].count() === 0) {
-						this.__events_mixin_events[event].destroy();
-						delete this.__events_mixin_events[event];
-						this._notify("unregister_event", event);
+					if (evntobj.count() === 0) {
+						evntobj.destroy();
+						delete this.__events_mixin_events[evnt];
+						this._notify("unregister_event", evnt);
 					}
-				}
+				}, this);
 			}
 			return this;
 		},
@@ -3678,19 +3677,16 @@ Scoped.define("module:Events.EventsMixin", [
 			var event;
 			if (!this.__events_mixin_events)
 				return this;
-			while (true) {
-				event = events.shift();
-				if (!event)
-					break;
+			Objs.iter(events, function (event) {
 	    		if (this.__events_mixin_events[event])
 	    			this.__events_mixin_events[event].iterate(function (object) {
 	    				self.__call_event_object(object, rest);
 	    			});
 				if (this.__events_mixin_events && "all" in this.__events_mixin_events)
-					this.__events_mixin_events["all"].iterate(function (object) {
+					this.__events_mixin_events.all.iterate(function (object) {
 						self.__call_event_object(object, [event].concat(rest));
 					});
-			}
+			}, this);
 	    	return this;
 	    },
 	    
@@ -3938,11 +3934,8 @@ Scoped.define("module:Properties.PropertiesMixin", [
 				});
 				self.set(key, func.apply(args.context, values));
 			}
-			for (var i = 0; i < deps.length; ++i) {
-				deps[i].properties.on("change:" + deps[i].key, function () {
-					recompute();
-				}, deps[i]);
-			}
+			for (var i = 0; i < deps.length; ++i)
+				deps[i].properties.on("change:" + deps[i].key, recompute, deps[i]);
 			recompute();
 			return this;
 		},
@@ -4270,8 +4263,8 @@ Scoped.define("module:Sort", [
 			var data = [];
 			var identifier_to_index = {};
 			var todo = {};
-			var i = null;
-			for ( i = 0; i < n; ++i) {
+			var i = 0;
+			for (i = 0; i < n; ++i) {
 				todo[i] = true;
 				var ident = identifierf(items[i], i);
 				identifier_to_index[ident] = i;
@@ -4280,21 +4273,27 @@ Scoped.define("module:Sort", [
 					after : {}
 				});
 			}
-			for ( i = 0; i < n; ++i) {
-				Objs.iter(beforef(items[i], i) || [], function(before) {
+			var make_before_iter_func = function (i) {
+				return function (before) {
 					var before_index = identifier_to_index[before];
 					if (Types.is_defined(before_index)) {
 						data[i].before[before_index] = true;
 						data[before_index].after[i] = true;
 					}
-				});
-				Objs.iter(afterf(items[i]) || [], function(after) {
+				};
+			};
+			var make_after_iter_func = function (i) {
+				return function(after) {
 					var after_index = identifier_to_index[after];
 					if (Types.is_defined(after_index)) {
 						data[i].after[after_index] = true;
 						data[after_index].before[i] = true;
 					}
-				});
+				};
+			};
+			for (i = 0; i < n; ++i) {
+				Objs.iter(beforef(items[i], i) || [], make_before_iter_func(i));
+				Objs.iter(afterf(items[i]) || [], make_after_iter_func(i));
 			}
 			var result = [];
 			while (!Types.is_empty(todo)) {
@@ -4525,7 +4524,7 @@ Scoped.define("module:Trees.TreeQueryObject", ["module:Class", "module:Events.Ev
 	}]);
 });
 
-Scoped.define("module:Classes.InvokerMixin", ["module:Types", "module:Functions"], function (Types, Functions) {
+Scoped.define("module:Classes.InvokerMixin", ["module:Objs", "module:Types", "module:Functions"], function (Objs, Types, Functions) {
 	return {
 		
 		invoke_delegate : function(invoker, members) {
@@ -4533,8 +4532,7 @@ Scoped.define("module:Classes.InvokerMixin", ["module:Types", "module:Functions"
 				members = [members];
 			invoker = this[invoker];
 			var self = this;
-			for (var i = 0; i < members.length; ++i) {
-				var member = members[i];
+			Objs.iter(members, function (member) {
 				this[member] = function(member) {
 					return function() {
 						var args = Functions.getArguments(arguments);
@@ -4542,8 +4540,7 @@ Scoped.define("module:Classes.InvokerMixin", ["module:Types", "module:Functions"
 						return invoker.apply(self, args);
 					};
 				}.call(self, member);
-			}
-		
+			}, this);
 		}
 	};
 });
@@ -4955,7 +4952,7 @@ Scoped.define("module:Collections.Collection", [
 					Objs.iter(options.indices, this.add_secondary_index, this);
 				var list_options = {};
 				if ("compare" in options)
-					list_options["compare"] = options["compare"];
+					list_options.compare = options.compare;
 				list_options.get_ident = Functions.as_method(this.get_ident, this);
 				this.__data = new ArrayList([], list_options);
 				var self = this;
@@ -4969,7 +4966,7 @@ Scoped.define("module:Collections.Collection", [
 					self._sorted();
 				};
 				if ("objects" in options)
-					this.add_objects(options["objects"]);
+					this.add_objects(options.objects);
 			},
 			
 			add_secondary_index: function (key) {
@@ -5115,11 +5112,11 @@ Scoped.define("module:Collections.FilteredCollection", [
 			constructor : function(parent, options) {
 				this.__parent = parent;
 				options = options || {};
-				delete options["objects"];
+				delete options.objects;
 				options.compare = options.compare || parent.get_compare();
 				inherited.constructor.call(this, options);
 				if ("filter" in options)
-					this.filter = options["filter"];
+					this.filter = options.filter;
 				this.__parent.iterate(function (object) {
 					this.add(object);
 					return true;
@@ -5892,9 +5889,8 @@ Scoped.define("module:States.StateRouter", ["module:Class", "module:Objs"], func
 					if (result === null)
 						continue;
 					var args = {};
-					Objs.iter(descriptor.mapping, function (key, i) {
-						args[key] = result[i + 1];
-					});
+					for (var j = 0; j < descriptor.mapping.length; ++j)
+						args[descriptor.mapping[j]] = result[j + 1];
 					return {
 						state: descriptor.state,
 						args: args

@@ -1,5 +1,5 @@
 /*!
-betajs-flash - v0.0.1 - 2015-03-24
+betajs-flash - v0.0.1 - 2015-03-26
 Copyright (c) Oliver Friedmann
 MIT Software License.
 */
@@ -15,7 +15,7 @@ Scoped.binding("jquery", "global:jQuery");
 Scoped.define("module:", function () {
 	return {
 		guid: "3adc016a-e639-4d1a-b4cb-e90cab02bc4f",
-		version: '6.1427219789310',
+		version: '7.1427414430087',
 		__global: {},
 		options: {
 			flashFile: "betajs-flash.swf"

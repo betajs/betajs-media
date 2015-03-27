@@ -1,5 +1,5 @@
 /*!
-betajs-browser - v1.0.0 - 2015-03-24
+betajs-browser - v1.0.0 - 2015-03-26
 Copyright (c) Oliver Friedmann
 MIT Software License.
 */
@@ -19,7 +19,7 @@ Scoped.define("base:$", ["jquery:"], function (jquery) {
 Scoped.define("module:", function () {
 	return {
 		guid: "02450b15-9bbf-4be2-b8f6-b483bc015d06",
-		version: '12.1427219513475'
+		version: '13.1427409166594'
 	};
 });
 
@@ -125,6 +125,7 @@ Scoped.define("module:Dom", ["base:Objs", "jquery:"], function (Objs, $) {
 			return this.traverseNext(node.parentNode, true);
 		},
 		
+		/** @suppress {checkTypes} */
 		selectNode : function(node, offset) {
 			node = $(node).get(0);
 			var selection = null;
@@ -147,6 +148,7 @@ Scoped.define("module:Dom", ["base:Objs", "jquery:"], function (Objs, $) {
 			}
 		},
 	
+		/** @suppress {checkTypes} */
 		selectionStartNode : function() {
 			if (window.getSelection)
 				return $(window.getSelection().getRangeAt(0).startContainer);
@@ -155,6 +157,7 @@ Scoped.define("module:Dom", ["base:Objs", "jquery:"], function (Objs, $) {
 			return null;
 		},
 		
+		/** @suppress {checkTypes} */
 		selectedHtml : function() {
 			if (window.getSelection)
 				return window.getSelection().toString();
@@ -163,6 +166,7 @@ Scoped.define("module:Dom", ["base:Objs", "jquery:"], function (Objs, $) {
 			return "";
 		},
 		
+		/** @suppress {checkTypes} */
 		selectionAncestor : function() {
 			if (window.getSelection)
 				return $(window.getSelection().getRangeAt(0).commonAncestorContainer);
@@ -171,6 +175,7 @@ Scoped.define("module:Dom", ["base:Objs", "jquery:"], function (Objs, $) {
 			return null;
 		},
 		
+		/** @suppress {checkTypes} */
 		selectionStartOffset: function () {
 			if (window.getSelection)
 				return window.getSelection().getRangeAt(0).startOffset;
@@ -179,6 +184,7 @@ Scoped.define("module:Dom", ["base:Objs", "jquery:"], function (Objs, $) {
 			return null;
 		},
 		
+		/** @suppress {checkTypes} */
 		selectionEndOffset: function () {
 			if (window.getSelection)
 				return window.getSelection().getRangeAt(0).endOffset;
@@ -187,6 +193,7 @@ Scoped.define("module:Dom", ["base:Objs", "jquery:"], function (Objs, $) {
 			return null;
 		},
 	
+		/** @suppress {checkTypes} */
 		selectionStart : function() {
 			if (window.getSelection)
 				return $(window.getSelection().getRangeAt(0).startContainer);
@@ -195,6 +202,7 @@ Scoped.define("module:Dom", ["base:Objs", "jquery:"], function (Objs, $) {
 			return null;
 		},
 	
+		/** @suppress {checkTypes} */
 		selectionEnd : function() {
 			if (window.getSelection)
 				return $(window.getSelection().getRangeAt(0).endContainer);
@@ -203,16 +211,19 @@ Scoped.define("module:Dom", ["base:Objs", "jquery:"], function (Objs, $) {
 			return null;
 		},
 		
+		/** @suppress {checkTypes} */
 		selectionNonEmpty: function () {
 			var start = this.selectionStart();
 			var end = this.selectionEnd();
 			return start && end && start.get(0) && end.get(0) && (start.get(0) != end.get(0) || this.selectionStartOffset() != this.selectionEndOffset());
 		},
 		
+		/** @suppress {checkTypes} */
 		selectionContained: function (node) {
 			return node.has(this.selectionStart()).length > 0 && node.has(this.selectionEnd()).length > 0;
 		},
 	
+		/** @suppress {checkTypes} */
 		selectionNodes: function () {
 			var result = [];
 			var start = this.selectionStart();
@@ -226,6 +237,7 @@ Scoped.define("module:Dom", ["base:Objs", "jquery:"], function (Objs, $) {
 			return result;
 		},
 		
+		/** @suppress {checkTypes} */
 		selectionLeaves: function () {
 			return Objs.filter(this.selectionNodes(), function (node) { return node.children().length === 0; });
 		},
@@ -251,6 +263,7 @@ Scoped.define("module:Dom", ["base:Objs", "jquery:"], function (Objs, $) {
 			}
 		},
 		
+		/** @suppress {checkTypes} */
 		selectionSplitOffsets: function () {
 			var startOffset = this.selectionStartOffset();
 			var endOffset = this.selectionEndOffset();
@@ -272,6 +285,7 @@ Scoped.define("module:Dom", ["base:Objs", "jquery:"], function (Objs, $) {
 			this.selectRange(start, end);
 		},
 		
+		/** @suppress {checkTypes} */
 		selectRange: function (start_node, end_node, start_offset, end_offset) {
 			start_node = $(start_node);
 			end_node = $(end_node);
@@ -451,7 +465,7 @@ Scoped.define("module:FlashHelper", [
 				embed = $(container).find("object").get(0);
 			if (!embed) {
 				var objs = $("object");
-				for (i = 0; i < objs.length; ++i) {
+				for (var i = 0; i < objs.length; ++i) {
 					if ($(objs[i]).closest(container).length > 0)
 						embed = $(objs[i]);
 				}
@@ -858,12 +872,14 @@ Scoped.define("module:Info", ["module:FlashDetect"], function (FlashDetect) {
 		internetExplorerVersion: function () {
 			if (navigator.appName == 'Microsoft Internet Explorer') {
 			    var re = new RegExp("MSIE ([0-9]{1,}[\.0-9]{0,})");
-			    if (re.exec(navigator.userAgent))
-			    	return parseFloat(RegExp.$1);
+			    var ma = re.exec(navigator.userAgent);
+			    if (ma)
+			    	return ma[1];
 			} else if (navigator.appName == 'Netscape') {
 			    var re2 = new RegExp("Trident/.*rv:([0-9]{1,}[\.0-9]{0,})");
-			    if (re2.exec(navigator.userAgent))
-			    	return parseFloat(RegExp.$1);
+			    var ma2 = re2.exec(navigator.userAgent); 
+			    if (ma2)
+			    	return parseFloat(ma2[1]);
 			}
 			return null;
 		},
@@ -1038,6 +1054,7 @@ Scoped.define("module:Router", [
 			 *  }
 			 * }
 			 */	
+			/** @suppress {checkTypes} */
 			routes: [],
 			
 			/** Creates a new router with options
@@ -1053,10 +1070,10 @@ Scoped.define("module:Router", [
 				if (!Types.is_array(routes))
 					routes = [routes];
 				if ("routes" in options) {
-					if (Types.is_array(options["routes"]))
-						routes = routes.concat(options["routes"]);
+					if (Types.is_array(options.routes))
+						routes = routes.concat(options.routes);
 					else
-						routes.push(options["routes"]);
+						routes.push(options.routes);
 				}
 				this.__routes = [];
 				this.__paths = {};
@@ -1081,7 +1098,7 @@ Scoped.define("module:Router", [
 						this.__paths[obj.path] = obj;
 					}, this);
 				}, this);
-				if ("actions" in options)
+				if (options.actions)
 					Objs.iter(options.actions, function (action, key) {
 						this[key] = action;
 					}, this);
@@ -1103,17 +1120,19 @@ Scoped.define("module:Router", [
 					if (result !== null) {
 						result.shift(1);
 						var applicable = true;
-						Objs.iter(obj.applicable, function (s) {
+						for (var j = 0; j < obj.applicable.length; ++j) {
+							var s = obj.applicable[j];
 							var f = Types.is_string(s) ? this[s] : s;
 							applicable = applicable && f.apply(this, result);
-						}, this);
+						}
 						if (!applicable)
 							continue;
 						var valid = true;
-						Objs.iter(obj.valid, function (s) {
-							var f = Types.is_string(s) ? this[s] : s;
-							valid = valid && f.apply(this, result);
-						}, this);
+						for (var k = 0; k < obj.valid.length; ++k) {
+							var t = obj.valid[k];
+							var g = Types.is_string(t) ? this[t] : t;
+							valid = valid && g.apply(this, result);
+						}
 						if (!valid)
 							return null;
 						return {
@@ -1135,7 +1154,7 @@ Scoped.define("module:Router", [
 			
 			/** Returns the route of a path description
 			 * @param pth the path descriptor
-			 * @param parameters parameters that should be attached to the route (capturing groups)
+			 * param parameters parameters that should be attached to the route (capturing groups)
 			 */
 			path: function (pth) {
 				var key = this.object(pth).key;

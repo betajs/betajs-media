@@ -11,15 +11,14 @@
 		"grunt-contrib-nodeunit": "",
 		"grunt-contrib-concat": "",
 		"grunt-contrib-uglify": "",
-		"grunt-shell": "",
-		"grunt-contrib-sass": "",
-		"grunt-contrib-cssmin": "",
 		"grunt-contrib-clean": "",
-		"grunt-newer": "",
 		"grunt-preprocess": "",
 		"grunt-git-revision-count": "",
 		"grunt-closure-tools": "",
-		"grunt-wget": ""
+		"grunt-node-qunit": "",
+		"grunt-contrib-jshint": "",
+		"grunt-wget": "",
+		"grunt-jsdoc": "beta"
 	},
 	"repository": {
 		"type": "git",
