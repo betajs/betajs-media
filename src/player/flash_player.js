@@ -3,8 +3,11 @@ Scoped.define("module:Player.Flash", [
     "base:Flash.FlashClassRegistry",
     "base:Flash.FlashEmbedding",
     "base:Browser.Dom",
-    "base:Strings"
-], function (FlashClassRegistry, FlashEmbedding, Dom, Strings) {
+    "base:Strings",
+    "base:Async",
+    "base:Ids",
+    "jquery:"
+], function (FlashClassRegistry, FlashEmbedding, Dom, Strings, Async, Ids, $) {
 	return {
 		
 		polyfill: function (element, polyfilltag, force) {
@@ -28,6 +31,11 @@ Scoped.define("module:Player.Flash", [
 		},
 		
 		attach: function (element) {
+			var event_id = Ids.uniqueId("flashembedding");
+			
+			var $element = $(element);
+			if (!$element.css("display") || $element.css("display") == "inline")
+				$element.css("display", "inline-block");
 			var preferred = [".mp4", ".flv"];
 			var sources = [];
 			for (var i = 0; i < element.childNodes.length; ++i) {
@@ -61,18 +69,52 @@ Scoped.define("module:Player.Flash", [
 				wrap: true
 			});
 			
+			var main;
+			var stage;
+			var video;
+			var connection;
 			var stream;
+			var meta;
+			var currentWidth;
+			var currentHeight;
+			
+			var updateSize = function () {
+				if (!meta)
+					return;
+				var newWidth = $element.width();
+				if ($element.width() < meta.width && !element.style.width) {
+					element.style.width = meta.width + "px";
+					newWidth = $element.width();
+					delete element.style.width;
+				}
+				var newHeight = Math.round(newWidth * meta.height / meta.width);
+				if (newWidth != currentWidth) {
+					currentWidth = newWidth;
+					currentHeight = newHeight;
+					$element.find("object").css("width", currentWidth + "px");
+					$element.find("embed").css("width", currentWidth + "px");
+					$element.find("object").css("height", currentHeight + "px");
+					$element.find("embed").css("height", currentHeight + "px");
+					video.set("width", currentWidth);
+					video.set("height", currentHeight);
+				}
+			};
 			
 			embedding.ready(function () {
-				var main = embedding.flashMain();
-				var stage = main.get("stage");
+				main = embedding.flashMain();
+				stage = main.get("stage");
 				stage.set("scaleMode", "noScale");
 				stage.set("align", "TL");
-				var video = embedding.newObject("flash.media.Video", stage.get("stageWidth"), stage.get("stageHeight"));
+				video = embedding.newObject("flash.media.Video", stage.get("stageWidth"), stage.get("stageHeight"));
 				main.addChildVoid(video);
-				var connection = embedding.newObject("flash.net.NetConnection");
+				connection = embedding.newObject("flash.net.NetConnection");
+				
 				connection.addEventListener("netStatus", function () {
 					stream = embedding.newObject("flash.net.NetStream", connection);
+					stream.set("client", embedding.newCallback("onMetaData", function (info) {
+						meta = info;
+						Async.eventually(updateSize);
+					}));
 					video.attachNetStreamVoid(stream);
 					if (element.attributes.autoplay)
 						element.play();
@@ -84,7 +126,18 @@ Scoped.define("module:Player.Flash", [
 				stream.playVoid(playUrl);
 			};
 			
-			// TODO: size, poster, other
+			var destroy = function () {
+				$(window).off("." + event_id);
+				$(document).off("." + event_id);
+			};
+						
+			$(document).on("DOMNodeRemoved", function (event) {
+				if (event.target == element)
+					destroy();
+			});
+			
+			$(window).on("resize", updateSize);
+			// TODO: poster, loop; other
 
 		}
 

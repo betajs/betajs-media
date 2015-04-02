@@ -1,5 +1,5 @@
 /*!
-betajs-flash - v0.0.1 - 2015-03-26
+betajs-flash - v0.0.1 - 2015-04-01
 Copyright (c) Oliver Friedmann
 MIT Software License.
 */
@@ -15,7 +15,7 @@ Scoped.binding("jquery", "global:jQuery");
 Scoped.define("module:", function () {
 	return {
 		guid: "3adc016a-e639-4d1a-b4cb-e90cab02bc4f",
-		version: '7.1427414430087',
+		version: '9.1427938913578',
 		__global: {},
 		options: {
 			flashFile: "betajs-flash.swf"
@@ -252,20 +252,23 @@ Scoped.define("module:FlashObjectWrapper", [ "base:Class", "base:Objs", "base:Fu
 				this.__ident = objectIdent;
 				this.__type = objectType;
 				if (embedding.__registry) {
-					Objs.iter(embedding.__registry.get(objectType).methods, function (method) {
-						this[method] = function () {
-							var args = Functions.getArguments(arguments);
-							args.unshift(method);
-							args.unshift(this.__ident);
-							return this.__embedding.flashCall.apply(this.__embedding, args);
-						};
-						this[method + "Void"] = function () {
-							var args = Functions.getArguments(arguments);
-							args.unshift(method);
-							args.unshift(this.__ident);
-							return this.__embedding.flashCallVoid.apply(this.__embedding, args);
-						};
-					}, this);
+					var lookup = embedding.__registry.get(objectType);
+					if (lookup) {
+						Objs.iter(lookup.methods, function (method) {
+							this[method] = function () {
+								var args = Functions.getArguments(arguments);
+								args.unshift(method);
+								args.unshift(this.__ident);
+								return this.__embedding.flashCall.apply(this.__embedding, args);
+							};
+							this[method + "Void"] = function () {
+								var args = Functions.getArguments(arguments);
+								args.unshift(method);
+								args.unshift(this.__ident);
+								return this.__embedding.flashCallVoid.apply(this.__embedding, args);
+							};
+						}, this);
+					}
 				}
 			},
 			
@@ -302,20 +305,23 @@ Scoped.define("module:FlashClassWrapper", [ "base:Class", "base:Objs", "base:Fun
 				this.__embedding = embedding;
 				this.__type = classType;
 				if (embedding.__registry) {
-					Objs.iter(embedding.__registry.get(classType).statics, function (method) {
-						this[method] = function () {
-							var args = Functions.getArguments(arguments);
-							args.unshift(method);
-							args.unshift(this.__type);
-							return this.__embedding.flashStaticCall.apply(this.__embedding, args);
-						};
-						this[method + "Void"] = function () {
-							var args = Functions.getArguments(arguments);
-							args.unshift(method);
-							args.unshift(this.__type);
-							return this.__embedding.flashStaticCallVoid.apply(this.__embedding, args);
-						};
-					}, this);
+					var lookup = embedding.__registry.get(classType);
+					if (lookup) {
+						Objs.iter(lookup.statics, function (method) {
+							this[method] = function () {
+								var args = Functions.getArguments(arguments);
+								args.unshift(method);
+								args.unshift(this.__type);
+								return this.__embedding.flashStaticCall.apply(this.__embedding, args);
+							};
+							this[method + "Void"] = function () {
+								var args = Functions.getArguments(arguments);
+								args.unshift(method);
+								args.unshift(this.__type);
+								return this.__embedding.flashStaticCallVoid.apply(this.__embedding, args);
+							};
+						}, this);
+					}
 				}
 			},
 			
