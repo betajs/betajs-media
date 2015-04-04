@@ -10,7 +10,13 @@ Scoped.define("module:Player.Flash", [
 ], function (FlashClassRegistry, FlashEmbedding, Dom, Strings, Async, Ids, $) {
 	return {
 		
-		polyfill: function (element, polyfilltag, force) {
+		polyfill: function (element, polyfilltag, force, eventual) {
+			if (eventual) {
+				Async.eventually(function () {
+					this.polyfill(element, polyfilltag, force);
+				}, this);
+				return element; 
+			}
 			if (element.tagName.toLowerCase() != "video" || !("networkState" in element))
 				return this.attach(element);
 			else if (element.networkState == element.NETWORK_NO_SOURCE || force)
@@ -24,8 +30,8 @@ Scoped.define("module:Player.Flash", [
 				this.__flashRegistry.register("flash.media.Video", ["attachNetStream"]);
 				this.__flashRegistry.register("flash.display.Sprite", ["addChild"]);
 				this.__flashRegistry.register("flash.display.Stage", []);
-				this.__flashRegistry.register("flash.net.NetStream", ["play"]);
-				this.__flashRegistry.register("flash.net.NetConnection", ["connect"]);
+				this.__flashRegistry.register("flash.net.NetStream", ["play", "addEventListener"]);
+				this.__flashRegistry.register("flash.net.NetConnection", ["connect", "addEventListener"]);
 			}
 			return this.__flashRegistry;
 		},
@@ -100,6 +106,8 @@ Scoped.define("module:Player.Flash", [
 				}
 			};
 			
+			var status = "idle";
+			
 			embedding.ready(function () {
 				main = embedding.flashMain();
 				stage = main.get("stage");
@@ -109,16 +117,29 @@ Scoped.define("module:Player.Flash", [
 				main.addChildVoid(video);
 				connection = embedding.newObject("flash.net.NetConnection");
 				
-				connection.addEventListener("netStatus", function () {
+				connection.addEventListener("netStatus", embedding.newCallback(function () {
 					stream = embedding.newObject("flash.net.NetStream", connection);
 					stream.set("client", embedding.newCallback("onMetaData", function (info) {
 						meta = info;
 						Async.eventually(updateSize);
 					}));
+					stream.addEventListener("netStatus", embedding.newCallback(function (event) {
+						var code = event.get("info").code;
+						if (code == "NetStream.Play.Start")
+							status = "start";
+						if (code == "NetStream.Play.Stop")
+							status = "stopping";
+						if (code == "NetStream.Buffer.Empty" && status == "stopping")
+							status = "stopped";
+						if (status == "stopped" && element.attributes.loop) {
+							status = "idle";
+							element.play();
+						}
+					}));
 					video.attachNetStreamVoid(stream);
 					if (element.attributes.autoplay)
 						element.play();
-				});
+				}));
 				connection.connectVoid(connectionUrl);
 			});
 
@@ -137,7 +158,7 @@ Scoped.define("module:Player.Flash", [
 			});
 			
 			$(window).on("resize", updateSize);
-			// TODO: poster, loop; other
+			// TODO: refactor, poster, other
 
 		}
 

@@ -1,5 +1,5 @@
 /*!
-betajs-flash - v0.0.1 - 2015-04-01
+betajs-flash - v0.0.1 - 2015-04-04
 Copyright (c) Oliver Friedmann
 MIT Software License.
 */
@@ -15,7 +15,7 @@ Scoped.binding("jquery", "global:jQuery");
 Scoped.define("module:", function () {
 	return {
 		guid: "3adc016a-e639-4d1a-b4cb-e90cab02bc4f",
-		version: '9.1427938913578',
+		version: '10.1428179383116',
 		__global: {},
 		options: {
 			flashFile: "betajs-flash.swf"
@@ -67,7 +67,10 @@ Scoped.define("module:FlashEmbedding", [ "base:Class", "jquery:", "base:Strings"
 			
 			registerCallback: function (callback, context) {
 				var value = "__FLASHCALLBACK__" + Ids.uniqueId();
-				this.__callbacks[value] = Functions.as_method(callback, context || this);
+				var self = this;
+				this.__callbacks[value] = function () {
+					callback.apply(context || self, Objs.map(Functions.getArguments(arguments), self.unserialize, self));
+				};
 				return value;
 			},
 			
@@ -136,13 +139,17 @@ Scoped.define("module:FlashEmbedding", [ "base:Class", "jquery:", "base:Strings"
 			},
 			
 			newCallback: function () {
-				return this.flashCreateCallbackObject.apply(this, arguments);
+				return Types.is_string(arguments[0]) ? this.flashCreateCallbackObject.apply(this, arguments) : this.flashCreateCallbackFunction.apply(this, arguments);
 			},
 			
 			flashCreateCallbackObject : function() {
 				return this.invoke("create_callback_object", arguments);
 			},
 			
+			flashCreateCallbackFunction : function() {
+				return this.invoke("create_callback_function", arguments);
+			},
+
 			flashCreate : function() {
 				return this.invoke("create", arguments);
 			},
@@ -181,10 +188,6 @@ Scoped.define("module:FlashEmbedding", [ "base:Class", "jquery:", "base:Strings"
 
 			flashSetStatic : function() {
 				return this.invoke("set_static", arguments);
-			},
-
-			flashAddEventListener : function() {
-				return this.invoke("add_event_listener", arguments);
 			},
 
 			flashMain : function() {
@@ -277,10 +280,6 @@ Scoped.define("module:FlashObjectWrapper", [ "base:Class", "base:Objs", "base:Fu
 				inherited.destroy.call(this);
 			},
 			
-			addEventListener: function (ev, cb) {
-				return this.__embedding.flashAddEventListener.call(this.__embedding, this.__ident, ev, cb);
-			},
-			
 			set: function (key, value) {
 				return this.__embedding.flashSet.call(this.__embedding, this.__ident, key, value);
 			},
@@ -288,7 +287,7 @@ Scoped.define("module:FlashObjectWrapper", [ "base:Class", "base:Objs", "base:Fu
 			get: function (key) {
 				return this.__embedding.flashGet.call(this.__embedding, this.__ident, key);
 			}
-
+			
 		};
 	});
 });
