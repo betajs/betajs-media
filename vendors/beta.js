@@ -1,5 +1,5 @@
 /*!
-betajs - v1.0.0 - 2015-03-26
+betajs - v1.0.0 - 2015-04-16
 Copyright (c) Oliver Friedmann,Victor Lingenthal
 MIT Software License.
 */
@@ -537,7 +537,7 @@ Public.exports();
 	return Public;
 }).call(this);
 /*!
-betajs - v1.0.0 - 2015-03-26
+betajs - v1.0.0 - 2015-04-16
 Copyright (c) Oliver Friedmann,Victor Lingenthal
 MIT Software License.
 */
@@ -550,7 +550,7 @@ Scoped.binding("module", "global:BetaJS");
 Scoped.define("module:", function () {
 	return {
 		guid: "71366f7a-7da3-4e55-9a0b-ea0e4e2a9e79",
-		version: '345.1427403710989'
+		version: '355.1429230918532'
 	};
 });
 
@@ -887,25 +887,42 @@ Scoped.define("module:Ids", function () {
 	
 	};
 });
-Scoped.define("module:Tokens", function () {
-	/** Unique Token Generation
+Scoped.define("module:Tokens", function() {
+	/**
+	 * Unique Token Generation
+	 * 
 	 * @module BetaJS.Tokens
 	 */
 	return {
-		
-	    /** Returns a new token
-	     * 
-	     * @param length optional length of token, default is 16
-	     * @return token
-	     */
-		generate_token: function (length) {
+
+		/**
+		 * Returns a new token
+		 * 
+		 * @param length
+		 *            optional length of token, default is 16
+		 * @return token
+		 */
+		generate_token : function(length) {
 			length = length || 16;
 			var s = "";
 			while (s.length < length)
-				s += Math.random().toString(36).substr(2); 
+				s += Math.random().toString(36).substr(2);
 			return s.substr(0, length);
+		},
+
+		// http://jsperf.com/string-hashing-methods
+		simple_hash : function(s) {
+			var nHash = 0;
+			if (!s.length)
+				return nHash;
+			for (var i = 0, imax = s.length, n; i < imax; ++i) {
+				n = s.charCodeAt(i);
+				nHash = ((nHash << 5) - nHash) + n;
+				nHash = nHash & nHash;
+			}
+			return Math.abs(nHash);
 		}
-	
+
 	};
 });
 Scoped.define("module:Objs", ["module:Types"], function (Types) {
@@ -1571,7 +1588,8 @@ Scoped.define("module:Structures.AvlTree", function () {
 				data : data,
 				left : null,
 				right : null,
-				height : 1
+				height : 1,
+				length: 1
 			};
 		},
 	
@@ -1586,17 +1604,26 @@ Scoped.define("module:Structures.AvlTree", function () {
 		height : function(node) {
 			return node ? node.height : 0;
 		},
+		
+		length : function (node){
+			return node ? node.length : 0;
+		}, 
 	
 		height_join : function(left, right) {
 			return 1 + Math.max(this.height(left), this.height(right));
 		},
 	
+		length_join : function(left, right) {
+			return 1 + this.length(left) + this.length(right);
+		},
+
 		create : function(data, left, right) {
 			return {
 				data : data,
 				left : left,
 				right : right,
-				height : this.height_join(left, right)
+				height : this.height_join(left, right),
+				length : this.length_join(left, right)
 			};
 		},
 	
@@ -1660,7 +1687,7 @@ Scoped.define("module:Structures.AvlTree", function () {
 			return [ result[0], this.join(root.data, root.left, result[1]) ];
 		},
 	
-		rereoot : function(left, right) {
+		reroot : function(left, right) {
 			if (!left || !right)
 				return left || right;
 			if (this.height(left) > this.height(right)) {
@@ -1701,7 +1728,6 @@ Scoped.define("module:Structures.TreeMap", ["module:Structures.AvlTree"], functi
 		empty : function(compare) {
 			return {
 				root : null,
-				length : 0,
 				compare : compare || function(x, y) {
 					return x > y ? 1 : x < y ? -1 : 0;
 				}
@@ -1713,7 +1739,7 @@ Scoped.define("module:Structures.TreeMap", ["module:Structures.AvlTree"], functi
 		},
 	
 		length : function(t) {
-			return t.length;
+			return t.root ? t.root.length : 0;
 		},
 	
 		__add : function(key, value, t, node) {
@@ -1721,10 +1747,8 @@ Scoped.define("module:Structures.TreeMap", ["module:Structures.AvlTree"], functi
 				key : key,
 				value : value
 			};
-			if (!node) {
-				t.length++;
+			if (!node) 
 				return AvlTree.singleton(kv);
-			}
 			var c = t.compare(key, node.data.key);
 			if (c === 0) {
 				node.data = kv;
@@ -1787,6 +1811,49 @@ Scoped.define("module:Structures.TreeMap", ["module:Structures.AvlTree"], functi
 			this.iterate_from(from_key, t, function(key, value) {
 				return t.compare(key, to_key) * (reverse ? -1 : 1) <= 0 && callback.call(context, key, value) !== false;
 			}, this, reverse);
+		},
+		
+		take_min: function (t) {
+			var a = AvlTree.take_min(t.root);
+			a[1] = {
+				compare: t.compare,
+				root: a[1]
+			};
+			return a;
+		},
+		
+		__treeSizeLeft: function (key, t, node) {
+			var c = t.compare(key, node.data.key);
+			if (c < 0)
+				return this.__treeSizeLeft(key, t, node.left);
+			return 1 + (node.left ? node.left.length : 0) + (c > 0 ? this.__treeSizeLeft(key, t, node.right) : 0);
+		},
+		
+		__treeSizeRight: function (key, t, node) {
+			var c = t.compare(key, node.data.key);
+			if (c > 0)
+				return this.__treeSizeRight(key, t, node.right);
+			return 1 + (node.right ? node.right.length : 0) + (c < 0 ? this.__treeSizeRight(key, t, node.left) : 0);
+		},
+		
+		__distance: function (keyLeft, keyRight, t, node) {
+			var cLeft = t.compare(keyLeft, node.data.key);
+			var cRight = t.compare(keyRight, node.data.key);
+			if (cLeft > 0 || cRight < 0)
+				return this.__distance(keyLeft, keyRight, t, cLeft > 0 ? node.right : node.left);
+			return 1 + (cRight > 0 ? this.__treeSizeLeft(keyRight, t, node.right) : 0) + (cLeft < 0 ? this.__treeSizeRight(keyLeft, t, node.left) : 0);
+		},
+		
+		treeSizeLeft: function (key, t) {
+			return this.__treeSizeLeft(key, t, t.root);
+		},
+		
+		treeSizeRight: function (key, t) {
+			return this.__treeSizeRight(key, t, t.root);
+		},
+
+		distance: function (keyLeft, keyRight, t) {
+			return t.compare(keyLeft, keyRight) < 0 ? this.__distance(keyLeft, keyRight, t, t.root) - 1 : 0;
 		}
 	
 	};
@@ -2559,76 +2626,82 @@ Scoped.define("module:Class", ["module:Types", "module:Objs", "module:Functions"
 	 * 
 	 */
 	
+	Class.prototype.__class_instance_guid = "e6b0ed30-80ee-4b28-af02-7d52430ba45f";
 	
-	Objs.extend(Class.prototype, {
-		
-		__class_instance_guid: "e6b0ed30-80ee-4b28-af02-7d52430ba45f",
-		
-		constructor: function () {
-			this._notify("construct");
-		},
-		
-		destroy: function () {
-			this._notify("destroy");
-			if (this.__auto_destroy_list) {
-				for (var i = 0; i < this.__auto_destroy_list.length; ++i) {
-					if ("destroy" in this.__auto_destroy_list[i])
-						this.__auto_destroy_list[i].destroy();
-				}
+	Class.prototype.constructor = function () {
+		this._notify("construct");
+	};
+	
+	Class.prototype.destroy = function () {
+		this._notify("destroy");
+		if (this.__auto_destroy_list) {
+			for (var i = 0; i < this.__auto_destroy_list.length; ++i) {
+				if ("destroy" in this.__auto_destroy_list[i])
+					this.__auto_destroy_list[i].destroy();
 			}
-			for (var key in this)
-				delete this[key];
-		},
-		
-		cid: function () {
-			return Ids.objectId(this);
-		},
-	
-		cls: Class,
-		
-		as_method: function (s) {
-			return Functions.as_method(this[s], this);
-		},
-		
-		auto_destroy: function (obj) {
-			if (!this.__auto_destroy_list)
-				this.__auto_destroy_list = [];
-			var target = obj;
-			if (!Types.is_array(target))
-			   target = [target];
-			for (var i = 0; i < target.length; ++i)
-			   this.__auto_destroy_list.push(target[i]);
-			return obj;
-		},
-		
-		_notify: function (name) {
-			if (!this.cls.__notifications)
-				return;
-			var rest = Array.prototype.slice.call(arguments, 1);
-			Objs.iter(this.cls.__notifications[name], function (entry) {
-				var method = Types.is_function(entry) ? entry : this[entry];
-				if (!method)
-					throw this.cls.classname  + ": Could not find " + name + " notification handler " + entry;
-				method.apply(this, rest);
-			}, this);
-		},
-		
-		instance_of: function (cls) {
-			return this.cls.ancestor_of(cls);
-		},
-		
-		// Legacy Methods
-		
-		_auto_destroy: function(obj) {
-			return this.auto_destroy(obj);
-		},
-		
-		_inherited: function (cls, func) {
-			return cls.parent.prototype[func].apply(this, Array.prototype.slice.apply(arguments, [2]));
 		}
-		
-	});
+		var cid = this.cid();
+		for (var key in this)
+			delete this[key];
+		Ids.objectId(this, cid);
+		this.destroy = this.__destroyedDestroy;
+	};
+	
+	Class.prototype.destroyed = function () {
+		return this.destroy === this.__destroyedDestroy;
+	};
+	
+	Class.prototype.__destroyedDestroy = function () {
+		throw ("Trying to destroy destroyed object " + this.cid() + ": " + this.cls.classname + ".");
+	};
+	
+	Class.prototype.cid = function () {
+		return Ids.objectId(this);
+	};
 
+	Class.prototype.cls = Class;
+	
+	Class.prototype.as_method = function (s) {
+		return Functions.as_method(this[s], this);
+	};
+	
+	Class.prototype.auto_destroy = function (obj) {
+		if (!this.__auto_destroy_list)
+			this.__auto_destroy_list = [];
+		var target = obj;
+		if (!Types.is_array(target))
+		   target = [target];
+		for (var i = 0; i < target.length; ++i)
+		   this.__auto_destroy_list.push(target[i]);
+		return obj;
+	};
+	
+	Class.prototype._notify = function (name) {
+		if (!this.cls.__notifications)
+			return;
+		var rest = Array.prototype.slice.call(arguments, 1);
+		Objs.iter(this.cls.__notifications[name], function (entry) {
+			var method = Types.is_function(entry) ? entry : this[entry];
+			if (!method)
+				throw this.cls.classname  + ": Could not find " + name + " notification handler " + entry;
+			method.apply(this, rest);
+		}, this);
+	};
+	
+	Class.prototype.instance_of = function (cls) {
+		return this.cls.ancestor_of(cls);
+	};
+	
+	// Legacy Methods
+	
+	Class.prototype._auto_destroy = function(obj) {
+		return this.auto_destroy(obj);
+	};
+	
+	Class.prototype._inherited = function (cls, func) {
+		return cls.parent.prototype[func].apply(this, Array.prototype.slice.apply(arguments, [2]));
+	};
+		
 	return Class;
 
 });
@@ -3219,6 +3292,96 @@ Scoped.define("module:Iterators.SortedIterator", ["module:Iterators.Iterator"], 
 				var ret = this.__array[this.__i];
 				this.__i++;
 				return ret;
+			}
+	
+		};
+	});
+});
+
+
+Scoped.define("module:Iterators.LazyIterator", ["module:Iterators.Iterator"], function (Iterator, scoped) {
+	return Iterator.extend({scoped: scoped}, function (inherited) {
+		return {
+	
+			constructor: function () {
+				inherited.constructor.call(this);
+				this.__finished = false;
+				this.__initialized = false;
+				this.__current = null;
+				this.__has_current = false;
+			},
+			
+			_initialize: function () {},
+			
+			_next: function () {},
+			
+			_finished: function () {
+				this.__finished = true;
+			},
+			
+			_current: function (result) {
+				this.__current = result;
+				this.__has_current = true;
+			},
+			
+			__touch: function () {
+				if (!this.__initialized)
+					this._initialize();
+				this.__initiliazed = true;
+				if (!this.__has_current && !this.__finished)
+					this._next();
+			},
+			
+			hasNext: function () {
+				this.__touch();
+				return this.__has_current;
+			},
+			
+			next: function () {
+				this.__touch();
+				return this.__current;
+			}
+	
+		};
+	});
+});
+
+Scoped.define("module:Iterators.SortedOrIterator", [
+    "module:Iterators.LazyIterator",
+    "module:Structures.TreeMap",
+    "module:Objs"
+], function (Iterator, TreeMap, Objs, scoped) {
+	return Iterator.extend({scoped: scoped}, function (inherited) {
+		return {
+	
+			constructor: function (iterators, compare) {
+				inherited.constructor.call(this);
+				this.__iterators = iterators;
+				this.__map = TreeMap.empty(compare);
+			},
+			
+			__process: function (iter) {
+				if (iter.hasNext()) {
+					var n = iter.next();
+	  				var value = TreeMap.find(n, this.__map);
+	  				if (value)
+	  					value.push(iter);
+	  				else 
+	  					this.__map = TreeMap.add(n, [iter], this.__map);
+				}
+			},
+			
+			_initialize: function () {
+				Objs.iterate(this.__iterators, this.__process, this);
+				if (TreeMap.is_empty(this.__map))
+					this._finished();
+			},
+			
+			_next: function () {
+				var ret = TreeMap.take_min(this.__map);
+				this.__map = ret[1];
+				Objs.iter(ret[0].value, this.__process, this);
+				return ret[0].key;
 			}
 	
 		};
@@ -5508,7 +5671,7 @@ Scoped.define("module:KeyValue.DefaultKeyValueStore", ["module:KeyValue.KeyValue
 });
 
 Scoped.define("module:States.Host", [
-	    "module:Class",
+	    "module:Properties.Properties",
 	    "module:Events.EventsMixin",
 	    "module:States.State",
 	    "module:Types",

@@ -1,5 +1,5 @@
 /*!
-betajs-browser - v1.0.0 - 2015-03-26
+betajs-browser - v1.0.0 - 2015-04-17
 Copyright (c) Oliver Friedmann
 MIT Software License.
 */
@@ -19,7 +19,7 @@ Scoped.define("base:$", ["jquery:"], function (jquery) {
 Scoped.define("module:", function () {
 	return {
 		guid: "02450b15-9bbf-4be2-b8f6-b483bc015d06",
-		version: '13.1427409166594'
+		version: '17.1429303645975'
 	};
 });
 
@@ -735,27 +735,43 @@ Scoped.define("module:Hotkeys", ["base:Objs", "jquery:"], function (Objs, $) {
 		
 	};
 });
-Scoped.define("module:Info", ["module:FlashDetect"], function (FlashDetect) {
-	return {				
+Scoped.define("module:Info", [
+        "base:Objs", "module:FlashDetect"
+    ], function (Objs, FlashDetect) {
+	return {
+		
+		__navigator: null,
 		
 		getNavigator: function () {
-			return {
-				appCodeName: navigator.appCodeName,
-				appName: navigator.appName,
-				appVersion: navigator.appVersion,
-				cookieEnabled: navigator.cookieEnabled,
-				onLine: navigator.onLine,
-				platform: navigator.platform,
-				userAgent: navigator.userAgent
-			};
+			if (!this.__navigator) {
+				this.__navigator = {
+					appCodeName: navigator.appCodeName,
+					appName: navigator.appName,
+					appVersion: navigator.appVersion,
+					cookieEnabled: navigator.cookieEnabled,
+					onLine: navigator.onLine,
+					platform: navigator.platform,
+					userAgent: navigator.userAgent,
+					window_chrome: "chrome" in window,
+					window_opera: "opera" in window
+				};
+			}
+			return this.__navigator;
 		},
 		
 		__cache: {},
 		
 		__cached: function (key, value_func) {
-			if (!(key in this.__cache))
-				this.__cache[key] = value_func.apply(this);
+			if (!(key in this.__cache)) {
+				var n = this.getNavigator();
+				this.__cache[key] = value_func.call(this, n, n.userAgent, n.userAgent.toLowerCase());
+			}
 			return this.__cache[key];
+		},
+		
+		setNavigator: function (obj) {
+			this.__navigator = obj;
+			this.__cache = {};
 		},
 	
 		flash: function () {
@@ -765,53 +781,54 @@ Scoped.define("module:Info", ["module:FlashDetect"], function (FlashDetect) {
 		},
 		
 		isiOS: function () {
-			return this.__cached("isiOS", function () {
-				var ua = navigator.userAgent;
+			return this.__cached("isiOS", function (nav, ua) {
+				if (this.isInternetExplorer())
+					return false;
 				return ua.indexOf('iPhone') != -1 || ua.indexOf('iPod') != -1 || ua.indexOf('iPad') != -1;
 			});
 		},
 		
 		isChrome: function () {
-			return this.__cached("isChrome", function () {
-				return ("chrome" in window || navigator.userAgent.indexOf('CriOS') != -1)  && !window.opera && navigator.userAgent.indexOf(' OPR/') === -1;
+			return this.__cached("isChrome", function (nav, ua) {
+				return (nav.window_chrome || ua.indexOf('CriOS') != -1) && !this.isOpera();
 			});
 		},
 		
 		isOpera: function () {
-			return this.__cached("isOpera", function () {
-				return !!window.opera || navigator.userAgent.indexOf(' OPR/') >= 0;
+			return this.__cached("isOpera", function (nav, ua) {
+				return nav.window_opera || ua.indexOf(' OPR/') >= 0 || ua.indexOf("OPiOS") >= 0;
 			});
 		},
 		
 		isAndroid: function () {
-			return this.__cached("isAndroid", function () {
-				return navigator.userAgent.toLowerCase().indexOf("android") != -1;
+			return this.__cached("isAndroid", function (nav, ua, ualc) {
+				return ualc.indexOf("android") != -1;
 			});
 		},
 		
 		isWebOS: function () {
-			return this.__cached("isWebOS", function () {
-				return navigator.userAgent.toLowerCase().indexOf("webos") != -1;
+			return this.__cached("isWebOS", function (nav, ua, ualc) {
+				return ualc.indexOf("webos") != -1;
 			});
 		},
 	
 		isWindowsPhone: function () {
-			return this.__cached("isWindowsPhone", function () {
-				return navigator.userAgent.toLowerCase().indexOf("windows phone") != -1;
+			return this.__cached("isWindowsPhone", function (nav, ua, ualc) {
+				return ualc.indexOf("windows phone") != -1;
 			});
 		},
 	
 		isBlackberry: function () {
-			return this.__cached("isBlackberry", function () {
-				return navigator.userAgent.toLowerCase().indexOf("blackberry") != -1;
+			return this.__cached("isBlackberry", function (nav, ua, ualc) {
+				return ualc.indexOf("blackberry") != -1;
 			});
 		},
 	
 		iOSversion: function () {
-			return this.__cached("iOSversion", function () {
+			return this.__cached("iOSversion", function (nav) {
 				if (!this.isiOS())
 					return false;
-			    var v = (navigator.appVersion).match(/OS (\d+)_(\d+)_?(\d+)?/);
+			    var v = (nav.appVersion).match(/OS (\d+)_(\d+)_?(\d+)?/);
 			    return {
 			    	major: parseInt(v[1], 10),
 			    	minor: parseInt(v[2], 10),
@@ -826,6 +843,12 @@ Scoped.define("module:Info", ["module:FlashDetect"], function (FlashDetect) {
 			});
 		},
 		
+		isDesktop: function () {
+			return this.__cached("isDesktop", function () {
+				return !this.isMobile();
+			});
+		},
+		
 		isInternetExplorer: function () {
 			return this.__cached("isInternetExplorer", function () {
 				//return navigator.appName == 'Microsoft Internet Explorer';
@@ -834,54 +857,56 @@ Scoped.define("module:Info", ["module:FlashDetect"], function (FlashDetect) {
 		},
 		
 		isFirefox: function () {
-			return this.__cached("isFirefox", function () {
-				return navigator.userAgent.toLowerCase().indexOf("firefox") != -1;
+			return this.__cached("isFirefox", function (nav, ua, ualc) {
+				return ualc.indexOf("firefox") != -1;
 			});
 		},
 		
 		isSafari: function () {
-			return this.__cached("isSafari", function () {
-				return !this.isChrome() && navigator.userAgent.toLowerCase().indexOf("safari") != -1;
+			return this.__cached("isSafari", function (nav, ua, ualc) {
+				return !this.isChrome() && !this.isOpera() && ualc.indexOf("safari") != -1;
 			});
 		},
 		
 		isWindows: function () {
-			return this.__cached("isWindows", function () {
-				return navigator.appVersion.toLowerCase().indexOf("win") != -1;
+			return this.__cached("isWindows", function (nav) {
+				return nav.appVersion.toLowerCase().indexOf("win") != -1;
 			});
 		},
 		
 		isMacOS: function () {
-			return this.__cached("isMacOS", function () {
-				return !this.isiOS() && navigator.appVersion.toLowerCase().indexOf("mac") != -1;
+			return this.__cached("isMacOS", function (nav) {
+				return !this.isiOS() && nav.appVersion.toLowerCase().indexOf("mac") != -1;
 			});
 		},
 		
 		isUnix: function () {
-			return this.__cached("isUnix", function () {
-				return navigator.appVersion.toLowerCase().indexOf("x11") != -1;
+			return this.__cached("isUnix", function (nav) {
+				return nav.appVersion.toLowerCase().indexOf("x11") != -1;
 			});
 		},
 		
 		isLinux: function () {
-			return this.__cached("isLinux", function () {
-				return navigator.appVersion.toLowerCase().indexOf("linux") != -1;
+			return this.__cached("isLinux", function (nav) {
+				return nav.appVersion.toLowerCase().indexOf("linux") != -1;
 			});
 		},
 		
 		internetExplorerVersion: function () {
-			if (navigator.appName == 'Microsoft Internet Explorer') {
-			    var re = new RegExp("MSIE ([0-9]{1,}[\.0-9]{0,})");
-			    var ma = re.exec(navigator.userAgent);
-			    if (ma)
-			    	return ma[1];
-			} else if (navigator.appName == 'Netscape') {
-			    var re2 = new RegExp("Trident/.*rv:([0-9]{1,}[\.0-9]{0,})");
-			    var ma2 = re2.exec(navigator.userAgent); 
-			    if (ma2)
-			    	return parseFloat(ma2[1]);
-			}
-			return null;
+			return this.__cached("internetExplorerVersion", function (nav, ua) {
+				if (nav.appName == 'Microsoft Internet Explorer') {
+				    var re = new RegExp("MSIE ([0-9]{1,}[\.0-9]{0,})");
+				    var ma = re.exec(ua);
+				    if (ma)
+				    	return ma[1];
+				} else if (nav.appName == 'Netscape') {
+				    var re2 = new RegExp("Trident/.*rv:([0-9]{1,}[\.0-9]{0,})");
+				    var ma2 = re2.exec(nav.userAgent); 
+				    if (ma2)
+				    	return parseFloat(ma2[1]);
+				}
+				return null;
+			});
 		},
 		
 		inIframe: function () {
@@ -892,58 +917,147 @@ Scoped.define("module:Info", ["module:FlashDetect"], function (FlashDetect) {
 		    }
 		},
 		
+		__devicesMap: {
+		    mobile: {
+		    	format: "Mobile",
+		    	check: function () { return this.isMobile(); }
+		    }, desktop: {
+		    	format: "Desktop",
+		    	check: function () { return this.isDesktop(); }
+		    }
+		},
+		
+		__obtainMatch: function (map, def) {
+			var result = null;
+			Objs.iter(map, function (value, key) {
+				if (value.check.apply(this)) {
+					if (result) {
+						result = null;
+						return false;
+					}
+					result = Objs.clone(value, 1);
+					delete result.check;
+					result.key = key;
+				}
+			}, this);
+			return result || def;
+		},
+		
+		getDevice: function () {
+			return this.__cached("getDevice", function () {
+				return this.__obtainMatch(this.__devicesMap, {
+					key: "unknown",
+					format: "Unknown Device"
+				});
+			});
+		},
+		
 		formatDevice: function () {
-			return this.isMobile() ? "Mobile" : "Desktop";
+			return this.getDevice().format;
+		},
+		
+		__osMap: {
+		    macosx: {
+		    	format: "Mac OS-X",
+		    	check: function () { return this.isMacOS(); }
+		    }, windows: {
+		    	format: "Windows",
+		    	check: function () { return this.isWindows(); }
+		    }, unix: {
+		    	format: "Unix",
+		    	check: function () { return this.isUnix(); }
+		    }, linux: {
+		    	format: "Linux",
+		    	check: function () { return this.isLinux(); }
+		    }, ios: {
+		    	format: "iOS",
+		    	check: function () { return this.isiOS(); },
+		    	version: function () {
+		    		return this.iOSversion().major + "." + this.iOSversion().minor + "." + this.iOSversion().revision;
+		    	}
+		    }, android: {
+		    	format: "Android",
+		    	check: function () { return this.isAndroid(); }
+		    }, webos: {
+		    	format: "WebOS",
+		    	check: function () { return this.isWebOS(); }
+		    }, windowsphone: {
+		    	format: "Windows Phone",
+		    	check: function () { return this.isWindowsPhone(); }
+		    }, blackberry: {
+		    	format: "Blackberry",
+		    	check: function () { return this.isBlackberry(); }
+		    }
+		},
+		
+		getOS: function () {
+			return this.__cached("getOS", function () {
+				return this.__obtainMatch(this.__osMap, {
+					key: "unknown",
+					format: "Unknown Operating System"
+				});
+			});
 		},
 		
 		formatOS: function () {
-			return this.__cached("formatOS", function () {
-				if (this.isMacOS())
-					return "Mac OS-X";
-				if (this.isWindows())
-					return "Windows";
-				if (this.isUnix())
-					return "Unix";
-				if (this.isLinux())
-					return "Linux";
-				if (this.isiOS())
-					return "iOS " + this.iOSversion().major + "." + this.iOSversion().minor + "." + this.iOSversion().revision;
-				if (this.isAndroid())
-					return "Android";
-				if (this.isWebOS())
-					return "WebOS";
-				if (this.isWindowsPhone())
-					return "Windows Phone";
-				if (this.isBlackberry())
-					return "Blackberry";
-				return "Unknown Operating System";
+			return this.getOS().format;
+		},
+		
+		formatOSVersion: function () {
+			return this.getOS().version ? this.getOS().version.apply(this) : ""; 
+		},
+			
+		__browserMap: {
+		    chrome: {
+		    	format: "Chrome",
+		    	check: function () { return this.isChrome(); }
+		    }, opera: {
+		    	format: "Opera",
+		    	check: function () { return this.isOpera(); }
+		    }, internetexplorer: {
+		    	format: "Internet Explorer",
+		    	check: function () { return this.isInternetExplorer(); },
+		    	version: function () {
+		    		return this.internetExplorerVersion();
+		    	}
+		    }, firefox: {
+		    	format: "Firefox",
+		    	check: function () { return this.isFirefox(); }
+		    }, safari: {
+		    	format: "Safari",
+		    	check: function () { return this.isSafari(); }
+		    }, android: {
+		    	format: "Android",
+		    	check: function () { return this.isAndroid(); }
+		    }, webos: {
+		    	format: "WebOS",
+		    	check: function () { return this.isWebOS(); }
+		    }, windowsphone: {
+		    	format: "Windows Phone",
+		    	check: function () { return this.isWindowsPhone(); }
+		    }, blackberry: {
+		    	format: "Blackberry",
+		    	check: function () { return this.isBlackberry(); }
+		    }
+		},
+		
+		getBrowser: function () {
+			return this.__cached("getBrowser", function () {
+				return this.__obtainMatch(this.__browserMap, {
+					key: "unknown",
+					format: "Unknown Browser"
+				});
 			});
 		},
 		
 		formatBrowser: function () {
-			return this.__cached("formatBrowser", function () {
-				if (this.isChrome())
-					return "Chrome";
-				if (this.isOpera())
-					return "Opera";
-				if (this.isInternetExplorer())
-					return "Internet Explorer " + this.internetExplorerVersion();
-				if (this.isFirefox())
-					return "Firefox";
-				if (this.isSafari())
-					return "Safari";
-				if (this.isAndroid())
-					return "Android";
-				if (this.isWebOS())
-					return "WebOS";
-				if (this.isWindowsPhone())
-					return "Windows Phone";
-				if (this.isBlackberry())
-					return "Blackberry";
-				return "Unknown Browser";
-			});
+			return this.getBrowser().format;
 		},
 		
+		formatBrowserVersion: function () {
+			return this.getBrowser().version ? this.getBrowser().version.apply(this) : ""; 
+		},
+
 		formatFlash: function () {
 			return this.flash().installed() ?
 				("Flash " + this.flash().version().raw) :

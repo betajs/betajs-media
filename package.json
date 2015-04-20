@@ -18,10 +18,32 @@
 		"grunt-node-qunit": "",
 		"grunt-contrib-jshint": "",
 		"grunt-wget": "",
-		"grunt-jsdoc": "beta"
+		"grunt-jsdoc": "beta",
+		"grunt-shell": "",
+		"grunt-template": ""
 	},
 	"repository": {
 		"type": "git",
 		"url": "git://github.com/betajs/betajs-media.git"
+	},
+	"meta": {
+		"status": "Active, In Development",
+		"weakDependencies": {
+			"betajs-scoped": "https://github.com/betajs/betajs-scoped"
+		},
+		"dependencies": {
+			"betajs": "https://github.com/betajs/betajs",
+			"betajs-browser": "https://github.com/betajs/betajs-browser",
+			"betajs-flash": "https://github.com/betajs/betajs-flash"
+		},
+		"tests": {
+			"Test Suite": "http://rawgit.com/betajs/betajs-media/master/tests/tests.html"
+		},
+		"cdn": {
+			"betajs-media.js": "http://cdn.rawgit.com/betajs/betajs-media/master/dist/betajs-media.js",
+			"betajs-media.min.js": "http://cdn.rawgit.com/betajs/betajs-media/master/dist/betajs-media.min.js",
+			"betajs-media-noscoped.js": "http://cdn.rawgit.com/betajs/betajs-media/master/dist/betajs-media-noscoped.js",
+			"betajs-media-noscoped.min.js": "http://cdn.rawgit.com/betajs/betajs-media/master/dist/betajs-media-noscoped.min.js"
+		}
 	}
 }
