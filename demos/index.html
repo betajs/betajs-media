@@ -27,7 +27,12 @@
 				flashFile: "../vendors/betajs-flash.swf",
 				forceReload: true
 			};
+			var video1 = $("video").get(0);
+			var video2;
 			BetaJS.Media.Player.Flash.polyfill($("video").get(1), "videopoly", true, true);
+			setTimeout(function () {
+				video2 = $("videopoly").get(0);
+			}, 1);
 		</script>
 	</body>
 </html>
