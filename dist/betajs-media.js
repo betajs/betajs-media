@@ -4,7 +4,7 @@ Copyright (c) Oliver Friedmann
 MIT Software License.
 */
 /*!
-betajs-scoped - v0.0.1 - 2015-03-26
+betajs-scoped - v0.0.2 - 2015-07-08
 Copyright (c) Oliver Friedmann
 MIT Software License.
 */
@@ -118,7 +118,7 @@ var Attach = {
 			var current_version = current.version.split(".");
 			var newer = false;
 			for (var i = 0; i < Math.min(my_version.length, current_version.length); ++i) {
-				newer = my_version[i] > current_version[i];
+				newer = parseInt(my_version[i], 10) > parseInt(current_version[i], 10);
 				if (my_version[i] != current_version[i]) 
 					break;
 			}
@@ -287,6 +287,19 @@ function newNamespace (options) {
 			}
 		}
 	}
+	
+	function nodeUnresolvedWatchers(node, base, result) {
+		node = node || nsRoot;
+		result = result || [];
+		if (!node.ready)
+			result.push(base);
+		for (var k in node.children) {
+			var c = node.children[k];
+			var r = (base ? base + "." : "") + c.route;
+			result = nodeUnresolvedWatchers(c, r, result);
+		}
+		return result;
+	}
 
 	return {
 		
@@ -319,6 +332,10 @@ function newNamespace (options) {
 		
 		obtain: function (path, callback, context) {
 			nodeAddWatcher(nodeNavigate(path), callback, context);
+		},
+		
+		unresolvedWatchers: function (path) {
+			return nodeUnresolvedWatchers(nodeNavigate(path), path);
 		}
 		
 	};
@@ -511,7 +528,12 @@ function newScope (parent, parentNamespace, rootNamespace, globalNamespace) {
 			var ns = this.resolve(namespaceLocator);
 			ns.namespace.digest(ns.path);
 			return this;
-		}		
+		},
+		
+		unresolved: function (namespaceLocator) {
+			var ns = this.resolve(namespaceLocator);
+			return ns.namespace.unresolvedWatchers(ns.path);
+		}
 		
 	};
 	
@@ -523,7 +545,7 @@ var rootScope = newScope(null, rootNamespace, rootNamespace, globalNamespace);
 var Public = Helper.extend(rootScope, {
 		
 	guid: "4b6878ee-cb6a-46b3-94ac-27d91f58d666",
-	version: '9.1427403679672',
+	version: '9.9436392609879',
 		
 	upgrade: Attach.upgrade,
 	attach: Attach.attach,
@@ -536,6 +558,7 @@ Public = Public.upgrade();
 Public.exports();
 	return Public;
 }).call(this);
+
 /*!
 betajs-media - v0.0.1 - 2015-07-08
 Copyright (c) Oliver Friedmann
@@ -553,7 +576,7 @@ Scoped.binding("jquery", "global:jQuery");
 Scoped.define("module:", function () {
 	return {
 		guid: "8475efdb-dd7e-402e-9f50-36c76945a692",
-		version: '9.1436361129402'
+		version: '10.1436393131488'
 	};
 });
 
