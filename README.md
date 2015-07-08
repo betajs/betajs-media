@@ -55,3 +55,9 @@ Active, In Development
 MIT
 
 
+## Credits
+
+This software may include modified and unmodified portions of:
+- TypedArray, From microphone to .WAV with: getUserMedia and Web Audio, (c) Thibault Imbert
+- Media Stream Recorder, https://github.com/streamproc/MediaStreamRecorder
+- Whammy Recorder, https://github.com/antimatter15/whammy

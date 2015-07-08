@@ -229,4 +229,12 @@ Scoped.define("module:Player.FlashPlayer", [
 });
 
 
-//TODO: poster, other
+
+//Browser Dom Mutation Polyfill
+//https://github.com/meetselva/attrchange
+// Polyfill Wrapper for attribute setting / replacing / eventual loading
+// Own state
+// Attributes: poster, muted
+// Methods: load
+// Attrs: currentSrc, currentTime, duration, ended, paused, played, volume
+// Events: *

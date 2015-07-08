@@ -18,7 +18,7 @@ module.exports = function(grunt) {
 					dist_raw : {
 						dest : 'dist/betajs-media-raw.js',
 						src : [ 'src/fragments/begin.js-fragment',
-								'src/player/*.js',
+								'src/*/*.js',
 								'src/fragments/end.js-fragment' ]
 					},
 					dist_scoped : {
@@ -60,7 +60,7 @@ module.exports = function(grunt) {
 						es5: false,
 						es3: true
 					},
-					source : [ "./src/**/*.js"],
+					source : [ "./src/*/*.js"],
 					dist : [ "./dist/betajs-media-noscoped.js", "./dist/betajs-media.js" ],
 					gruntfile : [ "./Gruntfile.js" ],
 					tests : [ "./tests/player/*.js" ]
