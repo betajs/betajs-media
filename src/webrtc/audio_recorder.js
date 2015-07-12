@@ -13,8 +13,6 @@ Scoped.define("module:WebRTC.AudioRecorder", [
 
 			constructor: function (stream, options) {
 				inherited.constructor.call(this);
-				this._requestDataInvoked = false;
-				this._started = false;
 				this._leftChannel = [];
 				this._rightChannel = [];
 				this._recordingLength = 0;
@@ -43,7 +41,7 @@ Scoped.define("module:WebRTC.AudioRecorder", [
 			},
 
 			_audioProcess: function (e) {
-				if (!this.started)
+				if (!this._started)					
 					return;
 				this._leftChannel.push(new Float32Array(e.inputBuffer.getChannelData(0)));
 				if (this._options.audioChannels > 1)

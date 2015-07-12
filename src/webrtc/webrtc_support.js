@@ -48,7 +48,12 @@ Scoped.define("module:WebRTC.Support", [
 		
 		bindStreamToVideo: function (stream, video) {
 			video.volume = 0;
-			video.src = this.globals().URL.createObjectURL(stream);
+			video.muted = true;
+			if (video.mozSrcObject !== undefined)
+                video.mozSrcObject = stream;
+            else
+            	video.src = this.globals().URL.createObjectURL(stream);
+			video.autoplay = true;
 			video.play();
 		}
 
