@@ -18,7 +18,7 @@ Scoped.define("module:WebRTC.AudioRecorder", [
 				this._recordingLength = 0;
 				this._options = Objs.extend({
 					audioChannels: 2,
-					bufferSize: 2048,
+					bufferSize: 16384,
 					sampleRate: 44100				 
 				}, options);
 				this._stream = stream;
