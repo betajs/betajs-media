@@ -497,7 +497,7 @@ Scoped.define("module:WebRTC.WhammyRecorder", [
 	}], {
 
 		supported: function () {
-			return true;
+			return Support.globals().webpSupport;
 		}
 
 	});

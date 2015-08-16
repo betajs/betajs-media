@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.1 - 2015-07-24
+betajs-media - v0.0.1 - 2015-08-15
 Copyright (c) Oliver Friedmann
 MIT Software License.
 */
@@ -15,7 +15,7 @@ Scoped.binding("jquery", "global:jQuery");
 Scoped.define("module:", function () {
 	return {
 		guid: "8475efdb-dd7e-402e-9f50-36c76945a692",
-		version: '12.1437760046698'
+		version: '13.1439666076318'
 	};
 });
 
@@ -693,6 +693,16 @@ Scoped.define("module:WebRTC.Support", [
 ], function (Promise) {
 	return {
 		
+		canvasSupportsImageFormat: function (imageFormat) {
+			try {
+				var data = document.createElement('canvas').toDataURL(imageFormat);
+				var headerIdx = data.indexOf(";");
+				return data.substring(0, data.indexOf(";")).indexOf(imageFormat) != -1;
+			} catch (e) {
+				return false;
+			}
+		},
+		
 		getGlobals: function () {
 			var getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
 			var URL = window.URL || window.webkitURL;
@@ -708,7 +718,8 @@ Scoped.define("module:WebRTC.Support", [
 				URL: URL,
 				MediaRecorder: MediaRecorder,
 				AudioContext: AudioContext,
-				audioContextScriptProcessor: audioContextScriptProcessor
+				audioContextScriptProcessor: audioContextScriptProcessor,
+				webpSupport: this.canvasSupportsImageFormat("image/webp") 
 			};
 		},
 		
@@ -1253,7 +1264,7 @@ Scoped.define("module:WebRTC.WhammyRecorder", [
 	}], {
 
 		supported: function () {
-			return true;
+			return Support.globals().webpSupport;
 		}
 
 	});
