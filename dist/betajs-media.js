@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.1 - 2015-08-15
+betajs-media - v0.0.1 - 2015-08-25
 Copyright (c) Oliver Friedmann
 MIT Software License.
 */
@@ -560,7 +560,7 @@ Public.exports();
 }).call(this);
 
 /*!
-betajs-media - v0.0.1 - 2015-08-15
+betajs-media - v0.0.1 - 2015-08-25
 Copyright (c) Oliver Friedmann
 MIT Software License.
 */
@@ -576,7 +576,7 @@ Scoped.binding("jquery", "global:jQuery");
 Scoped.define("module:", function () {
 	return {
 		guid: "8475efdb-dd7e-402e-9f50-36c76945a692",
-		version: '13.1439666076318'
+		version: '14.1440535406649'
 	};
 });
 
@@ -846,21 +846,6 @@ Scoped.define("module:WebRTC.AudioRecorder", [
 				}, options);
 				this._stream = stream;
 				this._started = false;
-				var AudioContext = Support.globals().AudioContext;
-				this._audioContext = new AudioContext();
-				this._volumeGain = this._audioContext.createGain();
-				this._audioInput = this._audioContext.createMediaStreamSource(stream);
-				this._audioInput.connect(this._volumeGain);
-				this._scriptProcessor = Support.globals().audioContextScriptProcessor.call(
-						this._audioContext,
-						this._options.bufferSize,
-						this._options.audioChannels,
-						this._options.audioChannels
-				);
-				this._actualBufferSize = this._scriptProcessor.bufferSize;
-				this._scriptProcessor.onaudioprocess = Functions.as_method(this._audioProcess, this);
-				this._volumeGain.connect(this._scriptProcessor);
-				this._scriptProcessor.connect(this._audioContext.destination);
 			},
 
 			_audioProcess: function (e) {
@@ -884,6 +869,21 @@ Scoped.define("module:WebRTC.AudioRecorder", [
 				this._recordingLength = 0;
 				this._leftChannel = [];
 				this._rightChannel = [];
+				var AudioContext = Support.globals().AudioContext;
+				this._audioContext = new AudioContext();
+				this._volumeGain = this._audioContext.createGain();
+				this._audioInput = this._audioContext.createMediaStreamSource(this._stream);
+				this._audioInput.connect(this._volumeGain);
+				this._scriptProcessor = Support.globals().audioContextScriptProcessor.call(
+						this._audioContext,
+						this._options.bufferSize,
+						this._options.audioChannels,
+						this._options.audioChannels
+				);
+				this._actualBufferSize = this._scriptProcessor.bufferSize;
+				this._scriptProcessor.onaudioprocess = Functions.as_method(this._audioProcess, this);
+				this._volumeGain.connect(this._scriptProcessor);
+				this._scriptProcessor.connect(this._audioContext.destination);
 				this.trigger("started");
 			},
 
@@ -892,6 +892,13 @@ Scoped.define("module:WebRTC.AudioRecorder", [
 					return;
 				this._started = false;
 				this.trigger("stopped");
+				this._scriptProcessor.disconnect();
+				this._volumeGain.disconnect();
+				this._audioInput.disconnect();
+				this._scriptProcessor.onaudioprocess = null;
+				delete this._scriptProcessor;
+				delete this._volumeGain;
+				delete this._audioInput;
 				this._generateData();
 			},
 
@@ -1377,7 +1384,7 @@ Scoped.define("module:WebRTC.WhammyRecorder", [
 			    this._isOnStartedDrawingNonBlankFramesInvoked = false;
 			    this._lastTime = Time.now();
 				this.trigger("started");
-				this._process();
+				Async.eventually(this._process, [], this);
 			},
 			
 			stop: function () {
@@ -1393,10 +1400,6 @@ Scoped.define("module:WebRTC.WhammyRecorder", [
 					return;
 				var now = Time.now();
 				var duration = now - this._lastTime;
-		        if (duration <= 0) {
-		        	Async.eventually(this._process, [], this, 10);
-		        	return;
-		        }
 		        this._lastTime = now;
 	        	this._context.drawImage(this._video, 0, 0, this._canvas.width, this._canvas.height);
 			    this._frames.push({
@@ -1407,7 +1410,7 @@ Scoped.define("module:WebRTC.WhammyRecorder", [
 		            this._isOnStartedDrawingNonBlankFramesInvoked = true;
 		            this.trigger("onStartedDrawingNonBlankFrames");
 		        }
-		        Async.eventually(this._process, [], this, 10);
+		        Async.eventually(this._process, [], this, Math.max(1, 10 - (Time.now() - now)));
 			},
 			
 			_generateData: function () {

@@ -23,21 +23,6 @@ Scoped.define("module:WebRTC.AudioRecorder", [
 				}, options);
 				this._stream = stream;
 				this._started = false;
-				var AudioContext = Support.globals().AudioContext;
-				this._audioContext = new AudioContext();
-				this._volumeGain = this._audioContext.createGain();
-				this._audioInput = this._audioContext.createMediaStreamSource(stream);
-				this._audioInput.connect(this._volumeGain);
-				this._scriptProcessor = Support.globals().audioContextScriptProcessor.call(
-						this._audioContext,
-						this._options.bufferSize,
-						this._options.audioChannels,
-						this._options.audioChannels
-				);
-				this._actualBufferSize = this._scriptProcessor.bufferSize;
-				this._scriptProcessor.onaudioprocess = Functions.as_method(this._audioProcess, this);
-				this._volumeGain.connect(this._scriptProcessor);
-				this._scriptProcessor.connect(this._audioContext.destination);
 			},
 
 			_audioProcess: function (e) {
@@ -61,6 +46,21 @@ Scoped.define("module:WebRTC.AudioRecorder", [
 				this._recordingLength = 0;
 				this._leftChannel = [];
 				this._rightChannel = [];
+				var AudioContext = Support.globals().AudioContext;
+				this._audioContext = new AudioContext();
+				this._volumeGain = this._audioContext.createGain();
+				this._audioInput = this._audioContext.createMediaStreamSource(this._stream);
+				this._audioInput.connect(this._volumeGain);
+				this._scriptProcessor = Support.globals().audioContextScriptProcessor.call(
+						this._audioContext,
+						this._options.bufferSize,
+						this._options.audioChannels,
+						this._options.audioChannels
+				);
+				this._actualBufferSize = this._scriptProcessor.bufferSize;
+				this._scriptProcessor.onaudioprocess = Functions.as_method(this._audioProcess, this);
+				this._volumeGain.connect(this._scriptProcessor);
+				this._scriptProcessor.connect(this._audioContext.destination);
 				this.trigger("started");
 			},
 
@@ -69,6 +69,13 @@ Scoped.define("module:WebRTC.AudioRecorder", [
 					return;
 				this._started = false;
 				this.trigger("stopped");
+				this._scriptProcessor.disconnect();
+				this._volumeGain.disconnect();
+				this._audioInput.disconnect();
+				this._scriptProcessor.onaudioprocess = null;
+				delete this._scriptProcessor;
+				delete this._volumeGain;
+				delete this._audioInput;
 				this._generateData();
 			},
 
