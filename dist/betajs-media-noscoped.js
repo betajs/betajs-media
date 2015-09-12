@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.1 - 2015-08-25
+betajs-media - v0.0.1 - 2015-09-11
 Copyright (c) Oliver Friedmann
 MIT Software License.
 */
@@ -15,7 +15,7 @@ Scoped.binding("jquery", "global:jQuery");
 Scoped.define("module:", function () {
 	return {
 		guid: "8475efdb-dd7e-402e-9f50-36c76945a692",
-		version: '14.1440535406649'
+		version: '15.1442017491690'
 	};
 });
 
@@ -275,8 +275,7 @@ Scoped.define("module:WebRTC.AudioRecorder", [
 
 			constructor: function (stream, options) {
 				inherited.constructor.call(this);
-				this._leftChannel = [];
-				this._rightChannel = [];
+				this._channels = [];
 				this._recordingLength = 0;
 				this._options = Objs.extend({
 					audioChannels: 2,
@@ -285,31 +284,60 @@ Scoped.define("module:WebRTC.AudioRecorder", [
 				}, options);
 				this._stream = stream;
 				this._started = false;
+				this._stopped = false;
+				//this.__initializeContext();
 			},
 
 			_audioProcess: function (e) {
 				if (!this._started)					
 					return;
-				this._leftChannel.push(new Float32Array(e.inputBuffer.getChannelData(0)));
-				if (this._options.audioChannels > 1)
-					this._rightChannel.push(new Float32Array(e.inputBuffer.getChannelData(1)));
-				this._recordingLength += this._actualBufferSize;
+				/*
+				var sampleStartTime = e.playbackTime;
+				var sampleStopTime = e.playbackTime + this._actualBufferSize / this._actualSampleRate;
+				//var sampleStopTime = e.playbackTime;
+				//var sampleStartTime = e.playbackTime - this._actualBufferSize / this._actualSampleRate;
+				if (sampleStopTime <= this._startContextTime)
+					return;
+				if (this._stopped && sampleStartTime > this._stopContextTime) {
+					this._started = false;
+					this._generateData();
+					return;
+				}
+				*/
+				var offset = 0;
+				var endOffset = this._actualBufferSize;
+				/*
+				if (sampleStartTime < this._startContextTime)
+					offset = Math.round((this._startContextTime - sampleStartTime) * this._actualSampleRate);
+				if (this._stopped && sampleStopTime > this._stopContextTime)
+					endOffset = Math.round((this._stopContextTime - sampleStartTime) * this._actualSampleRate);
+				*/
+				this._channels.push({
+					left: new Float32Array(e.inputBuffer.getChannelData(0)),
+					right: this._options.audioChannels > 1 ? new Float32Array(e.inputBuffer.getChannelData(1)) : null,
+					offset: offset,
+					endOffset: endOffset
+				});
+				this._recordingLength += endOffset - offset;
+				/*
+				if (this._stopped && sampleStopTime > this._stopContextTime) {
+					this._started = false;
+					this._generateData();
+					return;
+				}
+				*/
 			},
 
 			destroy: function () {
 				this.stop();
+				//this.__finalizeContext();
 				inherited.destroy.call(this);
 			},
-
-			start: function () {
-				if (this._started)
-					return;
-				this._started = true;
-				this._recordingLength = 0;
-				this._leftChannel = [];
-				this._rightChannel = [];
+			
+			__initializeContext: function () {
 				var AudioContext = Support.globals().AudioContext;
 				this._audioContext = new AudioContext();
+				this._actualSampleRate = this._audioContext.sampleRate || this._options.sampleRate;
 				this._volumeGain = this._audioContext.createGain();
 				this._audioInput = this._audioContext.createMediaStreamSource(this._stream);
 				this._audioInput.connect(this._volumeGain);
@@ -323,14 +351,9 @@ Scoped.define("module:WebRTC.AudioRecorder", [
 				this._scriptProcessor.onaudioprocess = Functions.as_method(this._audioProcess, this);
 				this._volumeGain.connect(this._scriptProcessor);
 				this._scriptProcessor.connect(this._audioContext.destination);
-				this.trigger("started");
 			},
-
-			stop: function () {
-				if (!this._started)
-					return;
-				this._started = false;
-				this.trigger("stopped");
+			
+			__finalizeContext: function () {
 				this._scriptProcessor.disconnect();
 				this._volumeGain.disconnect();
 				this._audioInput.disconnect();
@@ -338,18 +361,45 @@ Scoped.define("module:WebRTC.AudioRecorder", [
 				delete this._scriptProcessor;
 				delete this._volumeGain;
 				delete this._audioInput;
+			},
+
+			start: function () {
+				if (this._started)
+					return;
+				this.__initializeContext();
+				this._startContextTime = this._audioContext.currentTime;
+				this._started = true;
+				this._stopped = false;
+				this._recordingLength = 0;
+				this._channels = [];
+				this.trigger("started");
+			},
+
+			stop: function () {
+				if (!this._started || this._stopped)
+					return;
+				this._stopContextTime = this._audioContext.currentTime;
+				this._stopped = true;
+				this.trigger("stopped");
+				this.__finalizeContext();
+				this._started = false;
 				this._generateData();
 			},
 
 			_generateData: function () {
-				var leftBuffer = this.__mergeBuffers(this._leftChannel, this._recordingLength);
-				var rightBuffer = this.__mergeBuffers(this._rightChannel, this._recordingLength);
-				var interleaved = leftBuffer;
-				if (this._options.audioChannels > 1) {
-					interleaved = new Float32Array(leftBuffer.length + rightBuffer.length);
-					for (var i = 0; i < leftBuffer.length; ++i) {
-						interleaved[2 * i] = leftBuffer[i];
-						interleaved[2 * i + 1] = rightBuffer[i];
+				var interleaved = new Float32Array(this._recordingLength * this._options.audioChannels);
+				var offset = 0;
+				for (var channelIdx = 0; channelIdx < this._channels.length; ++channelIdx) {
+					var channelOffset = this._channels[channelIdx].offset;
+					var endOffset = this._channels[channelIdx].endOffset;
+					var left = this._channels[channelIdx].left;
+					var right = this._channels[channelIdx].right;
+					while (channelOffset < endOffset) {
+						interleaved[offset] = left[channelOffset];
+						if (right) 
+							interleaved[offset+1] = right[channelOffset];
+						++channelOffset;
+						offset += this._options.audioChannels;
 					}
 				}
 				// we create our wav file
@@ -365,8 +415,8 @@ Scoped.define("module:WebRTC.AudioRecorder", [
 				view.setUint16(20, 1, true);
 				// stereo (2 channels)
 				view.setUint16(22, this._options.audioChannels, true);
-				view.setUint32(24, this._options.sampleRate, true);
-				view.setUint32(28, this._options.sampleRate * 4, true);
+				view.setUint32(24, this._actualSampleRate, true);
+				view.setUint32(28, this._actualSampleRate * 4, true);
 				view.setUint16(32, this._options.audioChannels * 2, true);
 				view.setUint16(34, 16, true);
 				// data sub-chunk
@@ -388,18 +438,6 @@ Scoped.define("module:WebRTC.AudioRecorder", [
 				this._rightChannel = [];
 				this._recordingLength = 0;
 				this.trigger("data", this._data);
-			},
-
-			__mergeBuffers: function (channelBuffer, recordingLength) {
-				var result = new Float32Array(recordingLength);
-				var offset = 0;
-				var lng = channelBuffer.length;
-				for (var i = 0; i < lng; i++) {
-					var buffer = channelBuffer[i];
-					result.set(buffer, offset);
-					offset += buffer.length;
-				}
-				return result;
 			},
 
 			__writeUTFBytes: function (view, offset, string) {
