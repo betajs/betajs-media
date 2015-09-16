@@ -18,12 +18,16 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
 				return {
 					audio: this._options.recordAudio,
 					video: this._options.recordVideo ? {
+						/*
 						mandatory: {
 							minWidth: this._options.recordResolution.width,
 							maxWidth: this._options.recordResolution.width,
 							minHeight: this._options.recordResolution.height,
 							maxHeight: this._options.recordResolution.height
 						}
+						*/
+						width: this._options.recordResolution.width,
+						height: this._options.recordResolution.height
 					} : false
 				};
 			},
@@ -31,7 +35,7 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
 			bindMedia: function () {
 				if (this._bound)
 					return;
-				return Support.userMedia(this._getConstraints()).success(function (stream) {
+				return Support.userMedia2(this._getConstraints()).success(function (stream) {
 					this._bound = true;
 					this._stream = stream;
 					Support.bindStreamToVideo(stream, this._video);

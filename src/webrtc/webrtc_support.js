@@ -1,6 +1,7 @@
 Scoped.define("module:WebRTC.Support", [
-    "base:Promise.Promise"
-], function (Promise) {
+    "base:Promise.Promise",
+    "base:Objs"
+], function (Promise, Objs) {
 	return {
 		
 		canvasSupportsImageFormat: function (imageFormat) {
@@ -43,6 +44,62 @@ Scoped.define("module:WebRTC.Support", [
 			return !!this.globals().getUserMedia;
 		},
 		
+		mediaStreamTrackSourcesSupported: function () {
+			return MediaStreamTrack && MediaStreamTrack.getSources;
+		},
+		
+		mediaStreamTrackSources: function () {
+			if (!this.mediaStreamTrackSourcesSupported())
+				return Promise.error("Unsupported");
+			var promise = new Promise();
+			try {
+				MediaStreamTrack.getSources(function (sources) {
+					var result = {
+						audio: {},
+						audioCount: 0,
+						video: {},
+						videoCount: 0
+					};
+					Objs.iter(sources, function (source) {
+						if (source.kind === "video") {
+							result.videoCount++;
+							result.video[source.id] = {
+								id: source.id,
+								label: source.label
+							};
+						}
+						if (source.kind === "audio") {
+							result.audioCount++;
+							result.audio[source.id] = {
+								id: source.id,
+								label: source.label
+							};
+						}
+					});
+					promise.asyncSuccess(result);
+				});
+				return promise;
+			} catch (e) {
+				return Promise.error(e);
+			}
+		},
+		
+		streamQueryResolution: function (stream) {
+			var promise = new Promise();
+			var video = this.bindStreamToVideo(stream);			
+            video.addEventListener("playing", function () {
+                setTimeout(function () {
+                	promise.asyncSuccess({
+                		stream: stream,
+                		width: video.videoWidth,
+                		height: video.videoHeight
+                	});
+                	video.remove();
+                }, 500);
+            });
+			return promise;
+		},
+		
 		userMedia: function (options) {
 			var promise = new Promise();
 			this.globals().getUserMedia.call(navigator, options, function (stream) {
@@ -70,7 +127,7 @@ Scoped.define("module:WebRTC.Support", [
 					opts.video.mandatory.minWidth = options.video.width;
 					opts.video.mandatory.maxWidth = options.video.width;
 				}
-				if (options.video.height) {
+				if (!options.video.width && options.video.height) {
 					opts.video.mandatory.minHeight = options.video.height;
 					opts.video.mandatory.maxHeight = options.video.height;
 				}
@@ -81,18 +138,19 @@ Scoped.define("module:WebRTC.Support", [
 				}
 			}
 			var probe = function () {
+				var mandatory = opts.video.mandatory;
 				return this.userMedia(opts).mapError(function (e) {
 					if (e.name !== "ConstraintNotSatisfiedError")
 						return e;
 					var c = e.constraintName;
 					var flt = c.indexOf("aspect") > 0;
 					var d = c.indexOf("min") === 0 ? -1 : 1;
-					var u = Math.max(0, opts[c] * (1.0 + d / 10));
-					opts[c] = flt ? u : Math.round(u);
+					var u = Math.max(0, mandatory[c] * (1.0 + d / 10));
+					mandatory[c] = flt ? u : Math.round(u);
 					return probe.call(this);
-				});
+				}, this);
 			};
-			return probe.call(this);
+			return opts.video.mandatory ? probe.call(this) : this.userMedia(opts);
 		},
 		
 		stopUserMediaStream: function (stream) {
@@ -100,6 +158,8 @@ Scoped.define("module:WebRTC.Support", [
 		},
 		
 		bindStreamToVideo: function (stream, video) {
+			if (!video)
+				video = document.createElement("video");
 			video.volume = 0;
 			video.muted = true;
 			if (video.mozSrcObject !== undefined)
@@ -108,6 +168,7 @@ Scoped.define("module:WebRTC.Support", [
             	video.src = this.globals().URL.createObjectURL(stream);
 			video.autoplay = true;
 			video.play();
+			return video;
 		}
 
 	};

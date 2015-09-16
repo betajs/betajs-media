@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.1 - 2015-09-11
+betajs-media - v0.0.1 - 2015-09-16
 Copyright (c) Oliver Friedmann
 MIT Software License.
 */
@@ -560,7 +560,7 @@ Public.exports();
 }).call(this);
 
 /*!
-betajs-media - v0.0.1 - 2015-09-11
+betajs-media - v0.0.1 - 2015-09-16
 Copyright (c) Oliver Friedmann
 MIT Software License.
 */
@@ -576,7 +576,7 @@ Scoped.binding("jquery", "global:jQuery");
 Scoped.define("module:", function () {
 	return {
 		guid: "8475efdb-dd7e-402e-9f50-36c76945a692",
-		version: '15.1442017491690'
+		version: '18.1442422522359'
 	};
 });
 
@@ -1094,12 +1094,16 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
 				return {
 					audio: this._options.recordAudio,
 					video: this._options.recordVideo ? {
+						/*
 						mandatory: {
 							minWidth: this._options.recordResolution.width,
 							maxWidth: this._options.recordResolution.width,
 							minHeight: this._options.recordResolution.height,
 							maxHeight: this._options.recordResolution.height
 						}
+						*/
+						width: this._options.recordResolution.width,
+						height: this._options.recordResolution.height
 					} : false
 				};
 			},
@@ -1107,7 +1111,7 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
 			bindMedia: function () {
 				if (this._bound)
 					return;
-				return Support.userMedia(this._getConstraints()).success(function (stream) {
+				return Support.userMedia2(this._getConstraints()).success(function (stream) {
 					this._bound = true;
 					this._stream = stream;
 					Support.bindStreamToVideo(stream, this._video);
@@ -1295,8 +1299,9 @@ Scoped.define("module:WebRTC.WhammyAudioRecorderWrapper", [
 });
 
 Scoped.define("module:WebRTC.Support", [
-    "base:Promise.Promise"
-], function (Promise) {
+    "base:Promise.Promise",
+    "base:Objs"
+], function (Promise, Objs) {
 	return {
 		
 		canvasSupportsImageFormat: function (imageFormat) {
@@ -1339,6 +1344,62 @@ Scoped.define("module:WebRTC.Support", [
 			return !!this.globals().getUserMedia;
 		},
 		
+		mediaStreamTrackSourcesSupported: function () {
+			return MediaStreamTrack && MediaStreamTrack.getSources;
+		},
+		
+		mediaStreamTrackSources: function () {
+			if (!this.mediaStreamTrackSourcesSupported())
+				return Promise.error("Unsupported");
+			var promise = new Promise();
+			try {
+				MediaStreamTrack.getSources(function (sources) {
+					var result = {
+						audio: {},
+						audioCount: 0,
+						video: {},
+						videoCount: 0
+					};
+					Objs.iter(sources, function (source) {
+						if (source.kind === "video") {
+							result.videoCount++;
+							result.video[source.id] = {
+								id: source.id,
+								label: source.label
+							};
+						}
+						if (source.kind === "audio") {
+							result.audioCount++;
+							result.audio[source.id] = {
+								id: source.id,
+								label: source.label
+							};
+						}
+					});
+					promise.asyncSuccess(result);
+				});
+				return promise;
+			} catch (e) {
+				return Promise.error(e);
+			}
+		},
+		
+		streamQueryResolution: function (stream) {
+			var promise = new Promise();
+			var video = this.bindStreamToVideo(stream);			
+            video.addEventListener("playing", function () {
+                setTimeout(function () {
+                	promise.asyncSuccess({
+                		stream: stream,
+                		width: video.videoWidth,
+                		height: video.videoHeight
+                	});
+                	video.remove();
+                }, 500);
+            });
+			return promise;
+		},
+		
 		userMedia: function (options) {
 			var promise = new Promise();
 			this.globals().getUserMedia.call(navigator, options, function (stream) {
@@ -1347,13 +1408,58 @@ Scoped.define("module:WebRTC.Support", [
 				promise.asyncError(e);
 			});
 			return promise;
-		},		
+		},
+		
+		/*
+		 * audio: {} | undefined
+		 * video: {} | undefined
+		 * 	  width, height, aspectRatio
+		 */
+		userMedia2: function (options) {
+			var opts = {};
+			if (options.audio)
+				opts.audio = true;
+			if (options.video) {
+				opts.video = {
+					mandatory: {}
+				};
+				if (options.video.width) {
+					opts.video.mandatory.minWidth = options.video.width;
+					opts.video.mandatory.maxWidth = options.video.width;
+				}
+				if (!options.video.width && options.video.height) {
+					opts.video.mandatory.minHeight = options.video.height;
+					opts.video.mandatory.maxHeight = options.video.height;
+				}
+				var as = options.video.aspectRatio ? options.video.aspectRatio : (options.video.width && options.video.height ? options.video.width/options.video.height : null);
+				if (as) {
+					opts.video.mandatory.minAspectRatio = as;
+					opts.video.mandatory.maxAspectRatio = as;
+				}
+			}
+			var probe = function () {
+				var mandatory = opts.video.mandatory;
+				return this.userMedia(opts).mapError(function (e) {
+					if (e.name !== "ConstraintNotSatisfiedError")
+						return e;
+					var c = e.constraintName;
+					var flt = c.indexOf("aspect") > 0;
+					var d = c.indexOf("min") === 0 ? -1 : 1;
+					var u = Math.max(0, mandatory[c] * (1.0 + d / 10));
+					mandatory[c] = flt ? u : Math.round(u);
+					return probe.call(this);
+				}, this);
+			};
+			return opts.video.mandatory ? probe.call(this) : this.userMedia(opts);
+		},
 		
 		stopUserMediaStream: function (stream) {
 			stream.stop();
 		},
 		
 		bindStreamToVideo: function (stream, video) {
+			if (!video)
+				video = document.createElement("video");
 			video.volume = 0;
 			video.muted = true;
 			if (video.mozSrcObject !== undefined)
@@ -1362,6 +1468,7 @@ Scoped.define("module:WebRTC.Support", [
             	video.src = this.globals().URL.createObjectURL(stream);
 			video.autoplay = true;
 			video.play();
+			return video;
 		}
 
 	};
