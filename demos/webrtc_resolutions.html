@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+		<script src="../vendors/beta.js"></script>
+		<script src="../vendors/beta-browser-noscoped.js"></script>
+		<script src="../dist/betajs-media.js"></script>
+	</head>
+	<body>
+	   <textarea id="constraints" rows=10 cols=50>{"video": true}</textarea>
+	   <button id="go">OK</button>
+	   <script>
+	    $("#go").on("click", function () {
+	    	var constraints = JSON.parse($("#constraints").val().trim());
+	    	BetaJS.Media.WebRTC.Support.userMedia2(constraints).success(function (stream) {
+	    		console.log("Success", stream);
+	            var video = document.createElement("video");
+	    		video.src = URL.createObjectURL(stream);
+	    		video.play();
+	            video.addEventListener("playing", function () {
+	                setTimeout(function () {
+	                    console.log("Stream dimensions: " + video.videoWidth + "x" + video.videoHeight);
+	                }, 500);
+	            });
+	        }).error(function (error) {
+	    		console.log("Error", error);
+	    		window.e = error;
+	    	});
+	    });	   
+	   </script>
+	</body>
+</html>

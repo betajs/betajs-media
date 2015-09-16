@@ -40,7 +40,49 @@ Scoped.define("module:WebRTC.Support", [
 				promise.asyncError(e);
 			});
 			return promise;
-		},		
+		},
+		
+		/*
+		 * audio: {} | undefined
+		 * video: {} | undefined
+		 * 	  width, height, aspectRatio
+		 */
+		userMedia2: function (options) {
+			var opts = {};
+			if (options.audio)
+				opts.audio = true;
+			if (options.video) {
+				opts.video = {
+					mandatory: {}
+				};
+				if (options.video.width) {
+					opts.video.mandatory.minWidth = options.video.width;
+					opts.video.mandatory.maxWidth = options.video.width;
+				}
+				if (options.video.height) {
+					opts.video.mandatory.minHeight = options.video.height;
+					opts.video.mandatory.maxHeight = options.video.height;
+				}
+				var as = options.video.aspectRatio ? options.video.aspectRatio : (options.video.width && options.video.height ? options.video.width/options.video.height : null);
+				if (as) {
+					opts.video.mandatory.minAspectRatio = as;
+					opts.video.mandatory.maxAspectRatio = as;
+				}
+			}
+			var probe = function () {
+				return this.userMedia(opts).mapError(function (e) {
+					if (e.name !== "ConstraintNotSatisfiedError")
+						return e;
+					var c = e.constraintName;
+					var flt = c.indexOf("aspect") > 0;
+					var d = c.indexOf("min") === 0 ? -1 : 1;
+					var u = Math.max(0, opts[c] * (1.0 + d / 10));
+					opts[c] = flt ? u : Math.round(u);
+					return probe.call(this);
+				});
+			};
+			return probe.call(this);
+		},
 		
 		stopUserMediaStream: function (stream) {
 			stream.stop();
