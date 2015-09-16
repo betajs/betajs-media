@@ -3,6 +3,16 @@ Scoped.define("module:WebRTC.Support", [
 ], function (Promise) {
 	return {
 		
+		canvasSupportsImageFormat: function (imageFormat) {
+			try {
+				var data = document.createElement('canvas').toDataURL(imageFormat);
+				var headerIdx = data.indexOf(";");
+				return data.substring(0, data.indexOf(";")).indexOf(imageFormat) != -1;
+			} catch (e) {
+				return false;
+			}
+		},
+		
 		getGlobals: function () {
 			var getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
 			var URL = window.URL || window.webkitURL;
@@ -18,7 +28,8 @@ Scoped.define("module:WebRTC.Support", [
 				URL: URL,
 				MediaRecorder: MediaRecorder,
 				AudioContext: AudioContext,
-				audioContextScriptProcessor: audioContextScriptProcessor
+				audioContextScriptProcessor: audioContextScriptProcessor,
+				webpSupport: this.canvasSupportsImageFormat("image/webp") 
 			};
 		},
 		

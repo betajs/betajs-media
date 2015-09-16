@@ -49,7 +49,7 @@ Scoped.define("module:WebRTC.WhammyRecorder", [
 			    this._isOnStartedDrawingNonBlankFramesInvoked = false;
 			    this._lastTime = Time.now();
 				this.trigger("started");
-				this._process();
+				Async.eventually(this._process, [], this);
 			},
 			
 			stop: function () {
@@ -65,10 +65,6 @@ Scoped.define("module:WebRTC.WhammyRecorder", [
 					return;
 				var now = Time.now();
 				var duration = now - this._lastTime;
-		        if (duration <= 0) {
-		        	Async.eventually(this._process, [], this, 10);
-		        	return;
-		        }
 		        this._lastTime = now;
 	        	this._context.drawImage(this._video, 0, 0, this._canvas.width, this._canvas.height);
 			    this._frames.push({
@@ -79,7 +75,7 @@ Scoped.define("module:WebRTC.WhammyRecorder", [
 		            this._isOnStartedDrawingNonBlankFramesInvoked = true;
 		            this.trigger("onStartedDrawingNonBlankFrames");
 		        }
-		        Async.eventually(this._process, [], this, 10);
+		        Async.eventually(this._process, [], this, Math.max(1, 10 - (Time.now() - now)));
 			},
 			
 			_generateData: function () {
@@ -497,7 +493,7 @@ Scoped.define("module:WebRTC.WhammyRecorder", [
 	}], {
 
 		supported: function () {
-			return true;
+			return Support.globals().webpSupport;
 		}
 
 	});
