@@ -42,8 +42,8 @@ Scoped.define("module:WebRTC.MediaRecorder", [
 					type: e.data.type
 				});
 				this.trigger("data", this._data);
-			}			
-			
+			}
+						
 		};		
 	}], {
 		

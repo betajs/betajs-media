@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.1 - 2015-09-16
+betajs-media - v0.0.1 - 2015-10-02
 Copyright (c) Oliver Friedmann
 MIT Software License.
 */
@@ -560,7 +560,7 @@ Public.exports();
 }).call(this);
 
 /*!
-betajs-media - v0.0.1 - 2015-09-16
+betajs-media - v0.0.1 - 2015-10-02
 Copyright (c) Oliver Friedmann
 MIT Software License.
 */
@@ -576,7 +576,7 @@ Scoped.binding("jquery", "global:jQuery");
 Scoped.define("module:", function () {
 	return {
 		guid: "8475efdb-dd7e-402e-9f50-36c76945a692",
-		version: '18.1442422522359'
+		version: '19.1443819333250'
 	};
 });
 
@@ -1061,8 +1061,8 @@ Scoped.define("module:WebRTC.MediaRecorder", [
 					type: e.data.type
 				});
 				this.trigger("data", this._data);
-			}			
-			
+			}
+						
 		};		
 	}], {
 		
@@ -1141,6 +1141,20 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
 				this._bound = false;
 				this.trigger("unbound");
 				this._unboundMedia();
+			},
+			
+			createSnapshot: function (type) {
+				return Support.dataURItoBlob(this._createSnapshot(type));
+			},
+			
+			_createSnapshot: function (type) {
+			    var canvas = document.createElement('canvas');
+				canvas.width = this._video.videoWidth || this._video.clientWidth;
+				canvas.height = this._video.videoHeight || this._video.clientHeight;
+			    var context = canvas.getContext('2d');
+	        	context.drawImage(this._video, 0, 0, canvas.width, canvas.height);
+	        	var data = canvas.toDataURL(type);
+	        	return data;
 			},
 			
 			_boundMedia: function () {},
@@ -1241,6 +1255,10 @@ Scoped.define("module:WebRTC.WhammyAudioRecorderWrapper", [
 			}
 		},
 */
+		_createSnapshot: function (type) {
+			return this._whammyRecorder.createSnapshot(type);
+		},
+
 		_boundMedia: function () {
 			this._whammyRecorder = new WhammyRecorder(this._stream, {
 				//recorderWidth: this._options.recordResolution.width,
@@ -1469,6 +1487,23 @@ Scoped.define("module:WebRTC.Support", [
 			video.autoplay = true;
 			video.play();
 			return video;
+		},
+		
+		dataURItoBlob: function (dataURI) {
+		    // convert base64 to raw binary data held in a string
+		    var byteString = atob(dataURI.split(',')[1]);
+
+		    // separate out the mime component
+		    var mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0];
+
+		    // write the bytes of the string to an ArrayBuffer
+		    var arrayBuffer = new ArrayBuffer(byteString.length);
+		    var _ia = new Uint8Array(arrayBuffer);
+		    for (var i = 0; i < byteString.length; i++)
+		        _ia[i] = byteString.charCodeAt(i);
+		    var dataView = new DataView(arrayBuffer);
+		    var blob = new Blob([dataView], { type: mimeString });
+		    return blob;
 		}
 
 	};
@@ -1967,7 +2002,12 @@ Scoped.define("module:WebRTC.WhammyRecorder", [
 		        } else {
 		            return true;
 		        }
-		    }		    
+		    },
+			
+			createSnapshot: function (type) {
+				this._context.drawImage(this._video, 0, 0, this._canvas.width, this._canvas.height);
+				return this._canvas.toDataURL(type);
+			}
 
 		};		
 	}], {

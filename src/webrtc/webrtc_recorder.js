@@ -67,6 +67,20 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
 				this._unboundMedia();
 			},
 			
+			createSnapshot: function (type) {
+				return Support.dataURItoBlob(this._createSnapshot(type));
+			},
+			
+			_createSnapshot: function (type) {
+			    var canvas = document.createElement('canvas');
+				canvas.width = this._video.videoWidth || this._video.clientWidth;
+				canvas.height = this._video.videoHeight || this._video.clientHeight;
+			    var context = canvas.getContext('2d');
+	        	context.drawImage(this._video, 0, 0, canvas.width, canvas.height);
+	        	var data = canvas.toDataURL(type);
+	        	return data;
+			},
+			
 			_boundMedia: function () {},
 			
 			_unboundMedia: function () {},
@@ -165,6 +179,10 @@ Scoped.define("module:WebRTC.WhammyAudioRecorderWrapper", [
 			}
 		},
 */
+		_createSnapshot: function (type) {
+			return this._whammyRecorder.createSnapshot(type);
+		},
+
 		_boundMedia: function () {
 			this._whammyRecorder = new WhammyRecorder(this._stream, {
 				//recorderWidth: this._options.recordResolution.width,
