@@ -2,8 +2,9 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
     "base:Classes.ConditionalInstance",
     "base:Events.EventsMixin",
     "base:Objs",
-    "module:WebRTC.Support"
-], function (ConditionalInstance, EventsMixin, Objs, Support, scoped) {
+    "module:WebRTC.Support",
+    "base:Time"
+], function (ConditionalInstance, EventsMixin, Objs, Support, Time, scoped) {
 	return ConditionalInstance.extend({scoped: scoped}, [EventsMixin, function (inherited) {
 		return {
 			
@@ -49,6 +50,7 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
 					return;
 				this._recording = true;
 				this._startRecord();
+				this._startTime = Time.now();
 			},
 			
 			stopRecord: function () {
@@ -56,6 +58,11 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
 					return;
 				this._recording = false;
 				this._stopRecord();
+				this._stopTime = Time.now();
+			},
+			
+			duration: function () {
+				return (this._recording ? Time.now() : this._stopTime) - this._startTime;
 			},
 			
 			unbindMedia: function () {

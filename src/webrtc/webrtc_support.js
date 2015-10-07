@@ -1,7 +1,8 @@
 Scoped.define("module:WebRTC.Support", [
     "base:Promise.Promise",
-    "base:Objs"
-], function (Promise, Objs) {
+    "base:Objs",
+    "base:Browser.Info"
+], function (Promise, Objs, Info) {
 	return {
 		
 		canvasSupportsImageFormat: function (imageFormat) {
@@ -119,38 +120,63 @@ Scoped.define("module:WebRTC.Support", [
 			var opts = {};
 			if (options.audio)
 				opts.audio = true;
-			if (options.video) {
-				opts.video = {
-					mandatory: {}
+			if (!options.video)
+				return this.userMedia(opts);
+			if (Info.isFirefox()) {
+				if (options.video) {
+					opts.video = {};
+					if (options.video.aspectRatio && !(options.video.width && options.video.height)) {
+						if (options.video.width)
+							options.video.height = Math.round(options.video.width / options.video.aspectRatio);
+						else if (options.video.height)
+							options.video.width = Math.round(options.video.height * options.video.aspectRatio);
+					}
+					if (options.video.width) {
+						opts.video.width = {
+							ideal: options.video.width
+						};
+					}
+					if (options.video.height) {
+						opts.video.height = {
+							ideal: options.video.height
+						};
+					}
+				}
+				return this.userMedia(opts);
+			} else {
+				if (options.video) {
+					opts.video = {
+						mandatory: {}
+					};
+					if (options.video.width) {
+						opts.video.mandatory.minWidth = options.video.width;
+						opts.video.mandatory.maxWidth = options.video.width;
+					}
+					if (!options.video.width && options.video.height) {
+						opts.video.mandatory.minHeight = options.video.height;
+						opts.video.mandatory.maxHeight = options.video.height;
+					}
+					var as = options.video.aspectRatio ? options.video.aspectRatio : (options.video.width && options.video.height ? options.video.width/options.video.height : null);
+					if (as) {
+						opts.video.mandatory.minAspectRatio = as;
+						opts.video.mandatory.maxAspectRatio = as;
+					}
+				}
+				var probe = function () {
+					var mandatory = opts.video.mandatory;
+					return this.userMedia(opts).mapError(function (e) {
+						if (e.name !== "ConstraintNotSatisfiedError")
+							return e;
+						var c = e.constraintName;
+						var flt = c.indexOf("aspect") > 0;
+						var d = c.indexOf("min") === 0 ? -1 : 1;
+						var u = Math.max(0, mandatory[c] * (1.0 + d / 10));
+						mandatory[c] = flt ? u : Math.round(u);
+						return probe.call(this);
+					}, this);
 				};
-				if (options.video.width) {
-					opts.video.mandatory.minWidth = options.video.width;
-					opts.video.mandatory.maxWidth = options.video.width;
-				}
-				if (!options.video.width && options.video.height) {
-					opts.video.mandatory.minHeight = options.video.height;
-					opts.video.mandatory.maxHeight = options.video.height;
-				}
-				var as = options.video.aspectRatio ? options.video.aspectRatio : (options.video.width && options.video.height ? options.video.width/options.video.height : null);
-				if (as) {
-					opts.video.mandatory.minAspectRatio = as;
-					opts.video.mandatory.maxAspectRatio = as;
-				}
+				return probe.call(this);
 			}
-			var probe = function () {
-				var mandatory = opts.video.mandatory;
-				return this.userMedia(opts).mapError(function (e) {
-					if (e.name !== "ConstraintNotSatisfiedError")
-						return e;
-					var c = e.constraintName;
-					var flt = c.indexOf("aspect") > 0;
-					var d = c.indexOf("min") === 0 ? -1 : 1;
-					var u = Math.max(0, mandatory[c] * (1.0 + d / 10));
-					mandatory[c] = flt ? u : Math.round(u);
-					return probe.call(this);
-				}, this);
-			};
-			return opts.video.mandatory ? probe.call(this) : this.userMedia(opts);
 		},
 		
 		stopUserMediaStream: function (stream) {
