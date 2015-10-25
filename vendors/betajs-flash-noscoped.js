@@ -1,5 +1,5 @@
 /*!
-betajs-flash - v0.0.1 - 2015-07-08
+betajs-flash - v0.0.2 - 2015-10-25
 Copyright (c) Oliver Friedmann
 MIT Software License.
 */
@@ -15,7 +15,7 @@ Scoped.binding("jquery", "global:jQuery");
 Scoped.define("module:", function () {
 	return {
 		guid: "3adc016a-e639-4d1a-b4cb-e90cab02bc4f",
-		version: '16.1436393076946',
+		version: '17.1445787592546',
 		__global: {},
 		options: {
 			flashFile: "betajs-flash.swf"
@@ -23,13 +23,13 @@ Scoped.define("module:", function () {
 	};
 });
 
-Scoped.define("module:FlashEmbedding", [ "base:Class", "jquery:", "base:Strings",
-		"base:Functions", "base:Types", "base:Objs", "base:Ids", "base:Async", "module:__global",
-		"module:FlashObjectWrapper", "module:FlashClassWrapper", "base:Browser.FlashHelper", "module:" ], function(Class, $,
-		Strings, Functions, Types, Objs, Ids, Async, moduleGlobal, FlashObjectWrapper, FlashClassWrapper, FlashHelper, mod, scoped) {
+Scoped.define("module:FlashEmbedding", [ "base:Class", "base:Events.EventsMixin", "jquery:", "base:Strings",
+		"base:Functions", "base:Types", "base:Objs", "base:Ids", "base:Time", "base:Timers.Timer", "base:Async", "module:__global",
+		"module:FlashObjectWrapper", "module:FlashClassWrapper", "base:Browser.FlashHelper", "module:" ], function(Class, EventsMixin, $,
+		Strings, Functions, Types, Objs, Ids, Time, Timer, Async, moduleGlobal, FlashObjectWrapper, FlashClassWrapper, FlashHelper, mod, scoped) {
 	return Class.extend({
 		scoped : scoped
-	}, function(inherited) {
+	}, [EventsMixin, function(inherited) {
 		return {
 
 			constructor : function(container, options, flashOptions) {
@@ -43,6 +43,7 @@ Scoped.define("module:FlashEmbedding", [ "base:Class", "jquery:", "base:Strings"
 				};
 				this.__namespace = "BetaJS.Flash.__global." + this.cid();
 				this.__is_ready = false;
+				this.__is_suspended = false;
 				this.__ready_queue = [];
 				this.__wrappers = {};
 				this.__staticWrappers = {};
@@ -51,7 +52,14 @@ Scoped.define("module:FlashEmbedding", [ "base:Class", "jquery:", "base:Strings"
 					FlashVars: {}
 				}, flashOptions));
 				flashOptions.FlashVars.ready = this.__namespace + ".ready";
+				if (options.debug)
+					flashOptions.FlashVars.debug = true;
 				this.__embedding = FlashHelper.embedFlashObject(container, flashOptions);
+				this.__suspendedTimer = this.auto_destroy(new Timer({
+					delay: 50,
+					context: this,
+					fire: this.__suspendedCheck
+				}));
 			},
 			
 			destroy: function () {
@@ -194,14 +202,34 @@ Scoped.define("module:FlashEmbedding", [ "base:Class", "jquery:", "base:Strings"
 				return this.invokeCached("main");
 			},
 			
+			__suspendedCheck: function () {
+				if (this.__is_ready) {
+					var test = Time.now();
+					var tries = 10;
+					while (this.__embedding.echo(test) !== test && tries > 0)
+						tries--;
+					var result = tries === 0;
+					if (result !== this.__is_suspended) {
+						this.__is_suspended = result;
+						this.trigger(result ? "suspended" : "resumed");
+					}
+				}
+			},
+			
+			isSuspended: function () {
+				return this.__is_ready && this.__is_suspended;
+			},
+			
 			__ready: function () {
 				if (!this.__is_ready) {
 					this.__is_ready = true;
+					this.__is_suspended = false;
 					Async.eventually(function () {
 						Objs.iter(this.__ready_queue, function (entry) {
 							entry.callback.call(entry.context || this);
 						}, this);
 					}, this);
+					this.trigger("ready");
 				}
 			},
 
@@ -219,7 +247,7 @@ Scoped.define("module:FlashEmbedding", [ "base:Class", "jquery:", "base:Strings"
 			}
 
 		};
-	});
+	}]);
 });
 Scoped.define("module:FlashClassRegistry", [ "base:Class" ], function(Class,
 		scoped) {

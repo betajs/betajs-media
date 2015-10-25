@@ -1,6 +1,6 @@
 {
 	"name": "betajs-media",
-	"version": "0.0.2",
+	"version": "0.0.3",
 	"description": "BetaJS-Media is a JavaScript media framework",
 	"homepage": "http://betajs.com",
 	"contributors": ["Oliver Friedmann"],
@@ -18,7 +18,7 @@
 		"grunt-node-qunit": "",
 		"grunt-contrib-jshint": "",
 		"grunt-wget": "",
-		"grunt-jsdoc": "beta",
+		"grunt-jsdoc": "",
 		"grunt-shell": "",
 		"grunt-template": ""
 	},

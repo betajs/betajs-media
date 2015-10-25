@@ -1,5 +1,5 @@
 /*!
-betajs - v1.0.0 - 2015-07-08
+betajs - v1.0.8 - 2015-10-24
 Copyright (c) Oliver Friedmann,Victor Lingenthal
 MIT Software License.
 */
@@ -557,7 +557,7 @@ Public.exports();
 	return Public;
 }).call(this);
 /*!
-betajs - v1.0.0 - 2015-07-08
+betajs - v1.0.8 - 2015-10-24
 Copyright (c) Oliver Friedmann,Victor Lingenthal
 MIT Software License.
 */
@@ -570,7 +570,7 @@ Scoped.binding("module", "global:BetaJS");
 Scoped.define("module:", function () {
 	return {
 		guid: "71366f7a-7da3-4e55-9a0b-ea0e4e2a9e79",
-		version: '405.1436389310033'
+		version: '422.1445708400034'
 	};
 });
 
@@ -1770,11 +1770,11 @@ Scoped.define("module:Collections.Collection", [
 				Objs.iter(this.__indices, function (entry, key) {
 					delete entry[object.get(key)];
 				}, this);
-				this.trigger("remove", object);
-				this.trigger("update");
 				var result = this.__data.remove(object);
 				if ("off" in object)
 					object.off(null, null, this);
+				this.trigger("remove", object);
+				this.trigger("update");
 				return result;
 			},
 			
@@ -2466,6 +2466,12 @@ Scoped.define("module:Functions", ["module:Types"], function (Types) {
 		
 		newClass: function (cls) {
 			return this.newClassFunc(cls).apply(this, this.getArguments(arguments, 1));
+		},
+		
+		callWithin: function (context, method) {
+			if (Types.is_string(method))
+				method = context[method];
+			return method.apply(context, this.getArguments(arguments, 2));
 		}
 	
 	};
@@ -3505,6 +3511,16 @@ Scoped.define("module:Locales", function () {
 	};
 	
 });	
+Scoped.define("module:Maths", [], function () {
+	return {
+		
+	    discreteCeil: function (number, steps, max) {
+	        var x = Math.ceil(number / steps) * steps;
+	        return max && x > max ? 0 : x;
+	    }
+	
+	};
+});
 Scoped.define("module:Objs", ["module:Types"], function (Types) {
 	return {
 
@@ -3580,7 +3596,7 @@ Scoped.define("module:Objs", ["module:Types"], function (Types) {
 			target = target || {};
 			if (source) {
 				for (var key in source) {
-					if (key in target && Types.is_object(target[key]) && Types.is_object(source[key]))
+					if (key in target && Types.is_object(target[key]) && Types.is_object(source[key]) && !Types.is_array(target[key]) && !Types.is_array(source[key]))
 						target[key] = this.tree_extend(target[key], source[key], depth);
 					else
 						target[key] = this.clone(source[key], depth);
@@ -4138,7 +4154,13 @@ Scoped.define("module:Promise", ["module:Types", "module:Functions", "module:Asy
 		
 		is: function (obj) {
 			return obj && Types.is_object(obj) && obj.classGuid == this.Promise.prototype.classGuid;
-		} 
+		},
+		
+		resilience: function (method, context, resilience, args) {
+			return method.apply(context, args).mapError(function (error) {
+				return resilience === 0 ? error : this.resilience(method, context, resilience - 1, args);
+			}, this);
+		}
 		
 	};
 });
@@ -4480,8 +4502,26 @@ Scoped.define("module:Properties.PropertiesMixin", [
 				});
 				self.set(key, func.apply(args.context, values));
 			}
-			for (var i = 0; i < deps.length; ++i)
-				deps[i].properties.on("change:" + deps[i].key, recompute, deps[i]);
+			BetaJS.Objs.iter(deps, function (dep) {
+				var value = dep.properties.get(dep.key);
+				// Ugly way of checking whether an EventsMixin is present - please improve in the future on this
+				if (value && typeof value == "object" && "on" in value && "off" in value && "trigger" in value) {
+					value.on("change update", function () {
+						recompute();
+					}, dep);
+				}
+				dep.properties.on("change:" + dep.key, function (value, oldValue) {
+					if (oldValue && typeof oldValue == "object" && "on" in oldValue && "off" in oldValue && "trigger" in oldValue) {
+						oldValue.off("change update", null, dep);
+					}
+					if (value && typeof value == "object" && "on" in value && "off" in value && "trigger" in value) {
+						value.on("change update", function () {
+							recompute();
+						}, dep);
+					}
+					recompute();
+				}, dep);
+			}, this);
 			recompute();
 			return this;
 		},
@@ -4545,6 +4585,11 @@ Scoped.define("module:Properties.PropertiesMixin", [
 				}
 				if (!binding.right || !this.has(key))
 					this.set(key, binding.properties.get(binding.key));
+				if (key === "") {
+					Objs.iter(binding.properties.data(), function (value, k) {
+						this.set(k, value);
+					}, this);
+				}
 			}
 			if (binding.right) {
 				this.on("strongchange:" + key, function (value) {
@@ -4569,6 +4614,11 @@ Scoped.define("module:Properties.PropertiesMixin", [
 				}
 				if (!binding.left || this.has(key))
 					binding.properties.set(binding.key, this.get(key));
+				if (key === "") {
+					Objs.iter(this.data(), function (value, k) {
+						binding.properties.set(k, value);
+					}, this);
+				}
 			}
 			binding.properties.on("destroy", function () {
 				this.unbind(key);
@@ -5984,6 +6034,12 @@ Scoped.define("module:Strings", ["module:Objs"], function (Objs) {
 	 */
 	return {
 		
+		padLeft: function (s, padding, length) {
+			while (s.length < length)
+				s = padding + s;
+			return s;
+		},
+		
 		/** Converts a string new lines to html <br /> tags
 		 *
 		 * @param s string
@@ -6148,22 +6204,6 @@ Scoped.define("module:Strings", ["module:Objs"], function (Objs) {
 			return a.join("\n").trim();
 		},
 	
-		read_cookie_string : function(raw, key) {
-			var cookie = "; " + raw;
-			var parts = cookie.split("; " + key + "=");
-			if (parts.length == 2)
-				return parts.pop().split(";").shift();
-			return null;
-		},
-	
-		write_cookie_string : function(raw, key, value) {
-			var cookie = "; " + raw;
-			var parts = cookie.split("; " + key + "=");
-			if (parts.length == 2)
-				cookie = parts[0] + parts[1].substring(parts[1].indexOf(";"));
-			return key + "=" + value + cookie;
-		},
-	
 		capitalize : function(input) {
 			return input.replace(/\w\S*/g, function(txt) {
 				return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
@@ -6254,6 +6294,7 @@ Scoped.define("module:Strings", ["module:Objs"], function (Objs) {
 	};
 
 });
+
 Scoped.define("module:Structures.AvlTree", function () {
 	return {
 	
@@ -6831,6 +6872,10 @@ Scoped.define("module:Time", ["module:Locales"], function (Locales) {
 			for (var key in replacers)
 				s = s.replace(key, replacers[key]);
 			return s;
+		},
+		
+		monthString: function (month) {
+			return (d = new Date(), d.setMonth(month), d).toDateString().substring(4,7);
 		}
 		
 	};
@@ -7656,7 +7701,7 @@ Scoped.define("module:Net.Uri", ["module:Objs", "module:Types"], function (Objs,
 				if (Types.is_object(value))
 					res = res.concat(this.encodeUriParams(value, prefix + key + "_"));
 				else
-					res.push(prefix + key + "=" + encodeURI(value));
+					res.push(prefix + key + "=" + encodeURIComponent(value));
 			}, this);
 			return res.join("&");
 		},

@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.2 - 2015-10-07
+betajs-media - v0.0.3 - 2015-10-25
 Copyright (c) Oliver Friedmann
 MIT Software License.
 */
@@ -15,44 +15,14 @@ Scoped.binding("jquery", "global:jQuery");
 Scoped.define("module:", function () {
 	return {
 		guid: "8475efdb-dd7e-402e-9f50-36c76945a692",
-		version: '20.1444237822355'
+		version: '21.1445787878433'
 	};
 });
-
-
-Scoped.define("module:Player.Flash", [
-    "base:Browser.Dom",
-    "base:Async",
-    "module:Player.FlashPlayer"
-], function (Dom, Async, FlashPlayer) {
-	return {
-		
-		polyfill: function (element, polyfilltag, force, eventual) {
-			if (eventual) {
-				Async.eventually(function () {
-					this.polyfill(element, polyfilltag, force);
-				}, this);
-				return element; 
-			}
-			if (element.tagName.toLowerCase() != "video" || !("networkState" in element))
-				return this.attach(element);
-			else if (element.networkState == element.NETWORK_NO_SOURCE || force)
-				return this.attach(Dom.changeTag(element, polyfilltag || "videopoly"));
-			return element;
-		},
-		
-		attach: function (element) {
-			var cls = new FlashPlayer(element);
-			return element;
-		}
-
-	};
-});
-
-
 
 Scoped.define("module:Player.FlashPlayer", [
-    "base:Class",
+    "base:Browser.DomExtend.DomExtension",
+	"base:Browser.Dom",
+	"base:Browser.Info",
     "base:Flash.FlashClassRegistry",
     "base:Flash.FlashEmbedding",
     "base:Strings",
@@ -60,63 +30,44 @@ Scoped.define("module:Player.FlashPlayer", [
     "base:Objs",
     "base:Functions",
     "jquery:"    
-], function (Class, FlashClassRegistry, FlashEmbedding, Strings, Async, Objs, Functions, $, scoped) {
-	return Class.extend({scoped: scoped}, function (inherited) {
+], function (Class, Dom, Info, FlashClassRegistry, FlashEmbedding, Strings, Async, Objs, Functions, $, scoped) {
+	var Cls = Class.extend({scoped: scoped}, function (inherited) {
 		return {
 			
 			constructor: function (element) {
-				inherited.constructor.call(this);
-				this._element = element;
-				this._$element = $(element);
-				this._currentWidth = null;
-				this._currentHeight = null;
-				this.__initCss();
+				inherited.constructor.call(this, element);
 				this._source = this.__preferedSource();
-				this._embedding = new FlashEmbedding(element, {
+				this._embedding = this.auto_destroy(new FlashEmbedding(element, {
 					registry: this.cls.flashRegistry(),
-					wrap: true
-				});
+					wrap: true,
+					debug: false
+				}));
 				this._flashObjs = {};
 				this._flashData = {
 					status: 'idle'
 				};
 				this._embedding.ready(this.__initializeEmbedding, this);
-				this.__initEvents();
-				Objs.iter(this.__elementMethods, function (func, key) {
-					this._element[key] = Functions.as_method(func, this);
-				}, this);
-			},
-			
-			destroy: function () {
-				$(window).off("." + this.cid());
-				$(document).off("." + this.cid());
-				this._embedding.destroy();
-				inherited.destroy.call(this);
-			},
-			
-			__initEvents: function () {
-				var self = this;
-				$(document).on("DOMNodeRemoved." + this.cid(), function (event) {
-					if (event.target == self._element)
-						self.weakDestroy();
-				});
-				$(window).on("resize", function () {
-					self.updateSize();
-				});
-			},
-			
-			__initCss: function () {
-				if (!this._$element.css("display") || this._$element.css("display") == "inline")
-					this._$element.css("display", "inline-block");
 			},
 			
 			__preferedSource: function () {
 				var preferred = [".mp4", ".flv"];
 				var sources = [];
 				var element = this._element;
-				for (var i = 0; i < this._element.childNodes.length; ++i) {
-					if (element.childNodes[i].tagName && element.childNodes[i].tagName.toLowerCase() == "source" && element.childNodes[i].src)
-						sources.push(element.childNodes[i].src.toLowerCase());
+				if (!(Info.isInternetExplorer() && Info.internetExplorerVersion() < 9)) {
+					for (var i = 0; i < this._element.childNodes.length; ++i) {
+						if (element.childNodes[i].tagName && element.childNodes[i].tagName.toLowerCase() == "source" && element.childNodes[i].src)
+							sources.push(element.childNodes[i].src.toLowerCase());
+					}
+				} else {
+					var $current = this._$element;
+					while (true) {
+						var $next = $current.next();
+						var next = $next.get(0);
+						if (!next || next.tagName.toLowerCase() != "source") 
+							break;
+						sources.push($next.attr("src").toLowerCase());
+						$current = $next;
+					}
 				}
 				var source = sources[0];
 				var currentExtIndex = preferred.length - 1;
@@ -152,12 +103,23 @@ Scoped.define("module:Player.FlashPlayer", [
 				this._flashObjs.stage = this._flashObjs.main.get("stage");
 				this._flashObjs.stage.set("scaleMode", "noScale");
 				this._flashObjs.stage.set("align", "TL");
+				
+				if (this.readAttr("poster")) {
+					this._flashObjs.imageLoader = this._embedding.newObject("flash.display.Loader");
+					this._flashObjs.imageLoader.get("contentLoaderInfo").addEventListener("complete", this._embedding.newCallback(Functions.as_method(function () {
+						this.__imageLoaded = true;
+						if (!this.__metaLoaded)
+							this.recomputeBB();
+					}, this)));
+					this._flashObjs.imageUrlRequest = this._embedding.newObject("flash.net.URLRequest", this.readAttr("poster"));
+					this._flashObjs.imageLoader.load(this._flashObjs.imageUrlRequest);
+					this._flashObjs.main.addChildVoid(this._flashObjs.imageLoader);
+				}
 				this._flashObjs.video = this._embedding.newObject(
 					"flash.media.Video",
 					this._flashObjs.stage.get("stageWidth"),
 					this._flashObjs.stage.get("stageHeight")
 				);
-				this._flashObjs.main.addChildVoid(this._flashObjs.video);
 				this._flashObjs.connection = this._embedding.newObject("flash.net.NetConnection");
 				this._flashObjs.connection.addEventListener("netStatus", this._embedding.newCallback(Functions.as_method(this.__connectionStatusEvent, this)));
 				this._flashObjs.connection.connectVoid(this._source.connectionUrl);
@@ -167,10 +129,22 @@ Scoped.define("module:Player.FlashPlayer", [
 				this._flashObjs.stream = this._embedding.newObject("flash.net.NetStream", this._flashObjs.connection);
 				this._flashObjs.stream.set("client", this._embedding.newCallback("onMetaData", Functions.as_method(function (info) {
 					this._flashData.meta = info;
-					Async.eventually(this.updateSize, this);
+					this._element.duration = info.duration;
+					this.__metaLoaded = true;
+					Async.eventually(this.recomputeBB, this);
 				}, this)));
 				this._flashObjs.stream.addEventListener("netStatus", this._embedding.newCallback(Functions.as_method(this.__streamStatusEvent, this)));
+				this._flashObjs.soundTransform = this._embedding.newObject("flash.media.SoundTransform");
+				this._flashObjs.stream.set("soundTransform", this._flashObjs.soundTransform);				
 				this._flashObjs.video.attachNetStreamVoid(this._flashObjs.stream);
+				this.writeAttr("volume", 1.0);
+				if (this._element.attributes.muted) {
+					this._flashObjs.soundTransform.set("volume", 0.0);
+					this._flashObjs.stream.set("soundTransform", null);				
+					this._flashObjs.stream.set("soundTransform", this._flashObjs.soundTransform);
+					this.writeAttr("volume", 0.0);
+				}
+				this._flashObjs.main.addChildVoid(this._flashObjs.video);
 				if (this._element.attributes.autoplay)
 					this._element.play();
 			},
@@ -189,47 +163,69 @@ Scoped.define("module:Player.FlashPlayer", [
 				}
 			},
 			
-			updateSize: function () {
-				if (!this._flashData.meta)
-					return;
-				var $el = this._$element;
-				var el = this._element;
-				var meta = this._flashData.meta;
-				
-				var newWidth = $el.width();
-				if ($el.width() < meta.width && !el.style.width) {
-					element.style.width = meta.width + "px";
-					newWidth = $el.width();
-					delete element.style.width;
+			idealBB: function () {
+				if (!this.__imageLoaded && !this.__metaLoaded)
+					return null;
+				return {
+					width: this.__metaLoaded ? this._flashData.meta.width : this._flashObjs.imageLoader.get("width"),
+					height: this.__metaLoaded ? this._flashData.meta.height : this._flashObjs.imageLoader.get("height")
+				};
+			},
+			
+			setActualBB: function (actualBB) {
+				this._$element.find("object").css("width", actualBB.width + "px");
+				this._$element.find("embed").css("width", actualBB.width + "px");
+				this._$element.find("object").css("height", actualBB.height + "px");
+				this._$element.find("embed").css("height", actualBB.height + "px");
+				if (this.__metaLoaded) {
+					this._flashObjs.video.set("width", actualBB.width);
+					this._flashObjs.video.set("height", actualBB.height);
 				}
-				var newHeight = Math.round(newWidth * meta.height / meta.width);
-				if (newWidth != this._currentWidth) {
-					this._currentWidth = newWidth;
-					this._currentHeight = newHeight;
-					$el.find("object").css("width", this._currentWidth + "px");
-					$el.find("embed").css("width", this._currentWidth + "px");
-					$el.find("object").css("height", this._currentHeight + "px");
-					$el.find("embed").css("height", this._currentHeight + "px");
-					this._flashObjs.video.set("width", this._currentWidth);
-					this._flashObjs.video.set("height", this._currentHeight);
+				if (this.__imageLoaded) {
+					this._flashObjs.imageLoader.set("width", actualBB.width);
+					this._flashObjs.imageLoader.set("height", actualBB.height);
 				}
 			},
 			
-			__elementMethods: {
-				
-				play: function () {
-					if (this._flashData.status === "paused")
-						this._flashObjs.stream.resumeVoid();
-					else
-						this._flashObjs.stream.playVoid(this._source.playUrl);
-				},
-				
-				pause: function () {
-					this._flashObjs.stream.pauseVoid();
-					this._flashData.status = "paused";
-				}			
+			_domMethods: ["play", "pause"],
 			
-			}			
+			_domAttrs: {
+				"volume": {
+					set: "_setVolume"
+				},
+				"currentTime": {
+					get: "_getCurrentTime",
+					set: "_setCurrentTime"
+				}				
+			},
+			
+			play: function () {
+				this._flashObjs.main.setChildIndex(this._flashObjs.video, 1);
+				if (this._flashData.status === "paused")
+					this._flashObjs.stream.resumeVoid();
+				else
+					this._flashObjs.stream.playVoid(this._source.playUrl);
+			},
+			
+			pause: function () {
+				this._flashObjs.stream.pauseVoid();
+				this._flashData.status = "paused";
+			},
+			
+			_setVolume: function (volume) {
+				this._flashObjs.soundTransform.set("volume", volume);
+				this._flashObjs.stream.set("soundTransform", null);				
+				this._flashObjs.stream.set("soundTransform", this._flashObjs.soundTransform);
+				this.domEvent("volumechange");
+			},
+			
+			_getCurrentTime: function () {
+				return this._flashObjs.stream.get("time");
+			},
+			
+			_setCurrentTime: function (time) {
+				this._flashObjs.stream.seek(time);
+			}
 		
 		};		
 	}, {
@@ -238,28 +234,41 @@ Scoped.define("module:Player.FlashPlayer", [
 			if (!this.__flashRegistry) {
 				this.__flashRegistry = new FlashClassRegistry();
 				this.__flashRegistry.register("flash.media.Video", ["attachNetStream"]);
-				this.__flashRegistry.register("flash.display.Sprite", ["addChild"]);
+				this.__flashRegistry.register("flash.display.Sprite", ["addChild", "setChildIndex"]);
 				this.__flashRegistry.register("flash.display.Stage", []);
-				this.__flashRegistry.register("flash.net.NetStream", ["play", "pause", "resume", "addEventListener"]);
+				this.__flashRegistry.register("flash.net.NetStream", ["play", "pause", "resume", "addEventListener", "seek"]);
 				this.__flashRegistry.register("flash.net.NetConnection", ["connect", "addEventListener"]);
+				this.__flashRegistry.register("flash.media.SoundTransform", []);
+				this.__flashRegistry.register("flash.display.Loader", ["load"]);
+				this.__flashRegistry.register("flash.net.URLRequest", []);
+				this.__flashRegistry.register("flash.display.LoaderInfo", ["addEventListener"]);
 			}
 			return this.__flashRegistry;
+		},
+		
+		polyfill: function (element, polyfilltag, force, eventual) {
+			if (eventual) {
+				Async.eventually(function () {
+					Cls.polyfill(element, polyfilltag, force);
+				});
+				return element; 
+			}
+			if (element.tagName.toLowerCase() != "video" || !("networkState" in element))
+				return Cls.attach(element);
+			else if (element.networkState == element.NETWORK_NO_SOURCE || force)
+				return Cls.attach(Dom.changeTag(element, polyfilltag || "videopoly"));
+			return element;
+		},
+		
+		attach: function (element) {
+			var cls = new Cls(element);
+			return element;
 		}
 		
+		
 	});
+	return Cls;
 });
-
-
-
-//Browser Dom Mutation Polyfill
-//https://github.com/meetselva/attrchange
-// Polyfill Wrapper for attribute setting / replacing / eventual loading
-// Own state
-// Attributes: poster, muted
-// Methods: load
-// Attrs: currentSrc, currentTime, duration, ended, paused, played, volume
-// Events: *
-
 // Credits: http://typedarray.org/wp-content/projects/WebAudioRecorder/script.js
 // Co-Credits: https://github.com/streamproc/MediaStreamRecorder/blob/master/MediaStreamRecorder-standalone.js
 

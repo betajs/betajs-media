@@ -1,21 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
 	<head>
-		<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+		<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.js"></script>
 		<script src="../vendors/beta.js"></script>
 		<script src="../vendors/beta-browser-noscoped.js"></script>
 		<script src="../vendors/betajs-flash-noscoped.js"></script>
 		<script src="../dist/betajs-media.js"></script>
 	</head>
 	<body>
-		<video autoplay loop poster="movie.png" style="width:100%">
+		<video autoplay loop poster="movie.png" style="width:50%" muted>
   			<source src="movie.ogg" type="video/ogg" />
   			<source src="movie.webm" type="video/webm" />
 			<source src="movie.mp4" type="video/mp4" />
 			<source src="rtmp://localhost:1935/vodtest/_definst_/abc.flv" type="video/flv" />
 		</video>
 
-		<video autoplay loop poster="movie.png" style="width:100%">
+		<video autoplay loop poster="movie.png" style="width:50%" >
   			<source src="movie.ogg" type="video/ogg" />
   			<source src="movie.webm" type="video/webm" />
 			<source src="movie.mp4" type="video/mp4" />
@@ -28,11 +28,16 @@
 				forceReload: true
 			};
 			var video1 = $("video").get(0);
-			var video2;
-			BetaJS.Media.Player.Flash.polyfill($("video").get(1), "videopoly", true, true);
+			var $video1 = $(video1);
+			var video2, $video2;
+			BetaJS.Media.Player.FlashPlayer.polyfill($("video").get(1), "videopoly", true, true);
 			setTimeout(function () {
 				video2 = $("videopoly").get(0);
-			}, 1);
+				$video2 = $(video2);
+	            $video2.on("volumechange", function () {
+	                console.log("Volume Change", arguments);
+	            });
+			}, 1); 
 		</script>
 	</body>
 </html>
