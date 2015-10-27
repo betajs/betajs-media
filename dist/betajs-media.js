@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.3 - 2015-10-25
+betajs-media - v0.0.3 - 2015-10-27
 Copyright (c) Oliver Friedmann
 MIT Software License.
 */
@@ -560,7 +560,7 @@ Public.exports();
 }).call(this);
 
 /*!
-betajs-media - v0.0.3 - 2015-10-25
+betajs-media - v0.0.3 - 2015-10-27
 Copyright (c) Oliver Friedmann
 MIT Software License.
 */
@@ -576,7 +576,7 @@ Scoped.binding("jquery", "global:jQuery");
 Scoped.define("module:", function () {
 	return {
 		guid: "8475efdb-dd7e-402e-9f50-36c76945a692",
-		version: '21.1445787878433'
+		version: '22.1445947745011'
 	};
 });
 
@@ -632,16 +632,15 @@ Scoped.define("module:Player.FlashPlayer", [
 				}
 				var source = sources[0];
 				var currentExtIndex = preferred.length - 1;
-				for (i = sources.length - 1; i >= 0; --i) {
+				for (var k = sources.length - 1; k >= 0; --k) {
 					for (var j = 0; j <= currentExtIndex; ++j) {
-						if (Strings.ends_with(sources[i], preferred[j])) {
-							source = sources[i];
+						if (Strings.ends_with(sources[k], preferred[j])) {
+							source = sources[k];
 							currentExtIndex = j;
 							break;
 						}
 					}
 				}
-				var source = "movie.mp4";
 				if (source.indexOf("://") == -1)
 					source = document.location.href + "/../" + source;
 				
@@ -665,7 +664,7 @@ Scoped.define("module:Player.FlashPlayer", [
 				this._flashObjs.stage = this._flashObjs.main.get("stage");
 				this._flashObjs.stage.set("scaleMode", "noScale");
 				this._flashObjs.stage.set("align", "TL");
-				this._element.poster ="movie.png";
+				
 				if (this.readAttr("poster")) {
 					this._flashObjs.imageLoader = this._embedding.newObject("flash.display.Loader");
 					this._flashObjs.imageLoader.get("contentLoaderInfo").addEventListener("complete", this._embedding.newCallback(Functions.as_method(function () {

@@ -50,10 +50,10 @@ Scoped.define("module:Player.FlashPlayer", [
 				}
 				var source = sources[0];
 				var currentExtIndex = preferred.length - 1;
-				for (i = sources.length - 1; i >= 0; --i) {
+				for (var k = sources.length - 1; k >= 0; --k) {
 					for (var j = 0; j <= currentExtIndex; ++j) {
-						if (Strings.ends_with(sources[i], preferred[j])) {
-							source = sources[i];
+						if (Strings.ends_with(sources[k], preferred[j])) {
+							source = sources[k];
 							currentExtIndex = j;
 							break;
 						}
