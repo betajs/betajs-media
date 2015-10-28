@@ -8,18 +8,10 @@
 		<script src="../dist/betajs-media.js"></script>
 	</head>
 	<body>
-		<video autoplay loop poster="movie.png" style="width:50%" muted>
-  			<source src="movie.ogg" type="video/ogg" />
-  			<source src="movie.webm" type="video/webm" />
-			<source src="movie.mp4" type="video/mp4" />
-			<source src="rtmp://localhost:1935/vodtest/_definst_/abc.flv" type="video/flv" />
+		<video autoplay loop poster="movie.png" src="movie.mp4" style="width:50%" muted>
 		</video>
 
-		<video autoplay loop poster="movie.png" style="width:50%" >
-  			<source src="movie.ogg" type="video/ogg" />
-  			<source src="movie.webm" type="video/webm" />
-			<source src="movie.mp4" type="video/mp4" />
-			<source src="rtmp://localhost:1935/vodtest/_definst_/abc.flv" type="video/flv" />
+		<video autoplay loop src="movie.mp4" poster="movie.png" style="width:50%" >
 		</video>
 		
 		<script>
@@ -31,13 +23,6 @@
 			var $video1 = $(video1);
 			var video2, $video2;
 			BetaJS.Media.Player.FlashPlayer.polyfill($("video").get(1), "videopoly", true, true);
-			setTimeout(function () {
-				video2 = $("videopoly").get(0);
-				$video2 = $(video2);
-	            $video2.on("volumechange", function () {
-	                console.log("Volume Change", arguments);
-	            });
-			}, 1); 
 		</script>
 	</body>
 </html>

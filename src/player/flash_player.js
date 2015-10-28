@@ -8,13 +8,14 @@ Scoped.define("module:Player.FlashPlayer", [
     "base:Async",
     "base:Objs",
     "base:Functions",
+    "base:Types",
     "jquery:"    
-], function (Class, Dom, Info, FlashClassRegistry, FlashEmbedding, Strings, Async, Objs, Functions, $, scoped) {
+], function (Class, Dom, Info, FlashClassRegistry, FlashEmbedding, Strings, Async, Objs, Functions, Types, $, scoped) {
 	var Cls = Class.extend({scoped: scoped}, function (inherited) {
 		return {
 			
-			constructor: function (element) {
-				inherited.constructor.call(this, element);
+			constructor: function (element, attrs) {
+				inherited.constructor.call(this, element, attrs);
 				this._source = this.__preferedSource();
 				this._embedding = this.auto_destroy(new FlashEmbedding(element, {
 					registry: this.cls.flashRegistry(),
@@ -31,6 +32,13 @@ Scoped.define("module:Player.FlashPlayer", [
 			__preferedSource: function () {
 				var preferred = [".mp4", ".flv"];
 				var sources = [];
+				if (this.readAttr("src")) {
+					var src = this.readAttr("src");
+					if (Types.is_array(src))
+						sources = src;
+					else
+						sources.push(src);
+				}
 				var element = this._element;
 				if (!(Info.isInternetExplorer() && Info.internetExplorerVersion() < 9)) {
 					for (var i = 0; i < this._element.childNodes.length; ++i) {
@@ -69,7 +77,6 @@ Scoped.define("module:Player.FlashPlayer", [
 					connectionUrl = spl.head;
 					playUrl = spl.tail;
 				}
-								
 				return {
 					sourceUrl: source,
 					connectionUrl: connectionUrl,
