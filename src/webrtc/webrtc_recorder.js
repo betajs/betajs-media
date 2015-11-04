@@ -33,6 +33,10 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
 				};
 			},
 			
+			stream: function () {
+				return this._stream;
+			},
+			
 			bindMedia: function () {
 				if (this._bound)
 					return;

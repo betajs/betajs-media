@@ -26,12 +26,10 @@ Scoped.define("module:WebRTC.AudioAnalyser", [
 				var bufferLength = this._analyserNode.fftSize;
 				var dataArray = new Uint8Array(bufferLength);
 				this._analyserNode.getByteTimeDomainData(dataArray);
-				var acc = 0.0;
-			    for (var i = 0; i < bufferLength; i++) {
-			        var v = dataArray[i] / 128.0;
-			        acc += v;
-			    }
-			    return acc / bufferLength;
+				var mx = 0.0;
+			    for (var i = 0; i < bufferLength; i++)
+			        mx = Math.max(mx, Math.abs(dataArray[i] / 128.0));
+			    return mx;
 			}
 
 		};		
