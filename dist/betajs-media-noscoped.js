@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.3 - 2015-10-27
+betajs-media - v0.0.3 - 2015-11-03
 Copyright (c) Oliver Friedmann
 MIT Software License.
 */
@@ -15,7 +15,7 @@ Scoped.binding("jquery", "global:jQuery");
 Scoped.define("module:", function () {
 	return {
 		guid: "8475efdb-dd7e-402e-9f50-36c76945a692",
-		version: '22.1445947745011'
+		version: '26.1446587758385'
 	};
 });
 
@@ -29,13 +29,14 @@ Scoped.define("module:Player.FlashPlayer", [
     "base:Async",
     "base:Objs",
     "base:Functions",
+    "base:Types",
     "jquery:"    
-], function (Class, Dom, Info, FlashClassRegistry, FlashEmbedding, Strings, Async, Objs, Functions, $, scoped) {
+], function (Class, Dom, Info, FlashClassRegistry, FlashEmbedding, Strings, Async, Objs, Functions, Types, $, scoped) {
 	var Cls = Class.extend({scoped: scoped}, function (inherited) {
 		return {
 			
-			constructor: function (element) {
-				inherited.constructor.call(this, element);
+			constructor: function (element, attrs) {
+				inherited.constructor.call(this, element, attrs);
 				this._source = this.__preferedSource();
 				this._embedding = this.auto_destroy(new FlashEmbedding(element, {
 					registry: this.cls.flashRegistry(),
@@ -52,6 +53,13 @@ Scoped.define("module:Player.FlashPlayer", [
 			__preferedSource: function () {
 				var preferred = [".mp4", ".flv"];
 				var sources = [];
+				if (this.readAttr("src")) {
+					var src = this.readAttr("src");
+					if (Types.is_array(src))
+						sources = src;
+					else
+						sources.push(src);
+				}
 				var element = this._element;
 				if (!(Info.isInternetExplorer() && Info.internetExplorerVersion() < 9)) {
 					for (var i = 0; i < this._element.childNodes.length; ++i) {
@@ -90,7 +98,6 @@ Scoped.define("module:Player.FlashPlayer", [
 					connectionUrl = spl.head;
 					playUrl = spl.tail;
 				}
-								
 				return {
 					sourceUrl: source,
 					connectionUrl: connectionUrl,
@@ -138,14 +145,14 @@ Scoped.define("module:Player.FlashPlayer", [
 				this._flashObjs.stream.set("soundTransform", this._flashObjs.soundTransform);				
 				this._flashObjs.video.attachNetStreamVoid(this._flashObjs.stream);
 				this.writeAttr("volume", 1.0);
-				if (this._element.attributes.muted) {
+				if (this.readAttr("muted")) {
 					this._flashObjs.soundTransform.set("volume", 0.0);
 					this._flashObjs.stream.set("soundTransform", null);				
 					this._flashObjs.stream.set("soundTransform", this._flashObjs.soundTransform);
 					this.writeAttr("volume", 0.0);
 				}
 				this._flashObjs.main.addChildVoid(this._flashObjs.video);
-				if (this._element.attributes.autoplay)
+				if (this.readAttr("autoplay"))
 					this._element.play();
 			},
 			
@@ -157,7 +164,7 @@ Scoped.define("module:Player.FlashPlayer", [
 					this._flashData.status = "stopping";
 				if (code == "NetStream.Buffer.Empty" && this._flashData.status == "stopping")
 					this._flashData.status = "stopped";
-				if (this._flashData.status == "stopped" && this._element.attributes.loop) {
+				if (this._flashData.status == "stopped" && this.readAttr("loop")) {
 					this._flashData.status = "idle";
 					this._element.play();
 				}
@@ -260,8 +267,8 @@ Scoped.define("module:Player.FlashPlayer", [
 			return element;
 		},
 		
-		attach: function (element) {
-			var cls = new Cls(element);
+		attach: function (element, attrs) {
+			var cls = new Cls(element, attrs);
 			return element;
 		}
 		
@@ -269,6 +276,52 @@ Scoped.define("module:Player.FlashPlayer", [
 	});
 	return Cls;
 });
+Scoped.define("module:WebRTC.AudioAnalyser", [
+                                              "base:Class",
+                                              "module:WebRTC.Support"
+                                              ], function (Class, Support, scoped) {
+	return Class.extend({scoped: scoped}, function (inherited) {
+		return {
+
+			constructor: function (stream) {
+				inherited.constructor.call(this);
+				var AudioContext = Support.globals().AudioContext;
+				this._audioContext = new AudioContext();
+				this._analyserNode = Support.globals().createAnalyser.call(this._audioContext);
+				this._analyserNode.fftSize = 32;
+				this._audioInput = this._audioContext.createMediaStreamSource(stream);
+				this._audioInput.connect(this._analyserNode);
+			},
+			
+			destroy: function () {
+				this._analyserNode.disconnect();
+				delete this._analyserNode;
+				delete this._audioContext;
+				inherited.destroy.call(this);
+			},
+				
+			soundLevel: function () {
+				var bufferLength = this._analyserNode.fftSize;
+				var dataArray = new Uint8Array(bufferLength);
+				this._analyserNode.getByteTimeDomainData(dataArray);
+				var acc = 0.0;
+			    for (var i = 0; i < bufferLength; i++) {
+			        var v = dataArray[i] / 128.0;
+			        acc += v;
+			    }
+			    return acc / bufferLength;
+			}
+
+		};		
+	}, {
+
+		supported: function () {
+			return !!Support.globals().AudioContext && !!Support.globals().createAnalyser;
+		}
+
+	});
+});
+
 // Credits: http://typedarray.org/wp-content/projects/WebAudioRecorder/script.js
 // Co-Credits: https://github.com/streamproc/MediaStreamRecorder/blob/master/MediaStreamRecorder-standalone.js
 
@@ -564,7 +617,7 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
 					this._bound = true;
 					this._stream = stream;
 					Support.bindStreamToVideo(stream, this._video);
-					this.trigger("bound");
+					this.trigger("bound", stream);
 					this._boundMedia();
 				}, this);
 			},
@@ -610,6 +663,22 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
 	        	context.drawImage(this._video, 0, 0, canvas.width, canvas.height);
 	        	var data = canvas.toDataURL(type);
 	        	return data;
+			},
+			
+			lightLevel: function (sampleRoot) {
+				sampleRoot = sampleRoot || 10;
+			    var canvas = document.createElement('canvas');
+				canvas.width = this._video.videoWidth || this._video.clientWidth;
+				canvas.height = this._video.videoHeight || this._video.clientHeight;
+			    var context = canvas.getContext('2d');
+	        	context.drawImage(this._video, 0, 0, canvas.width, canvas.height);
+	        	var acc = 0.0;
+	        	for (var x = 0; x < sampleRoot; ++x)
+	        		for (var y = 0; y < sampleRoot; ++y) {
+	        			var data = context.getImageData(Math.floor(canvas.width * x / sampleRoot), Math.floor(canvas.height * y / sampleRoot), 1, 1).data;
+	        			acc += (data[0] + data[1] + data[2]) / 3; 
+	        		}
+	        	return acc / sampleRoot / sampleRoot;
 			},
 			
 			_boundMedia: function () {},
@@ -794,15 +863,18 @@ Scoped.define("module:WebRTC.Support", [
 			var MediaRecorder = window.MediaRecorder;
 			var AudioContext = window.AudioContext || window.webkitAudioContext;
 			var audioContextScriptProcessor = null;
+			var createAnalyser = null;
 			if (AudioContext) {
 				var audioContext = new AudioContext();
 				audioContextScriptProcessor = audioContext.createJavaScriptNode || audioContext.createScriptProcessor;
+				createAnalyser = audioContext.createAnalyser;
 			}
 			return {
 				getUserMedia: getUserMedia,
 				URL: URL,
 				MediaRecorder: MediaRecorder,
 				AudioContext: AudioContext,
+				createAnalyser: createAnalyser,
 				audioContextScriptProcessor: audioContextScriptProcessor,
 				webpSupport: this.canvasSupportsImageFormat("image/webp") 
 			};

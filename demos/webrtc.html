@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.js"></script>
+		<script src="../vendors/beta.js"></script>
+		<script src="../vendors/beta-browser-noscoped.js"></script>
+		<script src="../vendors/betajs-flash-noscoped.js"></script>
+		<script src="../dist/betajs-media.js"></script>
+	</head>
+	<body>
+		<video></video>
+		<br/>
+		<light></light>
+		<br/>
+		<sound></sound>
+		
+		<script>
+	        var view = BetaJS.Media.WebRTC.RecorderWrapper.create({
+	            video: $("video").get(0)
+	        });
+	        var audio;
+	        view.on("bound", function (stream) {
+	        	audio = new BetaJS.Media.WebRTC.AudioAnalyser(stream);
+	            setInterval(function () {
+	                $("light").html(view.lightLevel());
+	                $("sound").html(audio.soundLevel());
+	            }, 100);
+	        });
+	        view.bindMedia();
+		</script>
+	</body>
+</html>

@@ -40,7 +40,7 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
 					this._bound = true;
 					this._stream = stream;
 					Support.bindStreamToVideo(stream, this._video);
-					this.trigger("bound");
+					this.trigger("bound", stream);
 					this._boundMedia();
 				}, this);
 			},
@@ -86,6 +86,22 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
 	        	context.drawImage(this._video, 0, 0, canvas.width, canvas.height);
 	        	var data = canvas.toDataURL(type);
 	        	return data;
+			},
+			
+			lightLevel: function (sampleRoot) {
+				sampleRoot = sampleRoot || 10;
+			    var canvas = document.createElement('canvas');
+				canvas.width = this._video.videoWidth || this._video.clientWidth;
+				canvas.height = this._video.videoHeight || this._video.clientHeight;
+			    var context = canvas.getContext('2d');
+	        	context.drawImage(this._video, 0, 0, canvas.width, canvas.height);
+	        	var acc = 0.0;
+	        	for (var x = 0; x < sampleRoot; ++x)
+	        		for (var y = 0; y < sampleRoot; ++y) {
+	        			var data = context.getImageData(Math.floor(canvas.width * x / sampleRoot), Math.floor(canvas.height * y / sampleRoot), 1, 1).data;
+	        			acc += (data[0] + data[1] + data[2]) / 3; 
+	        		}
+	        	return acc / sampleRoot / sampleRoot;
 			},
 			
 			_boundMedia: function () {},

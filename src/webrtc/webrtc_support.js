@@ -21,15 +21,18 @@ Scoped.define("module:WebRTC.Support", [
 			var MediaRecorder = window.MediaRecorder;
 			var AudioContext = window.AudioContext || window.webkitAudioContext;
 			var audioContextScriptProcessor = null;
+			var createAnalyser = null;
 			if (AudioContext) {
 				var audioContext = new AudioContext();
 				audioContextScriptProcessor = audioContext.createJavaScriptNode || audioContext.createScriptProcessor;
+				createAnalyser = audioContext.createAnalyser;
 			}
 			return {
 				getUserMedia: getUserMedia,
 				URL: URL,
 				MediaRecorder: MediaRecorder,
 				AudioContext: AudioContext,
+				createAnalyser: createAnalyser,
 				audioContextScriptProcessor: audioContextScriptProcessor,
 				webpSupport: this.canvasSupportsImageFormat("image/webp") 
 			};

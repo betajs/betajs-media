@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script
+	src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.js"></script>
+<script src="../vendors/beta.js"></script>
+<script src="../vendors/beta-browser-noscoped.js"></script>
+<script src="../vendors/betajs-flash-noscoped.js"></script>
+<script src="../dist/betajs-media.js"></script>
+</head>
+<body>
+	<div id="element" style="width: 50%"></div>
+
+	<script>
+		BetaJS.Flash.options = {
+			flashFile : "../vendors/betajs-flash.swf",
+			forceReload : true
+		};
+		BetaJS.Media.Player.FlashPlayer.attach($("#element").get(0), {
+			autoplay : true,
+			loop : true,
+			muted: true,
+			poster : "movie.png",
+			src : "movie.mp4"
+		});
+	</script>
+</body>
+</html>

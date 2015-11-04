@@ -124,14 +124,14 @@ Scoped.define("module:Player.FlashPlayer", [
 				this._flashObjs.stream.set("soundTransform", this._flashObjs.soundTransform);				
 				this._flashObjs.video.attachNetStreamVoid(this._flashObjs.stream);
 				this.writeAttr("volume", 1.0);
-				if (this._element.attributes.muted) {
+				if (this.readAttr("muted")) {
 					this._flashObjs.soundTransform.set("volume", 0.0);
 					this._flashObjs.stream.set("soundTransform", null);				
 					this._flashObjs.stream.set("soundTransform", this._flashObjs.soundTransform);
 					this.writeAttr("volume", 0.0);
 				}
 				this._flashObjs.main.addChildVoid(this._flashObjs.video);
-				if (this._element.attributes.autoplay)
+				if (this.readAttr("autoplay"))
 					this._element.play();
 			},
 			
@@ -143,7 +143,7 @@ Scoped.define("module:Player.FlashPlayer", [
 					this._flashData.status = "stopping";
 				if (code == "NetStream.Buffer.Empty" && this._flashData.status == "stopping")
 					this._flashData.status = "stopped";
-				if (this._flashData.status == "stopped" && this._element.attributes.loop) {
+				if (this._flashData.status == "stopped" && this.readAttr("loop")) {
 					this._flashData.status = "idle";
 					this._element.play();
 				}
@@ -246,8 +246,8 @@ Scoped.define("module:Player.FlashPlayer", [
 			return element;
 		},
 		
-		attach: function (element) {
-			var cls = new Cls(element);
+		attach: function (element, attrs) {
+			var cls = new Cls(element, attrs);
 			return element;
 		}
 		
