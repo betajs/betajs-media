@@ -9,8 +9,9 @@ Scoped.define("module:Player.FlashPlayer", [
     "base:Objs",
     "base:Functions",
     "base:Types",
-    "jquery:"    
-], function (Class, Dom, Info, FlashClassRegistry, FlashEmbedding, Strings, Async, Objs, Functions, Types, $, scoped) {
+    "jquery:",
+    "base:Promise"
+], function (Class, Dom, Info, FlashClassRegistry, FlashEmbedding, Strings, Async, Objs, Functions, Types, $, Promise, scoped) {
 	var Cls = Class.extend({scoped: scoped}, function (inherited) {
 		return {
 			
@@ -26,14 +27,15 @@ Scoped.define("module:Player.FlashPlayer", [
 				this._flashData = {
 					status: 'idle'
 				};
+				this.ready = Promise.create();
 				this._embedding.ready(this.__initializeEmbedding, this);
 			},
 			
 			__preferedSource: function () {
 				var preferred = [".mp4", ".flv"];
 				var sources = [];
-				if (this.readAttr("src")) {
-					var src = this.readAttr("src");
+				if (this.readAttr("src") || this.readAttr("source") || this.readAttr("sources")) {
+					var src = this.readAttr("src") || this.readAttr("source") || this.readAttr("sources");
 					if (Types.is_array(src))
 						sources = src;
 					else
@@ -56,6 +58,9 @@ Scoped.define("module:Player.FlashPlayer", [
 						$current = $next;
 					}
 				}
+				sources = Objs.map(sources, function (source) {
+					return source.src || source;
+				});
 				var source = sources[0];
 				var currentExtIndex = preferred.length - 1;
 				for (var k = sources.length - 1; k >= 0; --k) {
@@ -124,26 +129,33 @@ Scoped.define("module:Player.FlashPlayer", [
 				this._flashObjs.stream.set("soundTransform", this._flashObjs.soundTransform);				
 				this._flashObjs.video.attachNetStreamVoid(this._flashObjs.stream);
 				this.writeAttr("volume", 1.0);
-				if (this.readAttr("muted")) {
+				if (this.hasAttr("muted")) {
 					this._flashObjs.soundTransform.set("volume", 0.0);
 					this._flashObjs.stream.set("soundTransform", null);				
 					this._flashObjs.stream.set("soundTransform", this._flashObjs.soundTransform);
 					this.writeAttr("volume", 0.0);
 				}
 				this._flashObjs.main.addChildVoid(this._flashObjs.video);
-				if (this.readAttr("autoplay"))
+				if (this.hasAttr("autoplay"))
 					this._element.play();
+				this.ready.asyncSuccess(this);
 			},
 			
 			__streamStatusEvent: function (event) {
 				var code = event.get("info").code;
+				if (code == "NetStream.Play.StreamNotFound") {
+					this._flashData.status = "error";
+					this.domEvent("error");
+				}
 				if (code == "NetStream.Play.Start")
 					this._flashData.status = "start";
 				if (code == "NetStream.Play.Stop")
 					this._flashData.status = "stopping";
-				if (code == "NetStream.Buffer.Empty" && this._flashData.status == "stopping")
+				if (code == "NetStream.Buffer.Empty" && this._flashData.status == "stopping") {
 					this._flashData.status = "stopped";
-				if (this._flashData.status == "stopped" && this.readAttr("loop")) {
+					this.domEvent("ended");
+				}
+				if (this._flashData.status == "stopped" && this.hasAttr("loop")) {
 					this._flashData.status = "idle";
 					this._element.play();
 				}
@@ -191,11 +203,16 @@ Scoped.define("module:Player.FlashPlayer", [
 					this._flashObjs.stream.resumeVoid();
 				else
 					this._flashObjs.stream.playVoid(this._source.playUrl);
+				this._flashData.status = "playing";
+				this.domEvent("playing");
 			},
 			
 			pause: function () {
-				this._flashObjs.stream.pauseVoid();
+				if (this._flashData.status === "paused")
+					return;
 				this._flashData.status = "paused";
+				this._flashObjs.stream.pauseVoid();
+				this.domEvent("pause");
 			},
 			
 			_setVolume: function (volume) {
@@ -234,10 +251,11 @@ Scoped.define("module:Player.FlashPlayer", [
 		
 		polyfill: function (element, polyfilltag, force, eventual) {
 			if (eventual) {
+				var promise = Promise.create();
 				Async.eventually(function () {
-					Cls.polyfill(element, polyfilltag, force);
+					promise.asyncSuccess(Cls.polyfill(element, polyfilltag, force));
 				});
-				return element; 
+				return promise; 
 			}
 			if (element.tagName.toLowerCase() != "video" || !("networkState" in element))
 				return Cls.attach(element);

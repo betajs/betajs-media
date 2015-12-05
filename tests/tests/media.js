@@ -5,7 +5,7 @@ test("test playback mp4", function() {
 		flashFile: window.BrowserStack ? "//files.betajs.com/betajs-flash.swf" : "../vendors/betajs-flash.swf",
 		forceReload: true
 	};
-	BetaJS.Media.Player.Flash.polyfill($("video").get(0), "videopoly", true, true);
+	BetaJS.Media.Player.FlashPlayer.polyfill($("video").get(0), "videopoly", true, true);
 	setTimeout(function () {
 		QUnit.equal($("embed").length, 1);
 		start();

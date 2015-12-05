@@ -183,7 +183,15 @@ Scoped.define("module:WebRTC.Support", [
 		},
 		
 		stopUserMediaStream: function (stream) {
-			stream.stop();
+			try {
+				if (stream.stop) {
+					stream.stop();
+				} else if (stream.getTracks) {
+					stream.getTracks().each(function (track) {
+						track.stop();
+					});
+				}
+			} catch (e) {}
 		},
 		
 		bindStreamToVideo: function (stream, video) {

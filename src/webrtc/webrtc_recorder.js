@@ -124,6 +124,10 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
 				this.stopRecord();
 				this.unbindMedia();
 				inherited.destroy.call(this);
+			},
+			
+			averageFrameRate: function () {
+				return null;
 			}
 			
 		};
@@ -195,8 +199,9 @@ Scoped.define("module:WebRTC.MediaRecorderWrapper", [
 Scoped.define("module:WebRTC.WhammyAudioRecorderWrapper", [
      "module:WebRTC.RecorderWrapper",
      "module:WebRTC.AudioRecorder",
-     "module:WebRTC.WhammyRecorder"
-], function (RecorderWrapper, AudioRecorder, WhammyRecorder, scoped) {
+     "module:WebRTC.WhammyRecorder",
+     "base:Browser.Info"
+], function (RecorderWrapper, AudioRecorder, WhammyRecorder, Info, scoped) {
 	var Cls = RecorderWrapper.extend({scoped: scoped}, {
 /*
 		_getConstraints: function () {
@@ -248,13 +253,20 @@ Scoped.define("module:WebRTC.WhammyAudioRecorderWrapper", [
 		_stopRecord: function () {
 			this._whammyRecorder.stop();
 			this._audioRecorder.stop();
-		}		
+		},
+		
+		averageFrameRate: function () {
+			return this._whammyRecorder.averageFrameRate();
+		}
+		
 		
 	}, function (inherited) {
 		return {
 			
 			supported: function (options) {
 				if (!inherited.supported.call(this, options))
+					return false;
+				if (Info.isChrome() && Info.chromeVersion() >= 47 && document.location.href.indexOf("https://") !== 0)
 					return false;
 				return AudioRecorder.supported() && WhammyRecorder.supported();
 			}
