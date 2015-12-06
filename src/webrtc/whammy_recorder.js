@@ -80,7 +80,7 @@ Scoped.define("module:WebRTC.WhammyRecorder", [
 			},
 			
 			averageFrameRate: function () {
-				return this._frames.length > 0 ? (this.frames.length / (Time.now() - this._startTime) / 1000) : null;
+				return this._frames.length > 0 ? (this._frames.length / (Time.now() - this._startTime) * 1000) : null;
 			},
 			
 			_generateData: function () {

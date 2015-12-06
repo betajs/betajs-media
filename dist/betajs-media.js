@@ -576,7 +576,7 @@ Scoped.binding("jquery", "global:jQuery");
 Scoped.define("module:", function () {
 	return {
 		guid: "8475efdb-dd7e-402e-9f50-36c76945a692",
-		version: '28.1449328041478'
+		version: '29.1449366249936'
 	};
 });
 
@@ -2090,7 +2090,7 @@ Scoped.define("module:WebRTC.WhammyRecorder", [
 			},
 			
 			averageFrameRate: function () {
-				return this._frames.length > 0 ? (this.frames.length / (Time.now() - this._startTime) / 1000) : null;
+				return this._frames.length > 0 ? (this._frames.length / (Time.now() - this._startTime) * 1000) : null;
 			},
 			
 			_generateData: function () {
