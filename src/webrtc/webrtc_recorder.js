@@ -117,6 +117,8 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
 			_stopRecord: function () {},
 			
 			_dataAvailable: function (videoBlob, audioBlob) {
+				if (this.destroyed())
+					return;
 				this.trigger("data", videoBlob, audioBlob);
 			},
 			
@@ -266,8 +268,12 @@ Scoped.define("module:WebRTC.WhammyAudioRecorderWrapper", [
 			supported: function (options) {
 				if (!inherited.supported.call(this, options))
 					return false;
-				if (Info.isChrome() && Info.chromeVersion() >= 47 && document.location.href.indexOf("https://") !== 0)
-					return false;
+				if (document.location.href.indexOf("https://") !== 0 && document.location.hostname !== "localhost") {
+					if (Info.isChrome() && Info.chromeVersion() >= 47)
+						return false;
+					if (Info.isOpera() && Info.operaVersion() >= 34)
+						return false;
+				}
 				return AudioRecorder.supported() && WhammyRecorder.supported();
 			}
 		

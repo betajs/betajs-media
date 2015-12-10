@@ -25,7 +25,8 @@ Scoped.define("module:WebRTC.WhammyRecorder", [
 			},
 
 			destroy: function () {
-				this.stop();
+				this._started = false;
+				this.trigger("stopped");
 				inherited.destroy.call(this);
 			},
 
