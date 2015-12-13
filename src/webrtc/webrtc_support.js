@@ -1,7 +1,7 @@
 Scoped.define("module:WebRTC.Support", [
     "base:Promise.Promise",
     "base:Objs",
-    "base:Browser.Info"
+    "browser:Info"
 ], function (Promise, Objs, Info) {
 	return {
 		

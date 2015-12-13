@@ -76,7 +76,7 @@ module.exports = function(grunt) {
 					source : [ "./src/*/*.js"],
 					dist : [ "./dist/betajs-media-noscoped.js", "./dist/betajs-media.js" ],
 					gruntfile : [ "./Gruntfile.js" ],
-					tests : [ "./tests/player/*.js" ]
+					tests : [ "./tests/tests/*.js" ]
 				},
 				closureCompiler : {
 					options : {
@@ -88,7 +88,8 @@ module.exports = function(grunt) {
 						}
 					},
 					dist : {
-						src : [ "./vendors/beta.js",
+						src : [ "./vendors/scoped.js",
+						        "./vendors/beta-noscoped.js",
 								"./vendors/betajs-flash-noscoped.js",
 								"./vendors/betajs-browser-noscoped.js",
 								"./dist/betajs-media-noscoped.js" ],
@@ -102,7 +103,7 @@ module.exports = function(grunt) {
 						},
 						files : {
 							"./vendors/scoped.js" : "https://raw.githubusercontent.com/betajs/betajs-scoped/master/dist/scoped.js",
-							"./vendors/beta.js" : "https://raw.githubusercontent.com/betajs/betajs/master/dist/beta.js",
+							"./vendors/beta-noscoped.js" : "https://raw.githubusercontent.com/betajs/betajs/master/dist/beta-noscoped.js",
 							"./vendors/betajs-browser-noscoped.js" : "https://raw.githubusercontent.com/betajs/betajs-browser/master/dist/betajs-browser-noscoped.js",
 							"./vendors/betajs-flash-noscoped.js" : "https://raw.githubusercontent.com/betajs/betajs-flash/master/dist/betajs-flash-noscoped.js",
 							"./vendors/betajs-flash.swf" : "https://raw.githubusercontent.com/betajs/betajs-flash/master/dist/betajs-flash.swf",

@@ -1,9 +1,9 @@
 Scoped.define("module:Player.FlashPlayer", [
-    "base:Browser.DomExtend.DomExtension",
-	"base:Browser.Dom",
-	"base:Browser.Info",
-    "base:Flash.FlashClassRegistry",
-    "base:Flash.FlashEmbedding",
+    "browser:DomExtend.DomExtension",
+	"browser:Dom",
+	"browser:Info",
+    "flash:FlashClassRegistry",
+    "flash:FlashEmbedding",
     "base:Strings",
     "base:Async",
     "base:Objs",
@@ -97,10 +97,14 @@ Scoped.define("module:Player.FlashPlayer", [
 				
 				if (this.readAttr("poster")) {
 					this._flashObjs.imageLoader = this._embedding.newObject("flash.display.Loader");
-					this._flashObjs.imageLoader.get("contentLoaderInfo").addEventListener("complete", this._embedding.newCallback(Functions.as_method(function () {
+					var contentLoaderInfo = this._flashObjs.imageLoader.get("contentLoaderInfo");
+					contentLoaderInfo.addEventListener("complete", this._embedding.newCallback(Functions.as_method(function () {
 						this.__imageLoaded = true;
 						if (!this.__metaLoaded)
 							this.recomputeBB();
+					}, this)));
+					contentLoaderInfo.addEventListener("ioError", this._embedding.newCallback(Functions.as_method(function () {
+						this.domEvent("postererror");
 					}, this)));
 					this._flashObjs.imageUrlRequest = this._embedding.newObject("flash.net.URLRequest", this.readAttr("poster"));
 					this._flashObjs.imageLoader.load(this._flashObjs.imageUrlRequest);

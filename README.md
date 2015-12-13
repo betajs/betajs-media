@@ -1,4 +1,4 @@
-# betajs-media 0.0.1
+# betajs-media 0.0.5
 
 BetaJS-Media is a JavaScript media framework
 

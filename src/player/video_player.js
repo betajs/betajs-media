@@ -40,6 +40,7 @@ Scoped.define("module:Player.VideoPlayerWrapper", [
 				this._preload = options.preload || false;
 				this._options = options;
 				this._loaded = false;
+				this._postererror = false;
 				this._error = 0;
 			},
 			
@@ -58,6 +59,10 @@ Scoped.define("module:Player.VideoPlayerWrapper", [
 			
 			loaded: function () {
 				return this._loaded;
+			},
+			
+			postererror: function () {
+				return this._postererror;
 			},
 			
 			buffered: function () {},
@@ -82,6 +87,11 @@ Scoped.define("module:Player.VideoPlayerWrapper", [
 			_eventError: function (error) {
 				this._error = error;
 				this.trigger("error", error);
+			},
+
+			_eventPosterError: function () {
+				this._postererror = true;
+				this.trigger("postererror");
 			},
 			
 			supportsFullscreen: function () {
@@ -142,12 +152,12 @@ Scoped.define("module:Player.VideoPlayerWrapper", [
 
 Scoped.define("module:Player.Html5VideoPlayerWrapper", [
     "module:Player.VideoPlayerWrapper",
-    "base:Browser.Info",
+    "browser:Info",
     "base:Promise",
     "base:Objs",
     "base:Timers.Timer",
     "jquery:",
-    "base:Browser.Dom"
+    "browser:Dom"
 ], function (VideoPlayerWrapper, Info, Promise, Objs, Timer, $, Dom, scoped) {
 	var Cls = VideoPlayerWrapper.extend({scoped: scoped}, function (inherited) {
 		return {
@@ -228,6 +238,14 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
 				videoOn("playing", this._eventPlaying);
 				videoOn("pause", this._eventPaused);
 				videoOn("ended", this._eventEnded);
+				self._$element.find("source").on("error" + "." + self.cid(), function () {
+					self._eventError(self.cls.ERROR_NO_PLAYABLE_SOURCE);
+				});
+				var image = new Image();
+				image.onerror = function () {
+					self._eventPosterError();
+				};
+				image.src = this.poster();
 			},
 			
 			buffered: function () {
@@ -257,9 +275,9 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
 Scoped.define("module:Player.FlashPlayerWrapper", [
      "module:Player.VideoPlayerWrapper",
      "module:Player.FlashPlayer",
-     "base:Browser.Info",
+     "browser:Info",
      "base:Promise",
-     "base:Browser.Dom"
+     "browser:Dom"
 ], function (VideoPlayerWrapper, FlashPlayer, Info, Promise, Dom, scoped) {
 	var Cls = VideoPlayerWrapper.extend({scoped: scoped}, function (inherited) {
 		return {
@@ -313,6 +331,7 @@ Scoped.define("module:Player.FlashPlayerWrapper", [
 				videoOn("error", function () {
 					this._eventError(this.cls.ERROR_NO_PLAYABLE_SOURCE);
 				});
+				videoOn("postererror", this._eventPosterError);
 			},
 			
 			position: function () {

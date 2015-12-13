@@ -202,7 +202,7 @@ Scoped.define("module:WebRTC.WhammyAudioRecorderWrapper", [
      "module:WebRTC.RecorderWrapper",
      "module:WebRTC.AudioRecorder",
      "module:WebRTC.WhammyRecorder",
-     "base:Browser.Info"
+     "browser:Info"
 ], function (RecorderWrapper, AudioRecorder, WhammyRecorder, Info, scoped) {
 	var Cls = RecorderWrapper.extend({scoped: scoped}, {
 /*
