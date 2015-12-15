@@ -112,6 +112,38 @@ test("wrapper native no video but poster", function () {
 });
 
 
+test("wrapper native, keep native no video but poster", function () {
+	stop();
+	$("#qunit-fixture").html('<video></video>');
+	BetaJS.Media.Player.VideoPlayerWrapper.create({
+    	element: $("video").get(0),
+    	poster: testasset("movie.png"),
+    	source: testasset("error.mp4")
+    }).success(function (instance) {
+    	instance.on("postererror", function () {
+    		ok(false);
+    		start();
+    	});
+    	instance.on("playing", function () {
+    		ok(false);
+    		start();
+    	});
+        instance.on("error", function (error) {
+        	ok(true);
+        	start();
+        });
+    	instance.play();
+        if (instance.error()) {
+        	ok(true);
+        	start();
+        }        	
+    }).error(function () {
+    	ok(true);
+    	start();
+    });
+});
+
+
 test("wrapper flash no video but poster", function () {
 	stop();
 	$("#qunit-fixture").html('<video></video>');

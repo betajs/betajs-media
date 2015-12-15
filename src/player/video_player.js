@@ -302,16 +302,18 @@ Scoped.define("module:Player.FlashPlayerWrapper", [
 					this._$element = $(this._element);
 					this._transitionals.element = this._element;
 				}
-				this._flashPlayer = this.auto_destroy(new FlashPlayer(this._element, {
+				this._flashPlayer = new FlashPlayer(this._element, {
 					poster: this.poster(),
 					sources: this.sources()
-				}));
+				});
 				return this._flashPlayer.ready.success(function () {
 					this._setup();
 				}, this);
 			},
 			
 			destroy: function () {
+				if (this._flashPlayer)
+					this._flashPlayer.weakDestroy();
 				this._$element.html("");
 				inherited.destroy.call(this);
 			},

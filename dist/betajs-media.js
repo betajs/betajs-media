@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.5 - 2015-12-12
+betajs-media - v0.0.5 - 2015-12-14
 Copyright (c) Oliver Friedmann
 MIT Software License.
 */
@@ -670,7 +670,7 @@ Public.exports();
 	return Public;
 }).call(this);
 /*!
-betajs-media - v0.0.5 - 2015-12-12
+betajs-media - v0.0.5 - 2015-12-14
 Copyright (c) Oliver Friedmann
 MIT Software License.
 */
@@ -688,7 +688,7 @@ Scoped.binding("jquery", "global:jQuery");
 Scoped.define("module:", function () {
 	return {
 		guid: "8475efdb-dd7e-402e-9f50-36c76945a692",
-		version: '31.1449959509306'
+		version: '32.1450150042544'
 	};
 });
 
@@ -1278,16 +1278,18 @@ Scoped.define("module:Player.FlashPlayerWrapper", [
 					this._$element = $(this._element);
 					this._transitionals.element = this._element;
 				}
-				this._flashPlayer = this.auto_destroy(new FlashPlayer(this._element, {
+				this._flashPlayer = new FlashPlayer(this._element, {
 					poster: this.poster(),
 					sources: this.sources()
-				}));
+				});
 				return this._flashPlayer.ready.success(function () {
 					this._setup();
 				}, this);
 			},
 			
 			destroy: function () {
+				if (this._flashPlayer)
+					this._flashPlayer.weakDestroy();
 				this._$element.html("");
 				inherited.destroy.call(this);
 			},
@@ -1699,7 +1701,7 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
 			},
 			
 			duration: function () {
-				return (this._recording ? Time.now() : this._stopTime) - this._startTime;
+				return (this._recording || !this._stopTime ? Time.now() : this._stopTime) - this._startTime;
 			},
 			
 			unbindMedia: function () {

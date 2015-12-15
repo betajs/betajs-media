@@ -66,7 +66,7 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
 			},
 			
 			duration: function () {
-				return (this._recording ? Time.now() : this._stopTime) - this._startTime;
+				return (this._recording || !this._stopTime ? Time.now() : this._stopTime) - this._startTime;
 			},
 			
 			unbindMedia: function () {
