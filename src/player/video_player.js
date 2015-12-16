@@ -200,12 +200,15 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
 				this._$element.on("loadedmetadata", function () {
 					promise.asyncSuccess(true);
 				});
+				var nosourceCounter = 10;
 				var timer = new Timer({
 					context: this,
 					fire: function () {
-						if (this._element.networkState === this._element.NETWORK_NO_SOURCE)
-							promise.asyncError(true);
-						else if (this._element.networkState === this._element.NETWORK_IDLE) 
+						if (this._element.networkState === this._element.NETWORK_NO_SOURCE) {
+							nosourceCounter--;
+							if (nosourceCounter <= 0)
+								promise.asyncError(true);
+						} else if (this._element.networkState === this._element.NETWORK_IDLE) 
 							promise.asyncSuccess(true);
 					},
 					delay: 50
