@@ -99,7 +99,10 @@ Scoped.define("module:Player.FlashPlayer", [
 					this._flashObjs.imageLoader = this._embedding.newObject("flash.display.Loader");
 					var contentLoaderInfo = this._flashObjs.imageLoader.get("contentLoaderInfo");
 					contentLoaderInfo.addEventListener("complete", this._embedding.newCallback(Functions.as_method(function () {
-						this.__imageLoaded = true;
+						this.__imageLoaded = {
+							width: this._flashObjs.imageLoader.get("width"),
+							height: this._flashObjs.imageLoader.get("height")
+						};
 						if (!this.__metaLoaded)
 							this.recomputeBB();
 					}, this)));
@@ -169,8 +172,8 @@ Scoped.define("module:Player.FlashPlayer", [
 				if (!this.__imageLoaded && !this.__metaLoaded)
 					return null;
 				return {
-					width: this.__metaLoaded ? this._flashData.meta.width : this._flashObjs.imageLoader.get("width"),
-					height: this.__metaLoaded ? this._flashData.meta.height : this._flashObjs.imageLoader.get("height")
+					width: this.__metaLoaded ? this._flashData.meta.width : this.__imageLoaded.width,
+					height: this.__metaLoaded ? this._flashData.meta.height : this.__imageLoaded.height
 				};
 			},
 			

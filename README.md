@@ -1,4 +1,4 @@
-# betajs-media 0.0.5
+# betajs-media 0.0.7
 
 BetaJS-Media is a JavaScript media framework
 
@@ -14,6 +14,17 @@ Active, In Development
 | Git        | [git://github.com/betajs/betajs-media.git](git://github.com/betajs/betajs-media.git) |
 | Repository | [http://github.com/betajs/betajs-media](http://github.com/betajs/betajs-media) |
 
+
+## Compatability (Tested)
+| Target | Versions |
+| :----- | -------: |
+| Firefox | 4 - Latest |
+| Chrome | 14 - Latest |
+| Safari | 4 - Latest |
+| Opera | 12 - Latest |
+| Internet Explorer | 8 - Latest |
+| iOS | 7.0 - Latest |
+| Android | 4.0 - Latest |
 
 
 ## CDN
