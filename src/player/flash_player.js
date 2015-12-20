@@ -152,7 +152,7 @@ Scoped.define("module:Player.FlashPlayer", [
 				var code = event.get("info").code;
 				if (code == "NetStream.Play.StreamNotFound") {
 					this._flashData.status = "error";
-					this.domEvent("error");
+					this.domEvent("videoerror");
 				}
 				if (code == "NetStream.Play.Start")
 					this._flashData.status = "start";
@@ -205,7 +205,8 @@ Scoped.define("module:Player.FlashPlayer", [
 			},
 			
 			play: function () {
-				this._flashObjs.main.setChildIndex(this._flashObjs.video, 1);
+				if (this._flashObjs.main.imageLoader)
+					this._flashObjs.main.setChildIndex(this._flashObjs.video, 1);
 				if (this._flashData.status === "paused")
 					this._flashObjs.stream.resumeVoid();
 				else

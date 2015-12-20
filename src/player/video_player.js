@@ -355,7 +355,7 @@ Scoped.define("module:Player.FlashPlayerWrapper", [
 				videoOn("playing", this._eventPlaying);
 				videoOn("pause", this._eventPaused);
 				videoOn("ended", this._eventEnded);
-				videoOn("error", function () {
+				videoOn("videoerror", function () {
 					this._eventError(this.cls.ERROR_NO_PLAYABLE_SOURCE);
 				});
 				videoOn("postererror", this._eventPosterError);
