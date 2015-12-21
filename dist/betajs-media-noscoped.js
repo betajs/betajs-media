@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.7 - 2015-12-20
+betajs-media - v0.0.7 - 2015-12-21
 Copyright (c) Oliver Friedmann
 MIT Software License.
 */
@@ -17,7 +17,7 @@ Scoped.binding("jquery", "global:jQuery");
 Scoped.define("module:", function () {
 	return {
 		guid: "8475efdb-dd7e-402e-9f50-36c76945a692",
-		version: '35.1450643797456'
+		version: '36.1450740797992'
 	};
 });
 
@@ -714,6 +714,7 @@ Scoped.define("module:WebRTC.AudioAnalyser", [
 			destroy: function () {
 				this._analyserNode.disconnect();
 				delete this._analyserNode;
+				this._audioContext.close();
 				delete this._audioContext;
 				inherited.destroy.call(this);
 			},
@@ -836,9 +837,11 @@ Scoped.define("module:WebRTC.AudioRecorder", [
 				this._volumeGain.disconnect();
 				this._audioInput.disconnect();
 				this._scriptProcessor.onaudioprocess = null;
+				this._audioContext.close();
 				delete this._scriptProcessor;
 				delete this._volumeGain;
-				delete this._audioInput;
+				delete this._audioInput;				
+				delete this._audioContext;
 			},
 
 			start: function () {

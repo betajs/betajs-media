@@ -18,6 +18,7 @@ Scoped.define("module:WebRTC.AudioAnalyser", [
 			destroy: function () {
 				this._analyserNode.disconnect();
 				delete this._analyserNode;
+				this._audioContext.close();
 				delete this._audioContext;
 				inherited.destroy.call(this);
 			},

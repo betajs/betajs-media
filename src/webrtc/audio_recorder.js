@@ -96,9 +96,11 @@ Scoped.define("module:WebRTC.AudioRecorder", [
 				this._volumeGain.disconnect();
 				this._audioInput.disconnect();
 				this._scriptProcessor.onaudioprocess = null;
+				this._audioContext.close();
 				delete this._scriptProcessor;
 				delete this._volumeGain;
-				delete this._audioInput;
+				delete this._audioInput;				
+				delete this._audioContext;
 			},
 
 			start: function () {
