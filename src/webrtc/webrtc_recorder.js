@@ -159,7 +159,7 @@ Scoped.define("module:WebRTC.MediaRecorderWrapper", [
     "module:WebRTC.RecorderWrapper",
     "module:WebRTC.MediaRecorder"
 ], function (RecorderWrapper, MediaRecorder, scoped) {
-	var Cls = RecorderWrapper.extend({scoped: scoped}, {
+	return RecorderWrapper.extend({scoped: scoped}, {
 
 		_boundMedia: function () {
 			this._recorder = new MediaRecorder(this._stream);
@@ -191,10 +191,6 @@ Scoped.define("module:WebRTC.MediaRecorderWrapper", [
 		
 		};		
 	});	
-	
-	RecorderWrapper.register(Cls, 2);
-	
-	return Cls;
 });
 
 
@@ -204,7 +200,7 @@ Scoped.define("module:WebRTC.WhammyAudioRecorderWrapper", [
      "module:WebRTC.WhammyRecorder",
      "browser:Info"
 ], function (RecorderWrapper, AudioRecorder, WhammyRecorder, Info, scoped) {
-	var Cls = RecorderWrapper.extend({scoped: scoped}, {
+	return RecorderWrapper.extend({scoped: scoped}, {
 /*
 		_getConstraints: function () {
 			return {
@@ -279,8 +275,15 @@ Scoped.define("module:WebRTC.WhammyAudioRecorderWrapper", [
 		
 		};		
 	});	
-	
-	RecorderWrapper.register(Cls, 1);
-	
-	return Cls;
+});
+
+
+Scoped.extend("module:WebRTC.RecorderWrapper", [
+	"module:WebRTC.RecorderWrapper",
+	"module:WebRTC.MediaRecorderWrapper",
+	"module:WebRTC.WhammyAudioRecorderWrapper"
+], function (RecorderWrapper, MediaRecorderWrapper, WhammyAudioRecorderWrapper) {
+	RecorderWrapper.register(MediaRecorderWrapper, 2);
+	RecorderWrapper.register(WhammyAudioRecorderWrapper, 1);
+	return {};
 });

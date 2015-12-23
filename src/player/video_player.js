@@ -160,7 +160,7 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
     "jquery:",
     "browser:Dom"
 ], function (VideoPlayerWrapper, Info, Promise, Objs, Timer, Strings, $, Dom, scoped) {
-	var Cls = VideoPlayerWrapper.extend({scoped: scoped}, function (inherited) {
+	return VideoPlayerWrapper.extend({scoped: scoped}, function (inherited) {
 		return {
 			
 			constructor: function (options, transitionals) {
@@ -290,10 +290,6 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
 		
 		};		
 	});	
-	
-	VideoPlayerWrapper.register(Cls, 2);
-	
-	return Cls;
 });
 
 
@@ -304,7 +300,7 @@ Scoped.define("module:Player.FlashPlayerWrapper", [
      "base:Promise",
      "browser:Dom"
 ], function (VideoPlayerWrapper, FlashPlayer, Info, Promise, Dom, scoped) {
-	var Cls = VideoPlayerWrapper.extend({scoped: scoped}, function (inherited) {
+	return VideoPlayerWrapper.extend({scoped: scoped}, function (inherited) {
 		return {
 		
 			_initialize: function () {
@@ -379,8 +375,16 @@ Scoped.define("module:Player.FlashPlayerWrapper", [
             
 		};		
 	});	
-	
-	VideoPlayerWrapper.register(Cls, 1);
-	
-	return Cls;
+});
+
+
+
+Scoped.extend("module:Player.VideoPlayerWrapper", [
+    "module:Player.VideoPlayerWrapper",
+    "module:Player.Html5VideoPlayerWrapper",
+    "module:Player.FlashPlayerWrapper"
+], function (VideoPlayerWrapper, Html5VideoPlayerWrapper, FlashPlayerWrapper) {
+	VideoPlayerWrapper.register(Html5VideoPlayerWrapper, 2);
+	VideoPlayerWrapper.register(FlashPlayerWrapper, 1);
+	return {};
 });
