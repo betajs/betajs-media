@@ -1,5 +1,5 @@
 Scoped.define("module:WebRTC.Support", [
-    "base:Promise.Promise",
+    "base:Promise",
     "base:Objs",
     "browser:Info"
 ], function (Promise, Objs, Info) {
@@ -55,7 +55,7 @@ Scoped.define("module:WebRTC.Support", [
 		mediaStreamTrackSources: function () {
 			if (!this.mediaStreamTrackSourcesSupported())
 				return Promise.error("Unsupported");
-			var promise = new Promise();
+			var promise = Promise.create();
 			try {
 				MediaStreamTrack.getSources(function (sources) {
 					var result = {
@@ -89,7 +89,7 @@ Scoped.define("module:WebRTC.Support", [
 		},
 		
 		streamQueryResolution: function (stream) {
-			var promise = new Promise();
+			var promise = Promise.create();
 			var video = this.bindStreamToVideo(stream);			
             video.addEventListener("playing", function () {
                 setTimeout(function () {
@@ -105,7 +105,7 @@ Scoped.define("module:WebRTC.Support", [
 		},
 		
 		userMedia: function (options) {
-			var promise = new Promise();
+			var promise = Promise.create();
 			this.globals().getUserMedia.call(navigator, options, function (stream) {
 				promise.asyncSuccess(stream);
 			}, function (e) {

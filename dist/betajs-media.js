@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.8 - 2015-12-23
+betajs-media - v0.0.9 - 2016-01-07
 Copyright (c) Oliver Friedmann
 MIT Software License.
 */
@@ -670,7 +670,7 @@ Public.exports();
 	return Public;
 }).call(this);
 /*!
-betajs-media - v0.0.8 - 2015-12-23
+betajs-media - v0.0.9 - 2016-01-07
 Copyright (c) Oliver Friedmann
 MIT Software License.
 */
@@ -688,7 +688,7 @@ Scoped.binding("jquery", "global:jQuery");
 Scoped.define("module:", function () {
 	return {
 		guid: "8475efdb-dd7e-402e-9f50-36c76945a692",
-		version: '37.1450890039119'
+		version: '38.1452196882676'
 	};
 });
 
@@ -1885,6 +1885,8 @@ Scoped.define("module:WebRTC.WhammyAudioRecorderWrapper", [
 		},
 
 		_boundMedia: function () {
+			this._videoBlob = null;
+			this._audioBlob = null;
 			this._whammyRecorder = new WhammyRecorder(this._stream, {
 				//recorderWidth: this._options.recordResolution.width,
 				//recorderHeight: this._options.recordResolution.height,
@@ -1960,7 +1962,7 @@ Scoped.extend("module:WebRTC.RecorderWrapper", [
 });
 
 Scoped.define("module:WebRTC.Support", [
-    "base:Promise.Promise",
+    "base:Promise",
     "base:Objs",
     "browser:Info"
 ], function (Promise, Objs, Info) {
@@ -2016,7 +2018,7 @@ Scoped.define("module:WebRTC.Support", [
 		mediaStreamTrackSources: function () {
 			if (!this.mediaStreamTrackSourcesSupported())
 				return Promise.error("Unsupported");
-			var promise = new Promise();
+			var promise = Promise.create();
 			try {
 				MediaStreamTrack.getSources(function (sources) {
 					var result = {
@@ -2050,7 +2052,7 @@ Scoped.define("module:WebRTC.Support", [
 		},
 		
 		streamQueryResolution: function (stream) {
-			var promise = new Promise();
+			var promise = Promise.create();
 			var video = this.bindStreamToVideo(stream);			
             video.addEventListener("playing", function () {
                 setTimeout(function () {
@@ -2066,7 +2068,7 @@ Scoped.define("module:WebRTC.Support", [
 		},
 		
 		userMedia: function (options) {
-			var promise = new Promise();
+			var promise = Promise.create();
 			this.globals().getUserMedia.call(navigator, options, function (stream) {
 				promise.asyncSuccess(stream);
 			}, function (e) {

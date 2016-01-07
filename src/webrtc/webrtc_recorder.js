@@ -214,6 +214,8 @@ Scoped.define("module:WebRTC.WhammyAudioRecorderWrapper", [
 		},
 
 		_boundMedia: function () {
+			this._videoBlob = null;
+			this._audioBlob = null;
 			this._whammyRecorder = new WhammyRecorder(this._stream, {
 				//recorderWidth: this._options.recordResolution.width,
 				//recorderHeight: this._options.recordResolution.height,
