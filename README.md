@@ -1,4 +1,4 @@
-# betajs-media 0.0.7
+# betajs-media 0.0.10
 
 BetaJS-Media is a JavaScript media framework
 
@@ -58,12 +58,13 @@ Active, In Development
 
 ## Contributors
 
+- Ziggeo
 - Oliver Friedmann
 
 
 ## License
 
-MIT
+Apache 2.0
 
 
 ## Credits

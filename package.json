@@ -1,10 +1,10 @@
 {
 	"name": "betajs-media",
-	"version": "0.0.9",
+	"version": "0.0.10",
 	"description": "BetaJS-Media is a JavaScript media framework",
 	"homepage": "http://betajs.com",
-	"contributors": ["Oliver Friedmann"],
-	"license": "MIT",
+	"contributors": ["Ziggeo", "Oliver Friedmann"],
+	"license": "Apache 2.0",
 	"devDependencies": {
 		"grunt": "",
 		"grunt-contrib-jshint": "",

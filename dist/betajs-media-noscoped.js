@@ -1,7 +1,7 @@
 /*!
-betajs-media - v0.0.9 - 2016-01-07
-Copyright (c) Oliver Friedmann
-MIT Software License.
+betajs-media - v0.0.10 - 2016-01-17
+Copyright (c) Ziggeo,Oliver Friedmann
+Apache 2.0 Software License.
 */
 (function () {
 
@@ -17,7 +17,7 @@ Scoped.binding("jquery", "global:jQuery");
 Scoped.define("module:", function () {
 	return {
 		guid: "8475efdb-dd7e-402e-9f50-36c76945a692",
-		version: '38.1452196882676'
+		version: '39.1453060678092'
 	};
 });
 
@@ -348,6 +348,7 @@ Scoped.define("module:Player.VideoPlayerWrapper", [
 				this._$element = $(options.element);
 				this._preload = options.preload || false;
 				this._options = options;
+				this._loop = options.loop || false;
 				this._loaded = false;
 				this._postererror = false;
 				this._error = 0;
@@ -524,6 +525,8 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
 				});				
 				if (!this._preload)
 					this._$element.attr("preload", "none");
+				if (this._loop)
+					this._$element.attr("loop", "loop");
 				var errorCount = 0;
 				if (!ie9) {
 					Objs.iter(sources, function (source) {
@@ -634,7 +637,8 @@ Scoped.define("module:Player.FlashPlayerWrapper", [
 				}
 				this._flashPlayer = new FlashPlayer(this._element, {
 					poster: this.poster(),
-					sources: this.sources()
+					sources: this.sources(),
+					loop: this._loop
 				});
 				return this._flashPlayer.ready.success(function () {
 					this._setup();

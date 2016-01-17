@@ -39,6 +39,7 @@ Scoped.define("module:Player.VideoPlayerWrapper", [
 				this._$element = $(options.element);
 				this._preload = options.preload || false;
 				this._options = options;
+				this._loop = options.loop || false;
 				this._loaded = false;
 				this._postererror = false;
 				this._error = 0;
@@ -215,6 +216,8 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
 				});				
 				if (!this._preload)
 					this._$element.attr("preload", "none");
+				if (this._loop)
+					this._$element.attr("loop", "loop");
 				var errorCount = 0;
 				if (!ie9) {
 					Objs.iter(sources, function (source) {
@@ -325,7 +328,8 @@ Scoped.define("module:Player.FlashPlayerWrapper", [
 				}
 				this._flashPlayer = new FlashPlayer(this._element, {
 					poster: this.poster(),
-					sources: this.sources()
+					sources: this.sources(),
+					loop: this._loop
 				});
 				return this._flashPlayer.ready.success(function () {
 					this._setup();
