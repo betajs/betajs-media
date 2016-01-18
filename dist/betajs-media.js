@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.10 - 2016-01-17
+betajs-media - v0.0.11 - 2016-01-18
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache 2.0 Software License.
 */
@@ -670,7 +670,7 @@ Public.exports();
 	return Public;
 }).call(this);
 /*!
-betajs-media - v0.0.10 - 2016-01-17
+betajs-media - v0.0.11 - 2016-01-18
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache 2.0 Software License.
 */
@@ -688,7 +688,7 @@ Scoped.binding("jquery", "global:jQuery");
 Scoped.define("module:", function () {
 	return {
 		guid: "8475efdb-dd7e-402e-9f50-36c76945a692",
-		version: '39.1453060678092'
+		version: '40.1453128882706'
 	};
 });
 
@@ -1306,11 +1306,13 @@ Scoped.define("module:Player.FlashPlayerWrapper", [
 					this._$element = $(this._element);
 					this._transitionals.element = this._element;
 				}
-				this._flashPlayer = new FlashPlayer(this._element, {
+				var opts = {
 					poster: this.poster(),
-					sources: this.sources(),
-					loop: this._loop
-				});
+					sources: this.sources()
+				};
+				if (this._loop)
+					opts.loop = true;
+				this._flashPlayer = new FlashPlayer(this._element, opts);
 				return this._flashPlayer.ready.success(function () {
 					this._setup();
 				}, this);

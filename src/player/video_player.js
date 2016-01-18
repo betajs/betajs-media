@@ -326,11 +326,13 @@ Scoped.define("module:Player.FlashPlayerWrapper", [
 					this._$element = $(this._element);
 					this._transitionals.element = this._element;
 				}
-				this._flashPlayer = new FlashPlayer(this._element, {
+				var opts = {
 					poster: this.poster(),
-					sources: this.sources(),
-					loop: this._loop
-				});
+					sources: this.sources()
+				};
+				if (this._loop)
+					opts.loop = true;
+				this._flashPlayer = new FlashPlayer(this._element, opts);
 				return this._flashPlayer.ready.success(function () {
 					this._setup();
 				}, this);
