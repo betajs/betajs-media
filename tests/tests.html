@@ -4,7 +4,7 @@
 		<meta charset="utf-8">
 		<title>BetaJS-Media Tests</title>
 		<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
-		<link rel="stylesheet" href="http://code.jquery.com/qunit/qunit-1.11.0.css">
+		<link rel="stylesheet" href="http://code.jquery.com/qunit/qunit-1.12.0.css">
 		<script src="http://cdnjs.cloudflare.com/ajax/libs/es5-shim/4.1.1/es5-shim.js"></script>
 		<script src="http://cdnjs.cloudflare.com/ajax/libs/json2/20140204/json2.js"></script>
         <script src="../vendors/scoped.js"></script>
@@ -14,10 +14,12 @@
         <script src="../dist/betajs-media-noscoped.js"></script>
 	</head>
 	<body>
+		<!-- <script>window.BrowserStack = true;</script>  -->
 		<button id="clickme" style="width:100%;height:50%;font-size:10em;display:none">CLICK</button>
 		<div id="qunit"></div>
 		<div id="qunit-fixture"></div>
-		<script src="http://code.jquery.com/qunit/qunit-1.11.0.js"></script>
+		<div id="visible-fixture"></div>
+		<script src="http://code.jquery.com/qunit/qunit-1.12.0.js"></script>
 		<script>
 			QUnit.launcher = function (method, ctx) {
 				method.apply(ctx);
@@ -35,15 +37,14 @@
 				});
 			}
     	    BetaJS.Flash.options = {
-	            flashFile: window.BrowserStack ? "//files.betajs.com/betajs-flash.swf" : "../vendors/betajs-flash.swf",
+	            flashFile: window.BrowserStack ? "http://files.betajs.com/betajs-flash.swf" : "../vendors/betajs-flash.swf",
 	            forceReload: true
 	        };
 		</script>
 		<script>
-		/*
 			window.onerror = function (a,b,c,d,e,f,g,h) {
 				console.log("Error", a,b,c,d,e,f,g,h);
-			};*/
+			};
 		</script>
 		<script src="tests/scoped.js"></script>
 		<script src="tests/player.js"></script>

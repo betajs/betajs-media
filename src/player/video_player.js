@@ -158,16 +158,13 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
     "base:Objs",
     "base:Timers.Timer",
     "base:Strings",
+    "base:Async",
     "jquery:",
     "browser:Dom"
-], function (VideoPlayerWrapper, Info, Promise, Objs, Timer, Strings, $, Dom, scoped) {
+], function (VideoPlayerWrapper, Info, Promise, Objs, Timer, Strings, Async, $, Dom, scoped) {
 	return VideoPlayerWrapper.extend({scoped: scoped}, function (inherited) {
 		return {
 			
-			constructor: function (options, transitionals) {
-				inherited.constructor.call(this, options, transitionals);
-			},
-
 			_initialize: function () {
 				if (this._options.nohtml5)
 					return Promise.error(true);
@@ -198,7 +195,17 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
 					this._element = this._$element.get(0);
 					this._transitionals.element = this._element;
 				}
-				this._$element.on("loadedmetadata", function () {
+				/*
+				var loadevent = "loadedmetadata";
+				if (Info.isSafari() && Info.safariVersion() < 9)
+					loadevent = "loadstart";
+					*/
+				var loadevent = "loadstart";
+				this._$element.on(loadevent, function () {
+					if (/*loadevent === "loadstart" && */self._element.networkState === self._element.NETWORK_NO_SOURCE) {
+						promise.asyncError(true);
+						return;
+					}
 					promise.asyncSuccess(true);
 				});
 				var nosourceCounter = 10;
@@ -221,7 +228,7 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
 				var errorCount = 0;
 				if (!ie9) {
 					Objs.iter(sources, function (source) {
-						$source = $("<source type='" + source.type + "' />").appendTo(this._$element);
+						var $source = $("<source type='" + source.type + "' />").appendTo(this._$element);
 						$source.on("error", function () {
 							errorCount++;
 							if (errorCount === sources.length)
@@ -274,6 +281,14 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
 					self._eventPosterError();
 				};
 				image.src = this.poster();
+				if (Info.isSafari() && (Info.safariVersion() > 5 || Info.safariVersion() < 9)) {
+					if (this._element.networkState === this._element.NETWORK_LOADING) {
+						Async.eventually(function () {
+							if (!this.destroyed() && this._element.networkState === this._element.NETWORK_LOADING && this._element.buffered.length === 0)
+								this._eventError(this.cls.ERROR_NO_PLAYABLE_SOURCE);
+						}, this, 10000);
+					}
+				}
 			},
 			
 			buffered: function () {
@@ -301,8 +316,9 @@ Scoped.define("module:Player.FlashPlayerWrapper", [
      "module:Player.FlashPlayer",
      "browser:Info",
      "base:Promise",
-     "browser:Dom"
-], function (VideoPlayerWrapper, FlashPlayer, Info, Promise, Dom, scoped) {
+     "browser:Dom",
+     "jquery:"
+], function (VideoPlayerWrapper, FlashPlayer, Info, Promise, Dom, $, scoped) {
 	return VideoPlayerWrapper.extend({scoped: scoped}, function (inherited) {
 		return {
 		

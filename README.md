@@ -1,4 +1,6 @@
-# betajs-media 0.0.10
+# betajs-media 0.0.13
+[![Code Climate](https://codeclimate.com/github/betajs/betajs-media/badges/gpa.svg)](https://codeclimate.com/github/betajs/betajs-media)
+
 
 BetaJS-Media is a JavaScript media framework
 
@@ -13,6 +15,9 @@ Active, In Development
 | Homepage   | [http://betajs.com](http://betajs.com) |
 | Git        | [git://github.com/betajs/betajs-media.git](git://github.com/betajs/betajs-media.git) |
 | Repository | [http://github.com/betajs/betajs-media](http://github.com/betajs/betajs-media) |
+| Blog       | [http://blog.betajs.com](http://blog.betajs.com) | 
+| Twitter    | [http://twitter.com/thebetajs](http://twitter.com/thebetajs) | 
+
 
 
 ## Compatability (Tested)

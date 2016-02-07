@@ -1,17 +1,17 @@
 /*!
-betajs-media - v0.0.11 - 2016-01-18
+betajs-media - v0.0.13 - 2016-02-07
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache 2.0 Software License.
 */
-/*!
-betajs-scoped - v0.0.5 - 2015-12-23
+/** @flow **//*!
+betajs-scoped - v0.0.7 - 2016-02-06
 Copyright (c) Oliver Friedmann
-MIT Software License.
+Apache 2.0 Software License.
 */
 var Scoped = (function () {
 var Globals = {
 
-	get : function(key) {
+	get : function(key/* : string */) {
 		if (typeof window !== "undefined")
 			return window[key];
 		if (typeof global !== "undefined")
@@ -19,7 +19,7 @@ var Globals = {
 		return null;
 	},
 
-	set : function(key, value) {
+	set : function(key/* : string */, value) {
 		if (typeof window !== "undefined")
 			window[key] = value;
 		if (typeof global !== "undefined")
@@ -27,7 +27,7 @@ var Globals = {
 		return value;
 	},
 	
-	setPath: function (path, value) {
+	setPath: function (path/* : string */, value) {
 		var args = path.split(".");
 		if (args.length == 1)
 			return this.set(path, value);		
@@ -41,7 +41,7 @@ var Globals = {
 		return value;
 	},
 	
-	getPath: function (path) {
+	getPath: function (path/* : string */) {
 		var args = path.split(".");
 		if (args.length == 1)
 			return this.get(path);		
@@ -55,6 +55,12 @@ var Globals = {
 	}
 
 };
+/*::
+declare module Helper {
+	declare function extend<A, B>(a: A, b: B): A & B;
+}
+*/
+
 var Helper = {
 		
 	method: function (obj, func) {
@@ -62,7 +68,7 @@ var Helper = {
 			return func.apply(obj, arguments);
 		};
 	},
-	
+
 	extend: function (base, overwrite) {
 		base = base || {};
 		overwrite = overwrite || {};
@@ -110,8 +116,9 @@ var Helper = {
 var Attach = {
 		
 	__namespace: "Scoped",
+	__revert: null,
 	
-	upgrade: function (namespace) {
+	upgrade: function (namespace/* : ?string */) {
 		var current = Globals.get(namespace || Attach.__namespace);
 		if (current && Helper.typeOf(current) == "object" && current.guid == this.guid && Helper.typeOf(current.version) == "string") {
 			var my_version = this.version.split(".");
@@ -127,7 +134,7 @@ var Attach = {
 			return this.attach(namespace);		
 	},
 
-	attach : function(namespace) {
+	attach : function(namespace/* : ?string */) {
 		if (namespace)
 			Attach.__namespace = namespace;
 		var current = Globals.get(Attach.__namespace);
@@ -147,7 +154,7 @@ var Attach = {
 		return this;
 	},
 	
-	detach: function (forceDetach) {
+	detach: function (forceDetach/* : ?boolean */) {
 		if (forceDetach)
 			Globals.set(Attach.__namespace, null);
 		if (typeof Attach.__revert != "undefined")
@@ -167,52 +174,66 @@ var Attach = {
 
 };
 
-function newNamespace (options) {
-	
-	options = Helper.extend({
-		tree: false,
-		global: false,
-		root: {}
-	}, options);
-	
-	function initNode(options) {
-		return Helper.extend({
-			route: null,
-			parent: null,
+function newNamespace (opts/* : {tree ?: boolean, global ?: boolean, root ?: Object} */) {
+
+	var options/* : {
+		tree: boolean,
+	    global: boolean,
+	    root: Object
+	} */ = {
+		tree: typeof opts.tree === "boolean" ? opts.tree : false,
+		global: typeof opts.global === "boolean" ? opts.global : false,
+		root: typeof opts.root === "object" ? opts.root : {}
+	};
+
+	/*::
+	type Node = {
+		route: ?string,
+		parent: ?Node,
+		children: any,
+		watchers: any,
+		data: any,
+		ready: boolean,
+		lazy: any
+	};
+	*/
+
+	function initNode(options)/* : Node */ {
+		return {
+			route: typeof options.route === "string" ? options.route : null,
+			parent: typeof options.parent === "object" ? options.parent : null,
+			ready: typeof options.ready === "boolean" ? options.ready : false,
 			children: {},
 			watchers: [],
 			data: {},
-			ready: false,
 			lazy: []
-		}, options);
+		};
 	}
 	
 	var nsRoot = initNode({ready: true});
 	
 	if (options.tree) {
-		var treeRoot = null;
 		if (options.global) {
 			try {
 				if (window)
-					treeRoot = window;
+					nsRoot.data = window;
 			} catch (e) { }
 			try {
 				if (global)
-					treeRoot = global;
+					nsRoot.data = global;
 			} catch (e) { }
 		} else
-			treeRoot = options.root;
-		nsRoot.data = treeRoot;
+			nsRoot.data = options.root;
 	}
 	
-	function nodeDigest(node) {
+	function nodeDigest(node/* : Node */) {
 		if (node.ready)
 			return;
 		if (node.parent && !node.parent.ready) {
 			nodeDigest(node.parent);
 			return;
 		}
-		if (node.route in node.parent.data) {
+		if (node.route && node.parent && (node.route in node.parent.data)) {
 			node.data = node.parent.data[node.route];
 			node.ready = true;
 			for (var i = 0; i < node.watchers.length; ++i)
@@ -223,20 +244,22 @@ function newNamespace (options) {
 		}
 	}
 	
-	function nodeEnforce(node) {
+	function nodeEnforce(node/* : Node */) {
 		if (node.ready)
 			return;
 		if (node.parent && !node.parent.ready)
 			nodeEnforce(node.parent);
 		node.ready = true;
-		if (options.tree && typeof node.parent.data == "object")
-			node.parent.data[node.route] = node.data;
+		if (node.parent) {
+			if (options.tree && typeof node.parent.data == "object")
+				node.parent.data[node.route] = node.data;
+		}
 		for (var i = 0; i < node.watchers.length; ++i)
 			node.watchers[i].callback.call(node.watchers[i].context || this, node.data);
 		node.watchers = [];
 	}
 	
-	function nodeSetData(node, value) {
+	function nodeSetData(node/* : Node */, value) {
 		if (typeof value == "object" && node.ready) {
 			for (var key in value)
 				node.data[key] = value[key];
@@ -253,14 +276,14 @@ function newNamespace (options) {
 			nodeDigest(node.children[k]);
 	}
 	
-	function nodeClearData(node) {
+	function nodeClearData(node/* : Node */) {
 		if (node.ready && node.data) {
 			for (var key in node.data)
 				delete node.data[key];
 		}
 	}
 	
-	function nodeNavigate(path) {
+	function nodeNavigate(path/* : ?String */) {
 		if (!path)
 			return nsRoot;
 		var routes = path.split(".");
@@ -280,7 +303,7 @@ function newNamespace (options) {
 		return current;
 	}
 	
-	function nodeAddWatcher(node, callback, context) {
+	function nodeAddWatcher(node/* : Node */, callback, context) {
 		if (node.ready)
 			callback.call(context || this, node.data);
 		else {
@@ -301,7 +324,7 @@ function newNamespace (options) {
 		}
 	}
 	
-	function nodeUnresolvedWatchers(node, base, result) {
+	function nodeUnresolvedWatchers(node/* : Node */, base, result) {
 		node = node || nsRoot;
 		result = result || [];
 		if (!node.ready)
@@ -642,7 +665,7 @@ var rootScope = newScope(null, rootNamespace, rootNamespace, globalNamespace);
 var Public = Helper.extend(rootScope, {
 		
 	guid: "4b6878ee-cb6a-46b3-94ac-27d91f58d666",
-	version: '22.1450888807473',
+	version: '37.1454812115138',
 		
 	upgrade: Attach.upgrade,
 	attach: Attach.attach,
@@ -670,7 +693,7 @@ Public.exports();
 	return Public;
 }).call(this);
 /*!
-betajs-media - v0.0.11 - 2016-01-18
+betajs-media - v0.0.13 - 2016-02-07
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache 2.0 Software License.
 */
@@ -688,7 +711,7 @@ Scoped.binding("jquery", "global:jQuery");
 Scoped.define("module:", function () {
 	return {
 		guid: "8475efdb-dd7e-402e-9f50-36c76945a692",
-		version: '40.1453128882706'
+		version: '41.1454872522203'
 	};
 });
 
@@ -1138,16 +1161,13 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
     "base:Objs",
     "base:Timers.Timer",
     "base:Strings",
+    "base:Async",
     "jquery:",
     "browser:Dom"
-], function (VideoPlayerWrapper, Info, Promise, Objs, Timer, Strings, $, Dom, scoped) {
+], function (VideoPlayerWrapper, Info, Promise, Objs, Timer, Strings, Async, $, Dom, scoped) {
 	return VideoPlayerWrapper.extend({scoped: scoped}, function (inherited) {
 		return {
 			
-			constructor: function (options, transitionals) {
-				inherited.constructor.call(this, options, transitionals);
-			},
-
 			_initialize: function () {
 				if (this._options.nohtml5)
 					return Promise.error(true);
@@ -1178,7 +1198,17 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
 					this._element = this._$element.get(0);
 					this._transitionals.element = this._element;
 				}
-				this._$element.on("loadedmetadata", function () {
+				/*
+				var loadevent = "loadedmetadata";
+				if (Info.isSafari() && Info.safariVersion() < 9)
+					loadevent = "loadstart";
+					*/
+				var loadevent = "loadstart";
+				this._$element.on(loadevent, function () {
+					if (/*loadevent === "loadstart" && */self._element.networkState === self._element.NETWORK_NO_SOURCE) {
+						promise.asyncError(true);
+						return;
+					}
 					promise.asyncSuccess(true);
 				});
 				var nosourceCounter = 10;
@@ -1201,7 +1231,7 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
 				var errorCount = 0;
 				if (!ie9) {
 					Objs.iter(sources, function (source) {
-						$source = $("<source type='" + source.type + "' />").appendTo(this._$element);
+						var $source = $("<source type='" + source.type + "' />").appendTo(this._$element);
 						$source.on("error", function () {
 							errorCount++;
 							if (errorCount === sources.length)
@@ -1254,6 +1284,14 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
 					self._eventPosterError();
 				};
 				image.src = this.poster();
+				if (Info.isSafari() && (Info.safariVersion() > 5 || Info.safariVersion() < 9)) {
+					if (this._element.networkState === this._element.NETWORK_LOADING) {
+						Async.eventually(function () {
+							if (!this.destroyed() && this._element.networkState === this._element.NETWORK_LOADING && this._element.buffered.length === 0)
+								this._eventError(this.cls.ERROR_NO_PLAYABLE_SOURCE);
+						}, this, 10000);
+					}
+				}
 			},
 			
 			buffered: function () {
@@ -1281,8 +1319,9 @@ Scoped.define("module:Player.FlashPlayerWrapper", [
      "module:Player.FlashPlayer",
      "browser:Info",
      "base:Promise",
-     "browser:Dom"
-], function (VideoPlayerWrapper, FlashPlayer, Info, Promise, Dom, scoped) {
+     "browser:Dom",
+     "jquery:"
+], function (VideoPlayerWrapper, FlashPlayer, Info, Promise, Dom, $, scoped) {
 	return VideoPlayerWrapper.extend({scoped: scoped}, function (inherited) {
 		return {
 		

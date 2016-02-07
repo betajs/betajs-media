@@ -1,11 +1,11 @@
 var testasset = function (s) {
-	return BetaJS.Strings.splitLast(document.location.href, "/").head + "/tests/" + s;
+	return (window.BrowserStack ? "http://files.betajs.com/" : (BetaJS.Strings.splitLast(document.location.href, "/").head + "/tests/")) + s;
 };
 
 if (!BetaJS.Browser.Info.isMobile()) {
 	test("test flash playback mp4", function() {
 		stop();
-		$("#qunit-fixture").html('<video src="' + testasset("movie.mp4") + '"></video>');
+		$("#visible-fixture").html('<video src="' + testasset("movie.mp4") + '"></video>');
 		BetaJS.Media.Player.FlashPlayer.polyfill($("video").get(0), "videopoly", true, true);
 		setTimeout(function () {
 			QUnit.equal(Math.max($("object").length, $("embed").length), 1);
@@ -18,7 +18,7 @@ if (!BetaJS.Browser.Info.isMobile()) {
 if (!BetaJS.Browser.Info.isInternetExplorer() || BetaJS.Browser.Info.internetExplorerVersion() > 8) {
 	test("wrapper native video and poster", function () {
 		stop();
-		$("#qunit-fixture").html('<video></video>');
+		$("#visible-fixture").html('<video></video>');
 		BetaJS.Media.Player.VideoPlayerWrapper.create({
 	    	element: $("video").get(0),
 	    	poster: testasset("movie.png"),
@@ -34,6 +34,7 @@ if (!BetaJS.Browser.Info.isInternetExplorer() || BetaJS.Browser.Info.internetExp
 	    		start();
 	    	});
 	        instance.on("error", function (error) {
+	        	console.log(error);
 	        	ok(false);
 	        	start();
 	        });
@@ -52,7 +53,7 @@ if (!BetaJS.Browser.Info.isInternetExplorer() || BetaJS.Browser.Info.internetExp
 if (!BetaJS.Browser.Info.isMobile()) {
 	test("wrapper flash video and poster", function () {
 		stop();
-		$("#qunit-fixture").html('<video></video>');
+		$("#visible-fixture").html('<video></video>');
 		BetaJS.Media.Player.VideoPlayerWrapper.create({
 	    	element: $("video").get(0),
 	    	poster: testasset("movie.png"),
@@ -86,7 +87,7 @@ if (!BetaJS.Browser.Info.isMobile()) {
 if (!BetaJS.Browser.Info.isInternetExplorer() || BetaJS.Browser.Info.internetExplorerVersion() > 8) {
 	test("wrapper native no video but poster", function () {
 		stop();
-		$("#qunit-fixture").html('<video></video>');
+		$("#visible-fixture").html('<video></video>');
 		BetaJS.Media.Player.VideoPlayerWrapper.create({
 	    	element: $("video").get(0),
 	    	poster: testasset("movie.png"),
@@ -119,7 +120,7 @@ if (!BetaJS.Browser.Info.isInternetExplorer() || BetaJS.Browser.Info.internetExp
 
 test("wrapper native, keep native no video but poster", function () {
 	stop();
-	$("#qunit-fixture").html('<video></video>');
+	$("#visible-fixture").html('<video></video>');
 	BetaJS.Media.Player.VideoPlayerWrapper.create({
     	element: $("video").get(0),
     	poster: testasset("movie.png"),
@@ -148,7 +149,7 @@ test("wrapper native, keep native no video but poster", function () {
 if (!BetaJS.Browser.Info.isMobile()) {
 	test("wrapper flash no video but poster", function () {
 		stop();
-		$("#qunit-fixture").html('<video></video>');
+		$("#visible-fixture").html('<video></video>');
 		BetaJS.Media.Player.VideoPlayerWrapper.create({
 	    	element: $("video").get(0),
 	    	poster: testasset("movie.png"),
@@ -178,7 +179,7 @@ if (!BetaJS.Browser.Info.isMobile()) {
 if (!BetaJS.Browser.Info.isMobile()) {
 	test("wrapper fallback video and poster", function () {
 		stop();
-		$("#qunit-fixture").html('<video></video>');
+		$("#visible-fixture").html('<video></video>');
 		BetaJS.Media.Player.VideoPlayerWrapper.create({
 	    	element: $("video").get(0),
 	    	poster: testasset("movie.png"),
@@ -189,6 +190,7 @@ if (!BetaJS.Browser.Info.isMobile()) {
 	    		start();
 	    	});
 	    	instance.on("playing", function () {
+	    		instance.destroy();
 	    		ok(true);
 	    		start();
 	    	});
@@ -212,7 +214,7 @@ if (!BetaJS.Browser.Info.isMobile()) {
 if (!BetaJS.Browser.Info.isInternetExplorer() || BetaJS.Browser.Info.internetExplorerVersion() > 8) {
 	test("wrapper native video but no poster", function () {
 		stop();
-		$("#qunit-fixture").html('<video></video>');
+		$("#visible-fixture").html('<video></video>');
 		BetaJS.Media.Player.VideoPlayerWrapper.create({
 	    	element: $("video").get(0),
 	    	poster: testasset("error.png"),
@@ -242,7 +244,7 @@ if (!BetaJS.Browser.Info.isInternetExplorer() || BetaJS.Browser.Info.internetExp
 if (!BetaJS.Browser.Info.isMobile()) {
 	test("wrapper flash video but no poster", function () {
 		stop();
-		$("#qunit-fixture").html('<video></video>');
+		$("#visible-fixture").html('<video></video>');
 		BetaJS.Media.Player.VideoPlayerWrapper.create({
 	    	element: $("video").get(0),
 	    	poster: testasset("error.png"),

@@ -4,7 +4,7 @@
 .sass-cache
 node_modules
 /docs
-browserstack.json
+browserstack*.*
 BrowserStackLocal
 jsdoc.conf.json
 *.mp4
