@@ -24,9 +24,12 @@ Scoped.define("module:Player.VideoPlayerWrapper", [
 						source.type = "video/" + source.ext;
 					if (!source.ext && source.type)
 						source.ext = Strings.last_after(source.type, "/");
-					if (!source.ext && !source.type && source.src.indexOf(".") >= 0) {
-						source.ext = Strings.last_after(source.src, ".");
-						source.type = "video/" + source.ext;
+					if (!source.ext && !source.type) {
+						var temp = Strings.splitFirst(source.src, "?").head;
+						if (temp.indexOf(".") >= 0) {
+							source.ext = Strings.last_after(temp, ".");
+							source.type = "video/" + source.ext;
+						}
 					}
 					if (!source.type)
 						source.type = "video";
