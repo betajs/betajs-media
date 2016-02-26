@@ -1,16 +1,67 @@
-# betajs-media 0.0.14
+# betajs-media 0.0.15
 [![Code Climate](https://codeclimate.com/github/betajs/betajs-media/badges/gpa.svg)](https://codeclimate.com/github/betajs/betajs-media)
 
 
 BetaJS-Media is a JavaScript media framework
 
-## Status
-Active, In Development
+
+
+## Getting Started
+
+
+You can use the library in the browser and compile it as well.
+
+#### Browser
+
+```javascript
+	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+	<script src="betajs/dist/betajs.min.js"></script>
+	<script src="betajs-browser/dist/betajs-browser.min.js"></script>
+	<script src="betajs-flash/dist/betajs-flash.min.js"></script>
+	<script src="betajs-media/dist/betajs-media.min.js"></script>
+``` 
+
+#### Compile
+
+```javascript
+	git clone https://github.com/betajs/betajs-media.git
+	npm install
+	grunt
+```
 
 
 
+## Basic Usage
 
 
+```html
+
+	<video></video>
+
+```
+
+```js
+
+    var webrtc = BetaJS.Media.WebRTC.RecorderWrapper.create({
+        video: $("video").get(0)
+    });
+    
+```
+
+```html
+
+	<video autoplay loop poster="movie.png">
+		<source src="movie.mp4" type="video/mp4" />
+	</video>
+
+```
+
+```js
+
+	BetaJS.Media.Player.FlashPlayer.polyfill($("video").get(0)).success(function (video) {
+	});
+
+```
 
 
 ## Links
@@ -24,7 +75,7 @@ Active, In Development
 
 
 
-## Compatability (Tested)
+## Compatability
 | Target | Versions |
 | :----- | -------: |
 | Firefox | 4 - Latest |
@@ -73,7 +124,7 @@ Active, In Development
 
 ## License
 
-Apache 2.0
+Apache-2.0
 
 
 ## Credits

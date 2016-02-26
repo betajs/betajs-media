@@ -1,0 +1,73 @@
+{
+	"name": "betajs-media",
+	"version": "0.0.15",
+	"description": "BetaJS-Media is a JavaScript media framework",
+	"contributors": ["Ziggeo", "Oliver Friedmann"],
+	"devDependencies": {
+		"grunt": "",
+		"grunt-contrib-jshint": "",
+		"grunt-contrib-concat": "",
+		"grunt-contrib-uglify": "",
+		"grunt-contrib-clean": "",
+		"grunt-preprocess": "",
+		"grunt-git-revision-count": "",
+		"grunt-closure-tools": "",
+		"grunt-node-qunit": "",
+		"qunit": "",
+		"grunt-contrib-jshint": "",
+		"grunt-contrib-connect": "",
+		"grunt-wget": "",
+		"grunt-jsdoc": "",
+		"grunt-shell": "",
+		"grunt-template": "",
+		"grunt-betajs-docs-compile": "",
+		"betajs-scoped": "",
+		"betajs-compile": "betajs/betajs-compile"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git://github.com/betajs/betajs-media.git"
+	},
+	"meta": {
+		"guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
+		"installdoc": "docsrc/common/install.md",
+		"summarydoc": "docsrc/common/summary.md",
+		"badges": {
+			"codeclimate": true,
+			"travis": false,
+			"npm": false
+		},
+		"credits": [
+			"TypedArray, From microphone to .WAV with: getUserMedia and Web Audio, (c) Thibault Imbert",
+			"Media Stream Recorder, https://github.com/streamproc/MediaStreamRecorder",
+			"Whammy Recorder, https://github.com/antimatter15/whammy"
+		],
+		"weakDependencies": {
+			"betajs-scoped": "https://github.com/betajs/betajs-scoped"
+		},
+		"dependencies": {
+			"betajs": "https://github.com/betajs/betajs",
+			"betajs-browser": "https://github.com/betajs/betajs-browser",
+			"betajs-flash": "https://github.com/betajs/betajs-flash"
+		},
+		"compatability": {
+		      "Firefox": "4 - Latest",
+		      "Chrome": "15 - Latest",
+		      "Safari": "4 - Latest",
+		      "Opera": "12 - Latest",
+		      "Internet Explorer": "8 - Latest",
+			  "Edge": "12 - Latest",
+		      "iOS": "7.0 - Latest",
+		      "Android": "4.0 - Latest"
+		},
+		"tests": {
+			"Test Suite": "http://rawgit.com/betajs/betajs-media/master/tests/tests.html"
+		},
+		"cdn": {
+			"betajs-media.js": "http://cdn.rawgit.com/betajs/betajs-media/master/dist/betajs-media.js",
+			"betajs-media.min.js": "http://cdn.rawgit.com/betajs/betajs-media/master/dist/betajs-media.min.js",
+			"betajs-media-noscoped.js": "http://cdn.rawgit.com/betajs/betajs-media/master/dist/betajs-media-noscoped.js",
+			"betajs-media-noscoped.min.js": "http://cdn.rawgit.com/betajs/betajs-media/master/dist/betajs-media-noscoped.min.js"
+		}
+	}
+}
