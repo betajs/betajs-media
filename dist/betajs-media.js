@@ -1,7 +1,7 @@
 /*!
-betajs-media - v0.0.14 - 2016-02-16
+betajs-media - v0.0.16 - 2016-03-02
 Copyright (c) Ziggeo,Oliver Friedmann
-Apache 2.0 Software License.
+Apache-2.0 Software License.
 */
 /** @flow **//*!
 betajs-scoped - v0.0.7 - 2016-02-06
@@ -692,6 +692,12 @@ Public = Public.upgrade();
 Public.exports();
 	return Public;
 }).call(this);
+/*!
+betajs-media - v0.0.16 - 2016-03-02
+Copyright (c) Ziggeo,Oliver Friedmann
+Apache-2.0 Software License.
+*/
+
 (function () {
 var Scoped = this.subScope();
 Scoped.binding('module', 'global:BetaJS.Media');
@@ -702,7 +708,7 @@ Scoped.binding('jquery', 'global:jQuery');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "42.1455672967098"
+    "version": "44.1456954139211"
 };
 });
 Scoped.assumeVersion('base:version', 474);
@@ -1012,7 +1018,7 @@ Scoped.define("module:Player.VideoPlayerWrapper", [
 				var sourcesMapped = [];
 				Objs.iter(sources, function (source) {
 					if (Types.is_string(source))
-						source = {src: Strings.trim(source)};
+						source = {src: source.trim()};
 					if (source.ext && !source.type)
 						source.type = "video/" + source.ext;
 					if (!source.ext && source.type)

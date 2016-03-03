@@ -19,7 +19,7 @@ Scoped.define("module:Player.VideoPlayerWrapper", [
 				var sourcesMapped = [];
 				Objs.iter(sources, function (source) {
 					if (Types.is_string(source))
-						source = {src: Strings.trim(source)};
+						source = {src: source.trim()};
 					if (source.ext && !source.type)
 						source.type = "video/" + source.ext;
 					if (!source.ext && source.type)
