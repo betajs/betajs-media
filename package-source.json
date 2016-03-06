@@ -4,6 +4,7 @@
 	"description": "BetaJS-Media is a JavaScript media framework",
 	"contributors": ["Ziggeo", "Oliver Friedmann"],
 	"devDependencies": {
+    	"lodash": "",
 		"grunt": "",
 		"grunt-contrib-jshint": "",
 		"grunt-contrib-concat": "",
