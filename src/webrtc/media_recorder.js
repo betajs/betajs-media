@@ -2,8 +2,9 @@ Scoped.define("module:WebRTC.MediaRecorder", [
     "base:Class",
     "base:Events.EventsMixin",
     "base:Functions",
+    "browser:Info",
     "module:WebRTC.Support"
-], function (Class, EventsMixin, Functions, Support, scoped) {
+], function (Class, EventsMixin, Functions, Info, Support, scoped) {
 	return Class.extend({scoped: scoped}, [EventsMixin, function (inherited) {
 		return {
 			
@@ -48,7 +49,7 @@ Scoped.define("module:WebRTC.MediaRecorder", [
 	}], {
 		
 		supported: function () {
-			return !!Support.globals().MediaRecorder;
+			return !!Support.globals().MediaRecorder && !Info.isChrome();
 		}
 		
 	});

@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.16 - 2016-03-02
+betajs-media - v0.0.17 - 2016-03-07
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -693,7 +693,7 @@ Public.exports();
 	return Public;
 }).call(this);
 /*!
-betajs-media - v0.0.16 - 2016-03-02
+betajs-media - v0.0.17 - 2016-03-07
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -708,7 +708,7 @@ Scoped.binding('jquery', 'global:jQuery');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "44.1456954139211"
+    "version": "46.1457370037400"
 };
 });
 Scoped.assumeVersion('base:version', 474);
@@ -1660,8 +1660,9 @@ Scoped.define("module:WebRTC.MediaRecorder", [
     "base:Class",
     "base:Events.EventsMixin",
     "base:Functions",
+    "browser:Info",
     "module:WebRTC.Support"
-], function (Class, EventsMixin, Functions, Support, scoped) {
+], function (Class, EventsMixin, Functions, Info, Support, scoped) {
 	return Class.extend({scoped: scoped}, [EventsMixin, function (inherited) {
 		return {
 			
@@ -1706,7 +1707,7 @@ Scoped.define("module:WebRTC.MediaRecorder", [
 	}], {
 		
 		supported: function () {
-			return !!Support.globals().MediaRecorder;
+			return !!Support.globals().MediaRecorder && !Info.isChrome();
 		}
 		
 	});
