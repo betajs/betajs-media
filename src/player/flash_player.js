@@ -192,6 +192,14 @@ Scoped.define("module:Player.FlashPlayer", [
 				}
 			},
 			
+			videoWidth: function () {
+				return this.__metaLoaded ? this._flashData.meta.width : (this.__imageLoaded ? this.__imageLoaded.width : NaN);
+			},
+			
+			videoHeight: function () {
+				return this.__metaLoaded ? this._flashData.meta.height : (this.__imageLoaded ? this.__imageLoaded.height : NaN);
+			},
+
 			_domMethods: ["play", "pause"],
 			
 			_domAttrs: {

@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.17 - 2016-03-07
+betajs-media - v0.0.18 - 2016-03-21
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -14,7 +14,7 @@ Scoped.binding('jquery', 'global:jQuery');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "46.1457370037400"
+    "version": "47.1458604998934"
 };
 });
 Scoped.assumeVersion('base:version', 474);
@@ -214,6 +214,14 @@ Scoped.define("module:Player.FlashPlayer", [
 				}
 			},
 			
+			videoWidth: function () {
+				return this.__metaLoaded ? this._flashData.meta.width : (this.__imageLoaded ? this.__imageLoaded.width : NaN);
+			},
+			
+			videoHeight: function () {
+				return this.__metaLoaded ? this._flashData.meta.height : (this.__imageLoaded ? this.__imageLoaded.height : NaN);
+			},
+
 			_domMethods: ["play", "pause"],
 			
 			_domAttrs: {
@@ -447,7 +455,11 @@ Scoped.define("module:Player.VideoPlayerWrapper", [
 	        
 	        setVolume: function (volume) {
 	        	this._element.volume = volume;
-	        }
+	        },
+	        
+	        videoWidth: function () {},
+	        
+	        videoHeight: function () {}
 			
 		};
 	}], {
@@ -563,6 +575,8 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
 			},
 			
 			destroy: function () {
+				if (this.supportsFullscreen())
+					Dom.elementOffFullscreenChange(this._element);
 				this._$element.html("");
 				inherited.destroy.call(this);
 			},
@@ -589,6 +603,10 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
 					self._eventPosterError();
 				};
 				image.src = this.poster();
+				image.onload = function () {
+					self.__imageWidth = image.width;
+					self.__imageHeight = image.height;
+				};
 				if (Info.isSafari() && (Info.safariVersion() > 5 || Info.safariVersion() < 9)) {
 					if (this._element.networkState === this._element.NETWORK_LOADING) {
 						Async.eventually(function () {
@@ -597,6 +615,18 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
 						}, this, 10000);
 					}
 				}
+				if (this.supportsFullscreen()) {
+					this.__videoClassBackup = "";
+					Dom.elementOnFullscreenChange(this._element, function (element, inFullscreen) {
+						if (inFullscreen) {
+							this.__videoClassBackup = this._$element.attr("class");
+							this._$element.attr("class", "");
+						} else {
+							this._$element.attr("class", this.__videoClassBackup);
+							this.__videoClassBackup = "";
+						}
+					}, this);
+				}
 			},
 			
 			buffered: function () {
@@ -604,15 +634,20 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
 			},
 			
 			supportsFullscreen: function () {
-				return "webkitEnterFullscreen" in this._element || "mozRequestFullScreen" in this._element;
+				return Dom.elementSupportsFullscreen(this._element);
 			},
 			
             enterFullscreen: function () {
-                if ("webkitEnterFullscreen" in this._element)
-                    this._element.webkitEnterFullscreen();
-                else if ("mozRequestFullScreen" in this._element)
-                    this._element.mozRequestFullScreen();
-            }
+            	Dom.elementEnterFullscreen(this._element);
+            },
+            
+	        videoWidth: function () {
+	        	return this._$element.get(0).width || this.__imageWidth || NaN;
+	        },
+	        
+	        videoHeight: function () {
+	        	return this._$element.get(0).height || this.__imageHeight || NaN;
+	        }
 		
 		};		
 	});	
@@ -701,7 +736,16 @@ Scoped.define("module:Player.FlashPlayerWrapper", [
             
             setVolume: function (volume) {
             	this._element.set("volume", volume);
-            }		
+            },
+            
+	        videoWidth: function () {
+	        	return this._flashPlayer.videoWidth();
+	        },
+	        
+	        videoHeight: function () {
+	        	return this._flashPlayer.videoHeight();
+	        }
+            
             
 		};		
 	});	
