@@ -1,0 +1,21 @@
+{
+	"media-playback": {
+		"title": "Video Playback",
+		"children": {
+			"media-flash-player": {
+				"title": "Flash Player"
+			},
+			"media-video-player": {
+				"title": "Video Player"
+			}
+		}
+	},
+	"media-recording": {
+		"title": "Video Recording",
+		"children": {
+			"media-webrtc-recorder": {
+				"title": "WebRTC Recording"
+			}
+		}
+	}
+}
