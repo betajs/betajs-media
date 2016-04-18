@@ -49,7 +49,7 @@ Scoped.define("module:WebRTC.MediaRecorder", [
 	}], {
 		
 		supported: function () {
-			return !!Support.globals().MediaRecorder && !Info.isChrome();
+			return !!Support.globals().MediaRecorder && !Info.isChrome() && !Info.isOpera();
 		}
 		
 	});

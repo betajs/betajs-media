@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.20 - 2016-04-12
+betajs-media - v0.0.21 - 2016-04-17
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -693,7 +693,7 @@ Public.exports();
 	return Public;
 }).call(this);
 /*!
-betajs-media - v0.0.20 - 2016-04-12
+betajs-media - v0.0.21 - 2016-04-17
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -708,7 +708,7 @@ Scoped.binding('jquery', 'global:jQuery');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "51.1460500725595"
+    "version": "52.1460931671338"
 };
 });
 Scoped.assumeVersion('base:version', 474);
@@ -1902,7 +1902,7 @@ Scoped.define("module:WebRTC.MediaRecorder", [
 	}], {
 		
 		supported: function () {
-			return !!Support.globals().MediaRecorder && !Info.isChrome();
+			return !!Support.globals().MediaRecorder && !Info.isChrome() && !Info.isOpera();
 		}
 		
 	});
