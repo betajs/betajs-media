@@ -1,5 +1,5 @@
 /*!
-betajs-browser - v1.0.26 - 2016-03-21
+betajs-browser - v1.0.27 - 2016-03-25
 Copyright (c) Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -13,7 +13,7 @@ Scoped.binding('resumablejs', 'global:Resumable');
 Scoped.define("module:", function () {
 	return {
     "guid": "02450b15-9bbf-4be2-b8f6-b483bc015d06",
-    "version": "75.1458555287885"
+    "version": "76.1458939089675"
 };
 });
 Scoped.assumeVersion('base:version', 474);
@@ -2295,7 +2295,11 @@ Scoped.define("module:DomMutation.NodeInsertObserver", [
 	return ConditionalInstance.extend({scoped: scoped}, [EventsMixin, function (inherited) {
 		return {
 			
-			_nodeInserted: function (node) {
+			_nodeInserted: function (node, expand) {
+				if (expand) {
+					for (var i = 0; i < node.childNodes.length; ++i)
+						this._nodeInserted(node.childNodes[i], expand);
+				}
 				if (this._options.parent && node.parentNode !== this._options.parent)
 					return;
 				if (this._options.root && !this._options.root.contains(node))
@@ -2318,12 +2322,13 @@ Scoped.define("module:DomMutation.MutationObserverNodeInsertObserver", [
 		return {
 			
 			constructor: function (options) {
+				options = options || {};
 				inherited.constructor.call(this, options);
 				var self = this;
 				this._observer = new window.MutationObserver(function (mutations) {
 					Objs.iter(mutations, function (mutation) {
 						for (var i = 0; i < mutation.addedNodes.length; ++i)
-							self._nodeInserted(mutation.addedNodes[i]);
+							self._nodeInserted(mutation.addedNodes[i], true);
 					});
 				});
 				this._observer.observe(this._options.root || this._options.parent || document.body, {
@@ -2361,6 +2366,7 @@ Scoped.define("module:DomMutation.DOMNodeInsertedNodeInsertObserver", [
 		return {
 			
 			constructor: function (options) {
+				options = options || {};
 				inherited.constructor.call(this, options);
 				var self = this;
 				$(document).on("DOMNodeInserted." + this.cid(), function (event) {

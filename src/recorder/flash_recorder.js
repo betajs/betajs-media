@@ -24,11 +24,16 @@ Scoped.define("module:Player.FlashRecorderWorkInProgress", [
 					debug: false
 				}));
 				this._flashObjs = {};
+				this._snapshots = [];
 				this.ready = Promise.create();
+				this.__cameraWidth = this.readAttr('camerawidth') || 640;
+				this.__cameraHeight = this.readAttr('cameraheight') || 480;
+				this.__fps = this.readAttr('fps') || 20;				
 				this._embedding.ready(this.__initializeEmbedding, this);
 			},
 			
 			__initializeEmbedding: function () {
+				this.__hasMicrophoneActivity = false;
 				this._flashObjs.main = this._embedding.flashMain();
 				this._flashObjs.stage = this._flashObjs.main.get("stage");
 				this._flashObjs.stage.set("scaleMode", "noScale");
@@ -38,14 +43,28 @@ Scoped.define("module:Player.FlashRecorderWorkInProgress", [
 					this._flashObjs.stage.get("stageWidth"),
 					this._flashObjs.stage.get("stageHeight")
 				);
+				this._flashObjs.cameraVideo = this._embedding.newObject(
+					"flash.media.Video",
+					this.__cameraWidth,
+					this.__cameraHeight
+				);
+				this._flashObjs.lightLevelBmp = this._embedding.newObject(
+					"flash.display.BitmapData",
+					this._flashObjs.stage.get("stageWidth"),
+					this._flashObjs.stage.get("stageHeight")
+				);
+				this._flashObjs.main.addChildVoid(this._flashObjs.video);
 				this._flashObjs.Microphone = this._embedding.getClass("flash.media.Microphone");
 				this._flashObjs.Camera = this._embedding.getClass("flash.media.Camera");
-				this._flashObjs.microphone = this._flashObjs.Microphone.getMicrophone();
-				this._flashObjs.camera = this._flashObjs.Camera.getCamera();
+				this._flashObjs.microphone = this._flashObjs.Microphone.getMicrophone(0);
+				this._flashObjs.camera = this._flashObjs.Camera.getCamera(0);
 				this._flashObjs.Security = this._embedding.getClass("flash.system.Security");
-				// TODO
-				
 				this.ready.asyncSuccess(this);
+				this.auto_destroy(new Timer({
+					delay: 100,
+					fire: this._fire,
+					context: this
+				}));
 			},
 			
 			isAccessGranted: function () {
@@ -100,7 +119,139 @@ Scoped.define("module:Player.FlashRecorderWorkInProgress", [
 				});
 				return promise;
 			},
+			
+			bindMedia: function () {
+				this._flashObjs.camera.setMode(this.__cameraWidth, this.__cameraHeight, this.__fps);
+				this._flashObjs.camera.setQuality(0, 90);
+				this._flashObjs.camera.setKeyFrameInterval(5);
+				this._flashObjs.video.attachCamera(this._flashObjs.camera);
+				this._flashObjs.cameraVideo.attachCamera(this._flashObjs.camera);
+			},
+			
+			unbindMedia: function () {
+				this._flashObjs.video.attachCamera(null);
+				this._flashObjs.cameraVideo.attachCamera(null);
+			},
+			
+			enumerateDevices: function () {
+				return {
+					microphones: this._flashObjs.Microphone.get('names'),
+					cameras: this._flashObjs.Camera.get('names')
+				};
+			},
+			
+			selectMicrophone: function (index) {
+				if (this._flashObjs.microphone)
+					this._flashObjs.microphone.weakDestroy();
+				this.__hasMicrophoneActivity = false;
+				this._flashObjs.microphone = this._flashObjs.Microphone.getMicrophone(index);
+			},
 						
+			selectCamera: function (index) {
+				if (this._flashObjs.camera)
+					this._flashObjs.camera.weakDestroy();
+				this._flashObjs.camera = this._flashObjs.Camera.getCamera(index);
+			},
+			
+			microphoneInfo: function () {
+				return {
+					muted: this._flashObjs.microphone.get("muted"),
+					name: this._flashObjs.microphone.get("name"),
+					activityLevel: this._flashObjs.microphone.get("activityLevel"),
+					gain: this._flashObjs.microphone.get("gain"),
+					rate: this._flashObjs.microphone.get("rate"),
+					encodeQuality: this._flashObjs.microphone.get("encodeQuality"),
+					codec: this._flashObjs.microphone.get("codec"),
+					hasActivity: this.__hasMicrophoneActivity
+				};
+			},
+
+			cameraInfo: function () {
+				return {
+					muted: this._flashObjs.camera.get("muted"),
+					name: this._flashObjs.camera.get("name"),
+					activityLevel: this._flashObjs.camera.get("activityLevel"),
+					fps: this._flashObjs.camera.get("fps"),
+					width: this._flashObjs.camera.get("width"),
+					height: this._flashObjs.camera.get("height")
+					// TODO: active
+				};
+			},
+			
+			setMicrophoneProfile: function(profile) {
+				profile = profile || {};
+				this._flashObjs.microphone.setLoopBack(profile.loopback);
+				this._flashObjs.microphone.set("gain", profile.gain || 55);
+				this._flashObjs.microphone.setSilenceLevel(profile.silenceLevel || 0);
+				this._flashObjs.microphone.setUseEchoSuppression(profile.echoSuppression || false);
+			},
+
+			setMicrophoneCodec: function (codec, params) {
+				this._flashObjs.microphone.set("codec", codec);
+				for (var key in params || {})
+					this._flashObjs.microphone.set(key, params[key]);
+			},
+			
+			lightLevel: function (samples) {
+				this._flashObjs.lightLevelBmp.draw(this._flashObjs.video);
+				var w = this._flashObjs.stage.get("stageWidth");
+				var h = this._flashObjs.stage.get("stageHeight");
+				samples = samples || 10;
+				var total_samples = samples * samples;
+				var total_light = 0;
+				for (var i = 0; i < samples; ++i)
+					for (var j = 0; j < samples; ++j) {
+						var rgb = this._flashObjs.lightLevelBmp.getPixel(i * w / samples, j * h / samples);
+						var light = ((rgb % 256) + ((rgb / 256) % 256) + ((rgb / 256 / 256) % 256)) / 3;
+						total_light += light; 
+					}
+				return total_light / total_samples;
+			},
+			
+			_fire: function () {
+				if (this._flashObjs.microphone && !this.__hasMicrophoneActivity)
+					this.__hasMicrophoneActivity = this._flashObjs.microphone.get("activityLevel") > 0;
+			},
+			
+			createSnapshot: function () {
+				var bmp = this._embedding.newObject(
+					"flash.display.BitmapData",
+					this._flashObjs.video.get("videoWidth"),
+					this._flashObjs.video.get("videoHeight")
+				);
+				bmp.draw(this._flashObjs.video);
+				this._snapshots.push(bmp);
+				return this._snapshots.length - 1;
+			},
+			
+			postSnapshot: function (index, url, type, quality) {
+				// TODO: Flash Call Promise
+				
+				quality = quality || 90;
+				var bmp = this._snapshots[index];
+				var header = this._embedding.newObject("flash.net.URLRequestHeader", "Content-type", "application/octet-stream");
+				var request = this._embedding.newObject("flash.net.URLRequest", url);
+		    	request.set("requestHeaders", [header]);
+		    	request.set("method", "POST");
+		    	if (type === "jpg") {
+		    		var jpgEncoder = this._embedding.newObject("com.adobe.images.JPGEncoder", quality);
+		    		request.set("data", jpgEncoder.encodePromise(bmp));
+		    		jpgEncoder.destroy();
+		    	} else {
+		    		var PngEncoder = this._embedding.getClass("com.adobe.images.PNGEncoder");
+		    		request.set("data", PngEncoder.encodePromise(bmp));
+		    		PngEncoder.destroy();
+		    	}
+		    	var poster = this._embedding.newObject("flash.net.URLLoader");
+		    	poster.set("dataFormat", "BINARY");
+				// poster.addEventListener(Event.COMPLETE, snapshot_upload_successful);
+				// poster.addEventListener(IOErrorEvent.IO_ERROR, snapshot_upload_failed);
+				poster.load(request);
+				// poster.destroy();
+				// request.destroy();
+				// header.destroy();
+			},
+
 			idealBB: function () {
 				// TODO
 				return null;
@@ -125,6 +276,7 @@ Scoped.define("module:Player.FlashRecorderWorkInProgress", [
 				this.__flashRegistry.register("flash.net.NetConnection", ["connect", "addEventListener", "call", "close"]);
 				this.__flashRegistry.register("flash.net.URLRequest", []);
 				this.__flashRegistry.register("flash.net.URLRequestHeader", []);
+				this.__flashRegistry.register("flash.net.URLLoader", ["addEventListener", "load"]);
 				this.__flashRegistry.register("flash.display.Sprite", ["addChild", "removeChild", "setChildIndex"]);
 				this.__flashRegistry.register("flash.display.Stage", []);
 				this.__flashRegistry.register("flash.display.Loader", ["load"]);
