@@ -225,8 +225,7 @@ Scoped.define("module:Player.FlashRecorderWorkInProgress", [
 			},
 			
 			postSnapshot: function (index, url, type, quality) {
-				// TODO: Flash Call Promise
-				
+				var promise = Promise.create();
 				quality = quality || 90;
 				var bmp = this._snapshots[index];
 				var header = this._embedding.newObject("flash.net.URLRequestHeader", "Content-type", "application/octet-stream");
@@ -235,21 +234,48 @@ Scoped.define("module:Player.FlashRecorderWorkInProgress", [
 		    	request.set("method", "POST");
 		    	if (type === "jpg") {
 		    		var jpgEncoder = this._embedding.newObject("com.adobe.images.JPGEncoder", quality);
-		    		request.set("data", jpgEncoder.encodePromise(bmp));
+		    		request.set("data", jpgEncoder.encode(bmp));
 		    		jpgEncoder.destroy();
 		    	} else {
 		    		var PngEncoder = this._embedding.getClass("com.adobe.images.PNGEncoder");
-		    		request.set("data", PngEncoder.encodePromise(bmp));
+		    		request.set("data", PngEncoder.encode(bmp));
 		    		PngEncoder.destroy();
 		    	}
 		    	var poster = this._embedding.newObject("flash.net.URLLoader");
 		    	poster.set("dataFormat", "BINARY");
-				// poster.addEventListener(Event.COMPLETE, snapshot_upload_successful);
-				// poster.addEventListener(IOErrorEvent.IO_ERROR, snapshot_upload_failed);
+
+		    	// In case anybody is wondering, no, the progress event does not work for uploads:
+				// http://stackoverflow.com/questions/2106682/a-progress-event-when-uploading-bytearray-to-server-with-as3-php/2107059#2107059
+
+		    	poster.addEventListener("COMPLETE", this._embedding.newCallback(Functions.as_method(function () {
+		    		promise.asyncSuccess(true);
+		    	}, this)));
+		    	poster.addEventListener("IO_ERROR", this._embedding.newCallback(Functions.as_method(function () {
+		    		promise.asyncError("IO Error");
+		    	}, this)));
 				poster.load(request);
-				// poster.destroy();
-				// request.destroy();
-				// header.destroy();
+				promise.callback(function () {
+					poster.destroy();
+					request.destroy();
+					header.destroy();
+				});
+				return promise;
+			},
+			
+			showSnapshot: function (index, x, y, w, h) {
+				var bmpData = this._snapshots[index];
+				var bmp = this._embedding.newObject("flash.display.Bitmap", bmpData);
+				bmp.set("x", x);
+				bmp.set("y", y);
+				bmp.set("scaleX", w / bmpData.get("width"));
+				bmp.set("scaleY", h / bmpData.get("height"));
+				this._flashObjs.stage.addChild(bmp);
+				return bmp;
+			},
+			
+			hideSnapshot: function (snapshot) {
+				this._flashObjs.stage.removeChild(snapshot);
+				snapshot.destroy();
 			},
 
 			idealBB: function () {
@@ -282,6 +308,7 @@ Scoped.define("module:Player.FlashRecorderWorkInProgress", [
 				this.__flashRegistry.register("flash.display.Loader", ["load"]);
 				this.__flashRegistry.register("flash.display.LoaderInfo", ["addEventListener"]);
 				this.__flashRegistry.register("flash.display.BitmapData", ["draw", "getPixel", "dispose"]);
+				this.__flashRegistry.register("flash.display.Bitmap", []);
 				this.__flashRegistry.register("flash.system.Security", [], ["allowDomain", "showSettings"]);
 				this.__flashRegistry.register("com.adobe.images.PNGEncoder", [], ["encode"]);
 				this.__flashRegistry.register("com.adobe.images.JPGEncoder", ["encode"]);
