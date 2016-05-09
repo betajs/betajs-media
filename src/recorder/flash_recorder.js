@@ -325,3 +325,97 @@ Scoped.define("module:Player.FlashRecorderWorkInProgress", [
 	});
 	return Cls;
 });
+
+
+
+/*
+
+startRecording: function () {
+	var status = 'connecting';
+	var connection = new NetConnection();
+	connection.addEventListener("NET_STATUS", function (event) {
+		if (event.info.code == "NetConnection.Connect.Closed" && status != 'stopping') {
+			error("Connection to server interrupted.");
+			return;
+		}
+		if (event.info.code == "NetConnection.Connect.Success" && status != 'connecting') {
+			error("Could not connect to server");
+			return;
+		}
+		if (event.info.code == "NetConnection.Connect.Success" && status == 'connecting') {
+		}
+	});
+	connection.connect(serverUrl);
+	
+	if (streamFileType == "mp4")
+		connection.call("setStreamType", null, "live");
+	
+	stream = new NetStream(connection);			
+	stream.addEventListener(NetStatusEvent.NET_STATUS, function (event) {
+		if (event.info.code == "NetStream.Record.Start") {
+			status = 'recording';
+			return;
+		}
+		if (event.info.code == "NetStream.Play.StreamNotFound") {
+			stream.close();
+			if (status != "none")
+				throw_error("Stream not found");
+			return;
+		}
+		
+		// buffer empty and stopped means OK to close stream
+		else if (event.info.code == "NetStream.Buffer.Empty") {
+			if (status == "uploading" && config.recordStreamFileType() == "mp4") {
+				stream.publish(null);
+			}
+		}
+		
+		if (event.info.code == "NetStream.Unpublish.Success" || (status == "uploading" && event.info.code == "NetStream.Buffer.Empty" && config.recordStreamFileType() == "flv" && stream.bufferLength == 0)) {
+			if (stream_timer) {
+				stream_timer.stop();
+				stream_timer = null;
+			}
+			stream.close();
+			stream = null;
+			connection.close();
+			connection = null;
+			update_status("finished");
+		}
+	});
+
+	stream.bufferTime = 120;
+	if (streamFileType == "mp4" || streamCodec == 'h264) {
+		var h264Settings: H264VideoStreamSettings = new H264VideoStreamSettings();
+		h264Settings.setProfileLevel(H264Profile.BASELINE, H264Level.LEVEL_3_1);
+		stream.videoStreamSettings = h264Settings;
+	}
+
+	stream.attachCamera(camera);
+	stream.attachAudio(microphone);
+	stream.publish(StreamFileName, "record");
+
+
+}
+
+public function uploading_transferred(): Number {
+	return uploading_initial_buffer_length - stream.bufferLength;
+}
+
+
+----
+
+uploading_initial_buffer_length = stream.bufferLength;
+if (stream) {
+	stream.attachCamera(null);
+	stream.attachAudio(null);
+	stream.close();
+	stream = null;
+}
+if (connection) {
+	connection.close();
+	connection = null;
+}
+
+
+
+*/

@@ -13,6 +13,8 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
 				this._video = options.video;
 				this._recording = false;
 				this._bound = false;
+				this._hasAudio = false;
+				this._hasVideo = false;
 			},
 			
 			_getConstraints: function () {
@@ -41,6 +43,8 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
 				if (this._bound)
 					return;
 				return Support.userMedia2(this._getConstraints()).success(function (stream) {
+					this._hasAudio = this._options.recordAudio && stream.getAudioTracks().length > 0;
+					this._hasVideo = this._options.recordVideo && stream.getVideoTracks().length > 0;
 					this._bound = true;
 					this._stream = stream;
 					Support.bindStreamToVideo(stream, this._video);
@@ -216,22 +220,28 @@ Scoped.define("module:WebRTC.WhammyAudioRecorderWrapper", [
 		_boundMedia: function () {
 			this._videoBlob = null;
 			this._audioBlob = null;
-			this._whammyRecorder = new WhammyRecorder(this._stream, {
-				//recorderWidth: this._options.recordResolution.width,
-				//recorderHeight: this._options.recordResolution.height,
-				video: this._video
-			});
-			this._audioRecorder = new AudioRecorder(this._stream);
-			this._audioRecorder.on("data", function (blob) {
-				this._audioBlob = blob;
-				if (this._videoBlob)
-					this._dataAvailable(this._videoBlob, this._audioBlob);
-			}, this);
-			this._whammyRecorder.on("data", function (blob) {
-				this._videoBlob = blob;
-				if (this._audioBlob)
-					this._dataAvailable(this._videoBlob, this._audioBlob);
-			}, this);
+			if (this._hasVideo) {
+				this._whammyRecorder = new WhammyRecorder(this._stream, {
+					//recorderWidth: this._options.recordResolution.width,
+					//recorderHeight: this._options.recordResolution.height,
+					video: this._video
+				});
+			}
+			if (this._hasAudio) {
+				this._audioRecorder = new AudioRecorder(this._stream);
+				this._audioRecorder.on("data", function (blob) {
+					this._audioBlob = blob;
+					if (this._videoBlob || !this._hasVideo)
+						this._dataAvailable(this._videoBlob, this._audioBlob);
+				}, this);
+			}
+			if (this._hasVideo) {
+				this._whammyRecorder.on("data", function (blob) {
+					this._videoBlob = blob;
+					if (this._audioBlob || !this._hasAudio)
+						this._dataAvailable(this._videoBlob, this._audioBlob);
+				}, this);
+			}
 			/*
 			this._whammyRecorder.on("onStartedDrawingNonBlankFrames", function () {
 				if (this._recording)
@@ -241,22 +251,28 @@ Scoped.define("module:WebRTC.WhammyAudioRecorderWrapper", [
 		},
 		
 		_unboundMedia: function () {
-			this._audioRecorder.destroy();
-			this._whammyRecorder.destroy();
+			if (this._hasAudio)
+				this._audioRecorder.destroy();
+			if (this._hasVideo)
+				this._whammyRecorder.destroy();
 		},
 		
 		_startRecord: function () {
-			this._whammyRecorder.start();
-			this._audioRecorder.start();
+			if (this._hasVideo)
+				this._whammyRecorder.start();
+			if (this._hasAudio)
+				this._audioRecorder.start();
 		},
 		
 		_stopRecord: function () {
-			this._whammyRecorder.stop();
-			this._audioRecorder.stop();
+			if (this._hasVideo)
+				this._whammyRecorder.stop();
+			if (this._hasAudio)
+				this._audioRecorder.stop();
 		},
 		
 		averageFrameRate: function () {
-			return this._whammyRecorder.averageFrameRate();
+			return this._hasVideo ? this._whammyRecorder.averageFrameRate() : 0;
 		}
 		
 		

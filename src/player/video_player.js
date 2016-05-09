@@ -445,10 +445,17 @@ Scoped.define("module:Player.FlashPlayerWrapper", [
 
 Scoped.extend("module:Player.VideoPlayerWrapper", [
     "module:Player.VideoPlayerWrapper",
-    "module:Player.Html5VideoPlayerWrapper",
-    "module:Player.FlashPlayerWrapper"
-], function (VideoPlayerWrapper, Html5VideoPlayerWrapper, FlashPlayerWrapper) {
+    "module:Player.Html5VideoPlayerWrapper"
+], function (VideoPlayerWrapper, Html5VideoPlayerWrapper) {
 	VideoPlayerWrapper.register(Html5VideoPlayerWrapper, 2);
+	return {};
+});
+
+
+Scoped.extend("module:Player.VideoPlayerWrapper", [
+	"module:Player.VideoPlayerWrapper",
+	"module:Player.FlashPlayerWrapper"
+], function (VideoPlayerWrapper, FlashPlayerWrapper) {
 	VideoPlayerWrapper.register(FlashPlayerWrapper, 1);
 	return {};
 });

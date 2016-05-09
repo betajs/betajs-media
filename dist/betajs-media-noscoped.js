@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.22 - 2016-04-30
+betajs-media - v0.0.24 - 2016-05-09
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -14,7 +14,7 @@ Scoped.binding('jquery', 'global:jQuery');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "54.1462024423295"
+    "version": "55.1462805288894"
 };
 });
 Scoped.assumeVersion('base:version', 496);
@@ -758,10 +758,17 @@ Scoped.define("module:Player.FlashPlayerWrapper", [
 
 Scoped.extend("module:Player.VideoPlayerWrapper", [
     "module:Player.VideoPlayerWrapper",
-    "module:Player.Html5VideoPlayerWrapper",
-    "module:Player.FlashPlayerWrapper"
-], function (VideoPlayerWrapper, Html5VideoPlayerWrapper, FlashPlayerWrapper) {
+    "module:Player.Html5VideoPlayerWrapper"
+], function (VideoPlayerWrapper, Html5VideoPlayerWrapper) {
 	VideoPlayerWrapper.register(Html5VideoPlayerWrapper, 2);
+	return {};
+});
+
+
+Scoped.extend("module:Player.VideoPlayerWrapper", [
+	"module:Player.VideoPlayerWrapper",
+	"module:Player.FlashPlayerWrapper"
+], function (VideoPlayerWrapper, FlashPlayerWrapper) {
 	VideoPlayerWrapper.register(FlashPlayerWrapper, 1);
 	return {};
 });
@@ -1093,6 +1100,152 @@ Scoped.define("module:Player.FlashRecorderWorkInProgress", [
 	});
 	return Cls;
 });
+
+
+
+/*
+
+startRecording: function () {
+	var status = 'connecting';
+	var connection = new NetConnection();
+	connection.addEventListener("NET_STATUS", function (event) {
+		if (event.info.code == "NetConnection.Connect.Closed" && status != 'stopping') {
+			error("Connection to server interrupted.");
+			return;
+		}
+		if (event.info.code == "NetConnection.Connect.Success" && status != 'connecting') {
+			error("Could not connect to server");
+			return;
+		}
+		if (event.info.code == "NetConnection.Connect.Success" && status == 'connecting') {
+		}
+	});
+	connection.connect(serverUrl);
+	
+	if (streamFileType == "mp4")
+		connection.call("setStreamType", null, "live");
+	
+	stream = new NetStream(connection);			
+	stream.addEventListener(NetStatusEvent.NET_STATUS, function (event) {
+		if (event.info.code == "NetStream.Record.Start") {
+			status = 'recording';
+			return;
+		}
+		if (event.info.code == "NetStream.Play.StreamNotFound") {
+			stream.close();
+			if (status != "none")
+				throw_error("Stream not found");
+			return;
+		}
+		
+		// buffer empty and stopped means OK to close stream
+		else if (event.info.code == "NetStream.Buffer.Empty") {
+			if (status == "uploading" && config.recordStreamFileType() == "mp4") {
+				stream.publish(null);
+			}
+		}
+		
+		if (event.info.code == "NetStream.Unpublish.Success" || (status == "uploading" && event.info.code == "NetStream.Buffer.Empty" && config.recordStreamFileType() == "flv" && stream.bufferLength == 0)) {
+			if (stream_timer) {
+				stream_timer.stop();
+				stream_timer = null;
+			}
+			stream.close();
+			stream = null;
+			connection.close();
+			connection = null;
+			update_status("finished");
+		}
+	});
+
+	stream.bufferTime = 120;
+	if (streamFileType == "mp4" || streamCodec == 'h264) {
+		var h264Settings: H264VideoStreamSettings = new H264VideoStreamSettings();
+		h264Settings.setProfileLevel(H264Profile.BASELINE, H264Level.LEVEL_3_1);
+		stream.videoStreamSettings = h264Settings;
+	}
+
+	stream.attachCamera(camera);
+	stream.attachAudio(microphone);
+	stream.publish(StreamFileName, "record");
+
+
+}
+
+public function uploading_transferred(): Number {
+	return uploading_initial_buffer_length - stream.bufferLength;
+}
+
+
+----
+
+uploading_initial_buffer_length = stream.bufferLength;
+if (stream) {
+	stream.attachCamera(null);
+	stream.attachAudio(null);
+	stream.close();
+	stream = null;
+}
+if (connection) {
+	connection.close();
+	connection = null;
+}
+
+
+
+*/
+Scoped.define("module:Flash.Support", [
+    "base:Promise",
+    "base:Timers.Timer",
+    "flash:FlashClassRegistry",
+    "flash:FlashEmbedding"
+], function (Promise, Timer, FlashClassRegistry, FlashEmbedding) {
+	return {
+		
+		flashCanConnect: function (url, timeout) {
+			var promise = Promise.create();
+			var registry = new FlashClassRegistry();
+			registry.register("flash.net.NetConnection", ["connect", "addEventListener"]);
+			var embedding = new FlashEmbedding(null, {
+				registry: registry,
+				wrap: true
+			});
+			embedding.ready(function () {
+				var connection = embedding.newObject("flash.net.NetConnection");
+				connection.addEventListener("netStatus", embedding.newCallback(function (event) {
+					if (event.get("info") && event.get("info").code === "NetConnection.Connect.Success")
+						promise.asyncSuccess(true);
+					else
+						promise.asyncError(false);
+				}));
+				connection.connectVoid(url);
+			});
+			var timer = null;
+			if (timeout) {
+				timer = new Timer({
+					delay: timeout,
+					once: true,
+					start: true,
+					fire: function () {
+						promise.asyncError();
+					}
+				});
+			}
+			promise.callback(function () {
+				if (timer)
+					timer.destroy();
+				embedding.destroy();
+			});
+			return promise;
+		}
+		
+	};
+});
+
+
+
+
+
 Scoped.define("module:WebRTC.AudioAnalyser", [
                                               "base:Class",
                                               "module:WebRTC.Support"
@@ -1106,8 +1259,10 @@ Scoped.define("module:WebRTC.AudioAnalyser", [
 				this._audioContext = new AudioContext();
 				this._analyserNode = Support.globals().createAnalyser.call(this._audioContext);
 				this._analyserNode.fftSize = 32;
-				this._audioInput = this._audioContext.createMediaStreamSource(stream);
-				this._audioInput.connect(this._analyserNode);
+				if (stream.getAudioTracks().length > 0) {
+					this._audioInput = this._audioContext.createMediaStreamSource(stream);
+					this._audioInput.connect(this._analyserNode);
+				}
 			},
 			
 			destroy: function () {
@@ -1409,6 +1564,8 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
 				this._video = options.video;
 				this._recording = false;
 				this._bound = false;
+				this._hasAudio = false;
+				this._hasVideo = false;
 			},
 			
 			_getConstraints: function () {
@@ -1437,6 +1594,8 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
 				if (this._bound)
 					return;
 				return Support.userMedia2(this._getConstraints()).success(function (stream) {
+					this._hasAudio = this._options.recordAudio && stream.getAudioTracks().length > 0;
+					this._hasVideo = this._options.recordVideo && stream.getVideoTracks().length > 0;
 					this._bound = true;
 					this._stream = stream;
 					Support.bindStreamToVideo(stream, this._video);
@@ -1612,22 +1771,28 @@ Scoped.define("module:WebRTC.WhammyAudioRecorderWrapper", [
 		_boundMedia: function () {
 			this._videoBlob = null;
 			this._audioBlob = null;
-			this._whammyRecorder = new WhammyRecorder(this._stream, {
-				//recorderWidth: this._options.recordResolution.width,
-				//recorderHeight: this._options.recordResolution.height,
-				video: this._video
-			});
-			this._audioRecorder = new AudioRecorder(this._stream);
-			this._audioRecorder.on("data", function (blob) {
-				this._audioBlob = blob;
-				if (this._videoBlob)
-					this._dataAvailable(this._videoBlob, this._audioBlob);
-			}, this);
-			this._whammyRecorder.on("data", function (blob) {
-				this._videoBlob = blob;
-				if (this._audioBlob)
-					this._dataAvailable(this._videoBlob, this._audioBlob);
-			}, this);
+			if (this._hasVideo) {
+				this._whammyRecorder = new WhammyRecorder(this._stream, {
+					//recorderWidth: this._options.recordResolution.width,
+					//recorderHeight: this._options.recordResolution.height,
+					video: this._video
+				});
+			}
+			if (this._hasAudio) {
+				this._audioRecorder = new AudioRecorder(this._stream);
+				this._audioRecorder.on("data", function (blob) {
+					this._audioBlob = blob;
+					if (this._videoBlob || !this._hasVideo)
+						this._dataAvailable(this._videoBlob, this._audioBlob);
+				}, this);
+			}
+			if (this._hasVideo) {
+				this._whammyRecorder.on("data", function (blob) {
+					this._videoBlob = blob;
+					if (this._audioBlob || !this._hasAudio)
+						this._dataAvailable(this._videoBlob, this._audioBlob);
+				}, this);
+			}
 			/*
 			this._whammyRecorder.on("onStartedDrawingNonBlankFrames", function () {
 				if (this._recording)
@@ -1637,22 +1802,28 @@ Scoped.define("module:WebRTC.WhammyAudioRecorderWrapper", [
 		},
 		
 		_unboundMedia: function () {
-			this._audioRecorder.destroy();
-			this._whammyRecorder.destroy();
+			if (this._hasAudio)
+				this._audioRecorder.destroy();
+			if (this._hasVideo)
+				this._whammyRecorder.destroy();
 		},
 		
 		_startRecord: function () {
-			this._whammyRecorder.start();
-			this._audioRecorder.start();
+			if (this._hasVideo)
+				this._whammyRecorder.start();
+			if (this._hasAudio)
+				this._audioRecorder.start();
 		},
 		
 		_stopRecord: function () {
-			this._whammyRecorder.stop();
-			this._audioRecorder.stop();
+			if (this._hasVideo)
+				this._whammyRecorder.stop();
+			if (this._hasAudio)
+				this._audioRecorder.stop();
 		},
 		
 		averageFrameRate: function () {
-			return this._whammyRecorder.averageFrameRate();
+			return this._hasVideo ? this._whammyRecorder.averageFrameRate() : 0;
 		}
 		
 		
