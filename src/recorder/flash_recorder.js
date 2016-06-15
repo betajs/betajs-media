@@ -1,4 +1,4 @@
-Scoped.define("module:Player.FlashRecorderWorkInProgress", [
+Scoped.define("module:Flash.FlashRecorder", [
     "browser:DomExtend.DomExtension",
 	"browser:Dom",
 	"browser:Info",
@@ -10,10 +10,12 @@ Scoped.define("module:Player.FlashRecorderWorkInProgress", [
     "base:Functions",
     "base:Types",
     "base:Timers.Timer",
+    "base:Time",
     "jquery:",
-    "base:Promise"
-], function (Class, Dom, Info, FlashClassRegistry, FlashEmbedding, Strings, Async, Objs, Functions, Types, Timer, $, Promise, scoped) {
-	var Cls = Class.extend({scoped: scoped}, function (inherited) {
+    "base:Promise",
+    "base:Events.EventsMixin"
+], function (Class, Dom, Info, FlashClassRegistry, FlashEmbedding, Strings, Async, Objs, Functions, Types, Timer, Time, $, Promise, EventsMixin, scoped) {
+	var Cls = Class.extend({scoped: scoped}, [EventsMixin, function (inherited) {
 		return {
 			
 			constructor: function (element, attrs) {
@@ -22,12 +24,16 @@ Scoped.define("module:Player.FlashRecorderWorkInProgress", [
 					registry: this.cls.flashRegistry(),
 					wrap: true,
 					debug: false
+				}, {
+					parentBgcolor: true,
+					fixHalfPixels: true
 				}));
 				this._flashObjs = {};
-				this._snapshots = [];
 				this.ready = Promise.create();
+				this.__status = "idle";
 				this.__cameraWidth = this.readAttr('camerawidth') || 640;
 				this.__cameraHeight = this.readAttr('cameraheight') || 480;
+				this.__streamType = this.readAttr("streamtype") || 'mp4';
 				this.__fps = this.readAttr('fps') || 20;				
 				this._embedding.ready(this.__initializeEmbedding, this);
 			},
@@ -48,17 +54,16 @@ Scoped.define("module:Player.FlashRecorderWorkInProgress", [
 					this.__cameraWidth,
 					this.__cameraHeight
 				);
-				this._flashObjs.lightLevelBmp = this._embedding.newObject(
-					"flash.display.BitmapData",
-					this._flashObjs.stage.get("stageWidth"),
-					this._flashObjs.stage.get("stageHeight")
-				);
 				this._flashObjs.main.addChildVoid(this._flashObjs.video);
 				this._flashObjs.Microphone = this._embedding.getClass("flash.media.Microphone");
 				this._flashObjs.Camera = this._embedding.getClass("flash.media.Camera");
 				this._flashObjs.microphone = this._flashObjs.Microphone.getMicrophone(0);
+				this.setMicrophoneProfile();
 				this._flashObjs.camera = this._flashObjs.Camera.getCamera(0);
+				this._currentCamera = 0;
+				this._currentMicrophone = 0;
 				this._flashObjs.Security = this._embedding.getClass("flash.system.Security");
+				this.recomputeBB();
 				this.ready.asyncSuccess(this);
 				this.auto_destroy(new Timer({
 					delay: 100,
@@ -86,6 +91,7 @@ Scoped.define("module:Player.FlashRecorderWorkInProgress", [
 			},
 			
 			openSecurityDialog: function (fullSecurityDialog) {
+				this.trigger("require_display");
 				if (fullSecurityDialog)
 					this._flashObjs.Security.showSettings("privacy");
 				else {
@@ -95,18 +101,16 @@ Scoped.define("module:Player.FlashRecorderWorkInProgress", [
 			},
 			
 			grantAccess: function (fullSecurityDialog, allowDeny) {
-				if (this.isAccessGranted())
-					return Promise.value(true);
-				if (!this.isSecurityDialogOpen())
-					this.openSecurityDialog(fullSecurityDialog);
 				var promise = Promise.create();
 				var timer = new Timer({
 					fire: function () {
+						if (this.isSecurityDialogOpen())
+							return;
 						if (this.isAccessGranted()) {
 							timer.destroy();
 							promise.asyncSuccess(true);
-						} else if (!this.isSecurityDialogOpen()) {
-							if (allowDeny || !fullSecurityDialog) {
+						} else {
+							if (allowDeny) {
 								timer.destroy();
 								promise.asyncError(true);
 							} else
@@ -120,7 +124,19 @@ Scoped.define("module:Player.FlashRecorderWorkInProgress", [
 				return promise;
 			},
 			
-			bindMedia: function () {
+			bindMedia: function (fullSecurityDialog, allowDeny) {
+				return this.grantAccess(fullSecurityDialog, allowDeny).mapSuccess(function () {
+					this._mediaBound = true;
+					this._attachCamera();
+				}, this);
+			},
+			
+			unbindMedia: function () {
+				this._detachCamera();
+				this._mediaBound = false;
+			},
+			
+			_attachCamera: function () {
 				this._flashObjs.camera.setMode(this.__cameraWidth, this.__cameraHeight, this.__fps);
 				this._flashObjs.camera.setQuality(0, 90);
 				this._flashObjs.camera.setKeyFrameInterval(5);
@@ -128,15 +144,15 @@ Scoped.define("module:Player.FlashRecorderWorkInProgress", [
 				this._flashObjs.cameraVideo.attachCamera(this._flashObjs.camera);
 			},
 			
-			unbindMedia: function () {
+			_detachCamera: function () {
 				this._flashObjs.video.attachCamera(null);
 				this._flashObjs.cameraVideo.attachCamera(null);
 			},
 			
 			enumerateDevices: function () {
 				return {
-					microphones: this._flashObjs.Microphone.get('names'),
-					cameras: this._flashObjs.Camera.get('names')
+					audios: this._flashObjs.Microphone.get('names'),
+					videos: this._flashObjs.Camera.get('names')
 				};
 			},
 			
@@ -144,13 +160,28 @@ Scoped.define("module:Player.FlashRecorderWorkInProgress", [
 				if (this._flashObjs.microphone)
 					this._flashObjs.microphone.weakDestroy();
 				this.__hasMicrophoneActivity = false;
+				this.__microphoneActivityTime = null;
 				this._flashObjs.microphone = this._flashObjs.Microphone.getMicrophone(index);
+				this._currentMicrophone = index;
+				this.setMicrophoneProfile(this._currentMicrophoneProfile);
 			},
 						
 			selectCamera: function (index) {
 				if (this._flashObjs.camera)
 					this._flashObjs.camera.weakDestroy();
+				this.__cameraActivityTime = null;
 				this._flashObjs.camera = this._flashObjs.Camera.getCamera(index);
+				this._currentCamera = index;
+				if (this._mediaBound) 
+					this._attachCamera();
+			},
+			
+			currentCamera: function () {
+				return this._currentCamera;
+			},
+			
+			currentMicrophone: function () {
+				return this._currentMicrophone;
 			},
 			
 			microphoneInfo: function () {
@@ -162,7 +193,8 @@ Scoped.define("module:Player.FlashRecorderWorkInProgress", [
 					rate: this._flashObjs.microphone.get("rate"),
 					encodeQuality: this._flashObjs.microphone.get("encodeQuality"),
 					codec: this._flashObjs.microphone.get("codec"),
-					hasActivity: this.__hasMicrophoneActivity
+					hadActivity: this.__hadMicrophoneActivity,
+					inactivityTime: this.__microphoneActivityTime ? Time.now() - this.__microphoneActivityTime : null
 				};
 			},
 
@@ -173,19 +205,20 @@ Scoped.define("module:Player.FlashRecorderWorkInProgress", [
 					activityLevel: this._flashObjs.camera.get("activityLevel"),
 					fps: this._flashObjs.camera.get("fps"),
 					width: this._flashObjs.camera.get("width"),
-					height: this._flashObjs.camera.get("height")
-					// TODO: active
+					height: this._flashObjs.camera.get("height"),
+					inactivityTime: this.__cameraActivityTime ? Time.now() - this.__cameraActivityTime : null
 				};
 			},
 			
 			setMicrophoneProfile: function(profile) {
 				profile = profile || {};
-				this._flashObjs.microphone.setLoopBack(profile.loopback);
+				this._flashObjs.microphone.setLoopBack(profile.loopback || false);
 				this._flashObjs.microphone.set("gain", profile.gain || 55);
 				this._flashObjs.microphone.setSilenceLevel(profile.silenceLevel || 0);
 				this._flashObjs.microphone.setUseEchoSuppression(profile.echoSuppression || false);
+				this._currentMicrophoneProfile = profile;
 			},
-
+			
 			setMicrophoneCodec: function (codec, params) {
 				this._flashObjs.microphone.set("codec", codec);
 				for (var key in params || {})
@@ -193,41 +226,63 @@ Scoped.define("module:Player.FlashRecorderWorkInProgress", [
 			},
 			
 			lightLevel: function (samples) {
-				this._flashObjs.lightLevelBmp.draw(this._flashObjs.video);
-				var w = this._flashObjs.stage.get("stageWidth");
-				var h = this._flashObjs.stage.get("stageHeight");
+				var w = this._flashObjs.cameraVideo.get("width");
+				var h = this._flashObjs.cameraVideo.get("height");
+				var lightLevelBmp = this._embedding.newObject("flash.display.BitmapData", w, h);
+				lightLevelBmp.draw(this._flashObjs.cameraVideo);
 				samples = samples || 10;
 				var total_samples = samples * samples;
 				var total_light = 0;
 				for (var i = 0; i < samples; ++i)
 					for (var j = 0; j < samples; ++j) {
-						var rgb = this._flashObjs.lightLevelBmp.getPixel(i * w / samples, j * h / samples);
+						var rgb = lightLevelBmp.getPixel(Math.round(i * w / samples), Math.round(j * h / samples));
 						var light = ((rgb % 256) + ((rgb / 256) % 256) + ((rgb / 256 / 256) % 256)) / 3;
-						total_light += light; 
-					}
+						total_light += light;
+					}				
+				lightLevelBmp.destroy();
 				return total_light / total_samples;
 			},
 			
+			testSoundLevel: function (activate) {
+				this.setMicrophoneProfile(activate ? {
+					loopback: true,
+					gain: 55,
+					silenceLevel: 100,
+					echoSuppression: true
+				} : {});
+			},
+			
+			soundLevel: function () {
+				return this._flashObjs.microphone.get("activityLevel");
+			},
+			
 			_fire: function () {
-				if (this._flashObjs.microphone && !this.__hasMicrophoneActivity)
-					this.__hasMicrophoneActivity = this._flashObjs.microphone.get("activityLevel") > 0;
+				if (!this._mediaBound)
+					return;
+				this.__hadMicrophoneActivity = this.__hadMicrophoneActivity || (this._flashObjs.microphone && this._flashObjs.microphone.get("activityLevel") > 0);
+				if (this._flashObjs.microphone && this._flashObjs.microphone.get("activityLevel") > 0)
+					this.__microphoneActivityTime = Time.now();				
+				if (this._flashObjs.camera) {
+					var currentCameraActivity = this._flashObjs.camera.get("activityLevel");
+					if (!this.__lastCameraActivity || this.__lastCameraActivity !== currentCameraActivity)
+						this.__cameraActivityTime = Time.now();
+					this.__lastCameraActivity = currentCameraActivity;
+				}
 			},
 			
 			createSnapshot: function () {
 				var bmp = this._embedding.newObject(
 					"flash.display.BitmapData",
-					this._flashObjs.video.get("videoWidth"),
-					this._flashObjs.video.get("videoHeight")
+					this._flashObjs.cameraVideo.get("videoWidth"),
+					this._flashObjs.cameraVideo.get("videoHeight")
 				);
-				bmp.draw(this._flashObjs.video);
-				this._snapshots.push(bmp);
-				return this._snapshots.length - 1;
+				bmp.draw(this._flashObjs.cameraVideo);
+				return bmp;
 			},
 			
-			postSnapshot: function (index, url, type, quality) {
+			postSnapshot: function (bmp, url, type, quality) {
 				var promise = Promise.create();
 				quality = quality || 90;
-				var bmp = this._snapshots[index];
 				var header = this._embedding.newObject("flash.net.URLRequestHeader", "Content-type", "application/octet-stream");
 				var request = this._embedding.newObject("flash.net.URLRequest", url);
 		    	request.set("requestHeaders", [header]);
@@ -239,7 +294,6 @@ Scoped.define("module:Player.FlashRecorderWorkInProgress", [
 		    	} else {
 		    		var PngEncoder = this._embedding.getClass("com.adobe.images.PNGEncoder");
 		    		request.set("data", PngEncoder.encode(bmp));
-		    		PngEncoder.destroy();
 		    	}
 		    	var poster = this._embedding.newObject("flash.net.URLLoader");
 		    	poster.set("dataFormat", "BINARY");
@@ -247,10 +301,10 @@ Scoped.define("module:Player.FlashRecorderWorkInProgress", [
 		    	// In case anybody is wondering, no, the progress event does not work for uploads:
 				// http://stackoverflow.com/questions/2106682/a-progress-event-when-uploading-bytearray-to-server-with-as3-php/2107059#2107059
 
-		    	poster.addEventListener("COMPLETE", this._embedding.newCallback(Functions.as_method(function () {
+		    	poster.addEventListener("complete", this._embedding.newCallback(Functions.as_method(function () {
 		    		promise.asyncSuccess(true);
 		    	}, this)));
-		    	poster.addEventListener("IO_ERROR", this._embedding.newCallback(Functions.as_method(function () {
+		    	poster.addEventListener("ioError", this._embedding.newCallback(Functions.as_method(function () {
 		    		promise.asyncError("IO Error");
 		    	}, this)));
 				poster.load(request);
@@ -262,33 +316,138 @@ Scoped.define("module:Player.FlashRecorderWorkInProgress", [
 				return promise;
 			},
 			
-			showSnapshot: function (index, x, y, w, h) {
-				var bmpData = this._snapshots[index];
+			createSnapshotDisplay: function (bmpData, x, y, w, h) {
 				var bmp = this._embedding.newObject("flash.display.Bitmap", bmpData);
+				this.updateSnapshotDisplay(bmpData, bmp, x, y, w, h);
+				this._flashObjs.main.addChildVoid(bmp);
+				return bmp;
+			},
+			
+			updateSnapshotDisplay: function (bmpData, bmp, x, y, w, h) {
 				bmp.set("x", x);
 				bmp.set("y", y);
 				bmp.set("scaleX", w / bmpData.get("width"));
 				bmp.set("scaleY", h / bmpData.get("height"));
-				this._flashObjs.stage.addChild(bmp);
-				return bmp;
 			},
-			
-			hideSnapshot: function (snapshot) {
-				this._flashObjs.stage.removeChild(snapshot);
+
+			removeSnapshotDisplay: function (snapshot) {
+				this._flashObjs.main.removeChildVoid(snapshot);
 				snapshot.destroy();
 			},
 
 			idealBB: function () {
-				// TODO
-				return null;
+				return {
+					width: this.__cameraWidth,
+					height: this.__cameraHeight
+				};
 			},
 			
 			setActualBB: function (actualBB) {
-				// TODO
+				this._$element.find("object").css("width", actualBB.width + "px");
+				this._$element.find("embed").css("width", actualBB.width + "px");
+				this._$element.find("object").css("height", actualBB.height + "px");
+				this._$element.find("embed").css("height", actualBB.height + "px");
+				var video = this._flashObjs.video;
+				if (video) {
+					video.set("width", actualBB.width);
+					video.set("height", actualBB.height);
+				}
+			},
+			
+			_error: function (s) {
+				this.__status = "error";
+				this.trigger("error", s);
+			},
+			
+			_status: function (s) {
+				if (s && s !== this.__status) {
+					this.__status = s;
+					this.trigger("status", s);
+					this.trigger(s);
+				}
+				return this.__status;
+			},
+			
+			startRecord: function (serverUrl, streamName) {
+				this._status("connecting");
+				this._flashObjs.connection = this._embedding.newObject("flash.net.NetConnection");
+				this._flashObjs.connection.addEventListener("netStatus", this._embedding.newCallback(Functions.as_method(function (event) {
+					var code = event.get("info").code;
+					if (code === "NetConnection.Connect.Closed" && this._status() === 'recording') {
+						this._error("Connection to server interrupted.");
+						return;
+					}
+					if (code === "NetConnection.Connect.Success" && this._status() !== 'connecting') {
+						this._error("Could not connect to server");
+						return;
+					}
+					if (code === "NetConnection.Connect.Success" && this._status() === 'connecting') {
+						if (this.__streamType === 'mp4')
+							this._flashObjs.connection.callVoid("setStreamType", null, "live");
+						this._flashObjs.stream = this._embedding.newObject("flash.net.NetStream", this._flashObjs.connection);
+						this._flashObjs.stream.addEventListener("netStatus", this._embedding.newCallback(Functions.as_method(function (event) {
+							var code = event.get("info").code;
+							if (code === "NetStream.Record.Start") {
+								this._status('recording');
+								return;
+							}
+							if (code === "NetStream.Play.StreamNotFound") {
+								this._flashObjs.stream.closeVoid();
+								if (this._status() !== "none")
+									this._error("Stream not found");
+								return;
+							}
+							// buffer empty and stopped means OK to close stream
+							if (code === "NetStream.Buffer.Empty") {
+								if (this._status() === "uploading" && this.__streamType === 'mp4') {
+									this._flashObjs.stream.publish(null);
+								}
+							}
+							if (code === "NetStream.Unpublish.Success" ||
+							    (this._status() === "uploading" && code === "NetStream.Buffer.Empty" &&
+							     this.__streamType === "flv" && this._flashObjs.stream.get('bufferLength') === 0)) {
+								this._flashObjs.stream.closeVoid();
+								this._flashObjs.stream.destroy();
+								this._flashObjs.stream = null;
+								this._flashObjs.connection.closeVoid();
+								this._flashObjs.connection.destroy();
+								this._flashObjs.connection = null;
+								this._status('finished');
+							}
+						}, this)));
+						this._flashObjs.stream.set("bufferTime", 120);
+						if (this.__streamType === 'mp4') {
+							this._flashObjs.h264Settings = this._embedding.newObject("flash.media.H264VideoStreamSettings");
+							this._flashObjs.h264Settings.setProfileLevel("baseline", "3.1");
+							this._flashObjs.stream.set("videoStreamSettings", this._flashObjs.h264Settings);
+						}
+						this._flashObjs.stream.attachCameraVoid(this._flashObjs.camera);
+						this._flashObjs.stream.attachAudioVoid(this._flashObjs.microphone);
+						this._flashObjs.stream.publish(streamName, "record");
+					}
+				}, this)));
+				this._flashObjs.connection.connectVoid(serverUrl);
+			},
+			
+			stopRecord: function () {
+				if (this._status() !== "recording")
+					return;
+				this.__initialBufferLength = 0;
+				this._status("uploading");
+				this.__initialBufferLength = this._flashObjs.stream.get("bufferLength");
+				//this._flashObjs.stream.attachAudioVoid(null);
+				this._flashObjs.stream.attachCameraVoid(null);
+			},
+			
+			uploadStatus: function () {
+				return {
+					total: this.__initialBufferLength,
+					remaining: this._flashObjs.stream.get("bufferLength")
+				};
 			}
 		
 		};		
-	}, {
+	}], {
 		
 		flashRegistry: function () {
 			if (!this.__flashRegistry) {
@@ -326,96 +485,3 @@ Scoped.define("module:Player.FlashRecorderWorkInProgress", [
 	return Cls;
 });
 
-
-
-/*
-
-startRecording: function () {
-	var status = 'connecting';
-	var connection = new NetConnection();
-	connection.addEventListener("NET_STATUS", function (event) {
-		if (event.info.code == "NetConnection.Connect.Closed" && status != 'stopping') {
-			error("Connection to server interrupted.");
-			return;
-		}
-		if (event.info.code == "NetConnection.Connect.Success" && status != 'connecting') {
-			error("Could not connect to server");
-			return;
-		}
-		if (event.info.code == "NetConnection.Connect.Success" && status == 'connecting') {
-		}
-	});
-	connection.connect(serverUrl);
-	
-	if (streamFileType == "mp4")
-		connection.call("setStreamType", null, "live");
-	
-	stream = new NetStream(connection);			
-	stream.addEventListener(NetStatusEvent.NET_STATUS, function (event) {
-		if (event.info.code == "NetStream.Record.Start") {
-			status = 'recording';
-			return;
-		}
-		if (event.info.code == "NetStream.Play.StreamNotFound") {
-			stream.close();
-			if (status != "none")
-				throw_error("Stream not found");
-			return;
-		}
-		
-		// buffer empty and stopped means OK to close stream
-		else if (event.info.code == "NetStream.Buffer.Empty") {
-			if (status == "uploading" && config.recordStreamFileType() == "mp4") {
-				stream.publish(null);
-			}
-		}
-		
-		if (event.info.code == "NetStream.Unpublish.Success" || (status == "uploading" && event.info.code == "NetStream.Buffer.Empty" && config.recordStreamFileType() == "flv" && stream.bufferLength == 0)) {
-			if (stream_timer) {
-				stream_timer.stop();
-				stream_timer = null;
-			}
-			stream.close();
-			stream = null;
-			connection.close();
-			connection = null;
-			update_status("finished");
-		}
-	});
-
-	stream.bufferTime = 120;
-	if (streamFileType == "mp4" || streamCodec == 'h264) {
-		var h264Settings: H264VideoStreamSettings = new H264VideoStreamSettings();
-		h264Settings.setProfileLevel(H264Profile.BASELINE, H264Level.LEVEL_3_1);
-		stream.videoStreamSettings = h264Settings;
-	}
-
-	stream.attachCamera(camera);
-	stream.attachAudio(microphone);
-	stream.publish(StreamFileName, "record");
-
-
-}
-
-public function uploading_transferred(): Number {
-	return uploading_initial_buffer_length - stream.bufferLength;
-}
-
-
-----
-
-uploading_initial_buffer_length = stream.bufferLength;
-if (stream) {
-	stream.attachCamera(null);
-	stream.attachAudio(null);
-	stream.close();
-	stream = null;
-}
-if (connection) {
-	connection.close();
-	connection = null;
-}
-
-
-
-*/

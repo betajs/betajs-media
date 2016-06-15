@@ -1,9 +1,10 @@
 Scoped.define("module:Flash.Support", [
     "base:Promise",
     "base:Timers.Timer",
+    "base:Async",
     "flash:FlashClassRegistry",
     "flash:FlashEmbedding"
-], function (Promise, Timer, FlashClassRegistry, FlashEmbedding) {
+], function (Promise, Timer, Async, FlashClassRegistry, FlashEmbedding) {
 	return {
 		
 		flashCanConnect: function (url, timeout) {
@@ -38,7 +39,9 @@ Scoped.define("module:Flash.Support", [
 			promise.callback(function () {
 				if (timer)
 					timer.destroy();
-				embedding.destroy();
+				Async.eventually(function () {
+					embedding.destroy();
+				});				
 			});
 			return promise;
 		}

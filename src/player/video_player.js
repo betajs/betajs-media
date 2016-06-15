@@ -41,6 +41,7 @@ Scoped.define("module:Player.VideoPlayerWrapper", [
 				this._element = options.element;
 				this._$element = $(options.element);
 				this._preload = options.preload || false;
+				this._reloadonplay = options.reloadonplay || false;
 				this._options = options;
 				this._loop = options.loop || false;
 				this._loaded = false;
@@ -117,6 +118,8 @@ Scoped.define("module:Player.VideoPlayerWrapper", [
 			},
 			
             play: function () {
+            	if (this._reloadonplay)
+            		this._element.load();
             	this._element.play();
             },
             
@@ -365,7 +368,7 @@ Scoped.define("module:Player.FlashPlayerWrapper", [
 				if (!Info.flash().installed() && this._options.flashinstallrequired)
 					return Promise.error(true);				
 				if (!Info.flash().installed()) { 
-					this._errorEvent(this.cls.ERROR_NO_FLASH_INSTALLED);
+					this._eventError(this.cls.ERROR_NO_FLASH_INSTALLED);
 					return Promise.value(true);
 				}
 				var self = this;

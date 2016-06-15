@@ -19,7 +19,9 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
 			
 			_getConstraints: function () {
 				return {
-					audio: this._options.recordAudio,
+					audio: this._options.recordAudio ? {
+						sourceId: this._options.audioId
+					} : false,
 					video: this._options.recordVideo ? {
 						/*
 						mandatory: {
@@ -29,6 +31,7 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
 							maxHeight: this._options.recordResolution.height
 						}
 						*/
+						sourceId: this._options.videoId,
 						width: this._options.recordResolution.width,
 						height: this._options.recordResolution.height
 					} : false
@@ -53,6 +56,22 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
 				}, this);
 			},
 			
+			selectCamera: function (cameraId) {
+				this._options.videoId = cameraId;
+				if (this._bound) {
+					this.unbindMedia();
+					this.bindMedia();
+				}
+			},
+			
+			selectMicrophone: function (microphoneId) {
+				this._options.audioId = microphoneId;
+				if (this._bound) {
+					this.unbindMedia();
+					this.bindMedia();
+				}
+			},
+
 			startRecord: function () {
 				if (this._recording)
 					return;

@@ -200,7 +200,7 @@ Scoped.define("module:Player.FlashPlayer", [
 				return this.__metaLoaded ? this._flashData.meta.height : (this.__imageLoaded ? this.__imageLoaded.height : NaN);
 			},
 
-			_domMethods: ["play", "pause"],
+			_domMethods: ["play", "pause", "load"],
 			
 			_domAttrs: {
 				"volume": {
@@ -211,6 +211,8 @@ Scoped.define("module:Player.FlashPlayer", [
 					set: "_setCurrentTime"
 				}				
 			},
+			
+			load: function () {},
 			
 			play: function () {
 				if (this._flashObjs.main.imageLoader)
@@ -224,7 +226,7 @@ Scoped.define("module:Player.FlashPlayer", [
 			},
 			
 			pause: function () {
-				if (this._flashData.status === "paused")
+				if (this._flashData.status !== "playing")
 					return;
 				this._flashData.status = "paused";
 				this._flashObjs.stream.pauseVoid();

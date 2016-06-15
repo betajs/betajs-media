@@ -26,6 +26,8 @@ Scoped.define("module:WebRTC.AudioAnalyser", [
 			},
 				
 			soundLevel: function () {
+				if (!this._audioInput)
+					return 0.0;
 				var bufferLength = this._analyserNode.fftSize;
 				var dataArray = new Uint8Array(bufferLength);
 				this._analyserNode.getByteTimeDomainData(dataArray);

@@ -49,43 +49,47 @@ Scoped.define("module:WebRTC.Support", [
 		},
 		
 		mediaStreamTrackSourcesSupported: function () {
-			return MediaStreamTrack && MediaStreamTrack.getSources;
+			return ;
 		},
 		
-		mediaStreamTrackSources: function () {
-			if (!this.mediaStreamTrackSourcesSupported())
-				return Promise.error("Unsupported");
+		enumerateMediaSources: function () {
 			var promise = Promise.create();
-			try {
-				MediaStreamTrack.getSources(function (sources) {
-					var result = {
-						audio: {},
-						audioCount: 0,
-						video: {},
-						videoCount: 0
-					};
-					Objs.iter(sources, function (source) {
-						if (source.kind === "video") {
-							result.videoCount++;
-							result.video[source.id] = {
-								id: source.id,
-								label: source.label
-							};
-						}
-						if (source.kind === "audio") {
-							result.audioCount++;
-							result.audio[source.id] = {
-								id: source.id,
-								label: source.label
-							};
-						}
-					});
-					promise.asyncSuccess(result);
+			var promiseCallback = function (sources) {
+				var result = {
+					audio: {},
+					audioCount: 0,
+					video: {},
+					videoCount: 0
+				};
+				Objs.iter(sources, function (source) {
+					if (source.kind.indexOf("video") === 0) {
+						result.videoCount++;
+						result.video[source.id || source.deviceId] = {
+							id: source.id || source.deviceId,
+							label: source.label
+						};
+					}
+					if (source.kind.indexOf("audio") === 0) {
+						result.audioCount++;
+						result.audio[source.id || source.deviceId] = {
+							id: source.id || source.deviceId,
+							label: source.label
+						};
+					}
 				});
-				return promise;
+				promise.asyncSuccess(result);
+			};
+			try {
+				if (MediaStreamTrack && MediaStreamTrack.getSources)
+					MediaStreamTrack.getSources(promiseCallback);
+				else if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices)
+					navigator.mediaDevices.enumerateDevices().then(promiseCallback);
+				else
+					promise.asyncError("Unsupported");
 			} catch (e) {
-				return Promise.error(e);
+				promise.asyncError(e);
 			}
+			return promise;
 		},
 		
 		streamQueryResolution: function (stream) {
@@ -122,49 +126,50 @@ Scoped.define("module:WebRTC.Support", [
 		userMedia2: function (options) {
 			var opts = {};
 			if (options.audio)
-				opts.audio = true;
+				opts.audio = options.audio;
 			if (!options.video)
 				return this.userMedia(opts);
 			if (Info.isFirefox()) {
-				if (options.video) {
-					opts.video = {};
-					if (options.video.aspectRatio && !(options.video.width && options.video.height)) {
-						if (options.video.width)
-							options.video.height = Math.round(options.video.width / options.video.aspectRatio);
-						else if (options.video.height)
-							options.video.width = Math.round(options.video.height * options.video.aspectRatio);
-					}
-					if (options.video.width) {
-						opts.video.width = {
-							ideal: options.video.width
-						};
-					}
-					if (options.video.height) {
-						opts.video.height = {
-							ideal: options.video.height
-						};
-					}
+				opts.video = {};
+				if (options.video.aspectRatio && !(options.video.width && options.video.height)) {
+					if (options.video.width)
+						options.video.height = Math.round(options.video.width / options.video.aspectRatio);
+					else if (options.video.height)
+						options.video.width = Math.round(options.video.height * options.video.aspectRatio);
 				}
+				if (options.video.width) {
+					opts.video.width = {
+						ideal: options.video.width
+					};
+				}
+				if (options.video.height) {
+					opts.video.height = {
+						ideal: options.video.height
+					};
+				}
+				if (options.video.sourceId)
+					opts.video.sourceId = options.video.sourceId; 
 				return this.userMedia(opts);
 			} else {
-				if (options.video) {
-					opts.video = {
-						mandatory: {}
-					};
-					if (options.video.width) {
-						opts.video.mandatory.minWidth = options.video.width;
-						opts.video.mandatory.maxWidth = options.video.width;
-					}
-					if (!options.video.width && options.video.height) {
-						opts.video.mandatory.minHeight = options.video.height;
-						opts.video.mandatory.maxHeight = options.video.height;
-					}
-					var as = options.video.aspectRatio ? options.video.aspectRatio : (options.video.width && options.video.height ? options.video.width/options.video.height : null);
-					if (as) {
-						opts.video.mandatory.minAspectRatio = as;
-						opts.video.mandatory.maxAspectRatio = as;
-					}
+				opts.video = {
+					mandatory: {}
+				};
+				if (options.video.width) {
+					opts.video.mandatory.minWidth = options.video.width;
+					opts.video.mandatory.maxWidth = options.video.width;
 				}
+				if (!options.video.width && options.video.height) {
+					opts.video.mandatory.minHeight = options.video.height;
+					opts.video.mandatory.maxHeight = options.video.height;
+				}
+				var as = options.video.aspectRatio ? options.video.aspectRatio : (options.video.width && options.video.height ? options.video.width/options.video.height : null);
+				if (as) {
+					opts.video.mandatory.minAspectRatio = as;
+					opts.video.mandatory.maxAspectRatio = as;
+				}
+				if (options.video.sourceId)
+					opts.video.mandatory.sourceId = options.video.sourceId;
+				
 				var probe = function () {
 					var mandatory = opts.video.mandatory;
 					return this.userMedia(opts).mapError(function (e) {
