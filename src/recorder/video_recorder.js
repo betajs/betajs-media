@@ -57,6 +57,18 @@ Scoped.define("module:Recorder.VideoRecorderWrapper", [
 			
 			isFlash: function () {
 				return false;
+			},
+			
+			supportsLocalPlayback: function () {
+				return false;
+			},
+			
+			snapshotToLocalPoster: function (snapshot) {
+				return null;
+			},
+			
+			localPlaybackSource: function () {
+				return null;
 			}
 			
 		};
@@ -201,6 +213,7 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
 			},
 			
 			startRecord: function (options) {
+				this.__localPlaybackSource = null;
 				this._recorder.startRecord();
 				return Promise.value(true);
 			},
@@ -216,6 +229,10 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
 					var audioUploader = FileUploader.create(Objs.extend({
 						source: audioBlob
 					}, options.audio));
+					this.__localPlaybackSource = {
+						src: videoBlob,
+						audiosrc: audioBlob
+					};
 					var multiUploader = new MultiUploader();
 					multiUploader.addUploader(videoUploader);
 					multiUploader.addUploader(audioUploader);
@@ -223,7 +240,19 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
 				}, this);
 				this._recorder.stopRecord();
 				return promise;
-			}
+			},
+			
+			supportsLocalPlayback: function () {
+				return true;
+			},
+			
+			snapshotToLocalPoster: function (snapshot) {
+				return snapshot;
+			},
+			
+			localPlaybackSource: function () {
+				return this.__localPlaybackSource;
+			}			
 			
 		};		
 	}, {

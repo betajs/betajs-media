@@ -14,6 +14,13 @@
 		<light></light>
 		<br/>
 		<sound></sound>
+		<br />
+		<button id='record-button'>Record</button>
+		<button id='stop-button'>Stop</button>
+		<br />
+		<video id="video-playback"></video>
+		<audio id="audio-playback"></audio>
+		<button id='play-button'>Play</button>
 		
 		<script>
 	        var view = BetaJS.Media.WebRTC.RecorderWrapper.create({
@@ -25,9 +32,27 @@
 	            setInterval(function () {
 	                $("light").html(view.lightLevel());
 	                $("sound").html(audio.soundLevel());
-	            }, 100);
+	            }, 500);
 	        });
 	        view.bindMedia();
+	        $("#record-button").on("click", function () {
+	        	view.startRecord();
+	        });
+	        $("#stop-button").on("click", function () {
+	        	view.stopRecord();
+	        });
+	        $("#play-button").on("click", function () {
+	        	$("#video-playback").get(0).play();
+	        	$("#audio-playback").get(0).play();
+	        });
+	        view.on("data", function (video, audio) {
+	        	var videoURL = URL.createObjectURL(video);
+	        	$("#video-playback").get(0).src = videoURL;
+	        	if (audio) {
+		        	var audioURL = URL.createObjectURL(audio);
+		        	$("#audio-playback").get(0).src = audioURL;
+	        	}
+	        });
 		</script>
 	</body>
 </html>

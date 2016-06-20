@@ -1,5 +1,5 @@
 /*!
-betajs-flash - v0.0.14 - 2016-05-08
+betajs-flash - v0.0.15 - 2016-06-12
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -13,7 +13,7 @@ Scoped.binding('jquery', 'global:jQuery');
 Scoped.define("module:", function () {
 	return {
     "guid": "3adc016a-e639-4d1a-b4cb-e90cab02bc4f",
-    "version": "32.1462750748837"
+    "version": "33.1465770701066"
 };
 });
 Scoped.assumeVersion('base:version', 444);
@@ -83,10 +83,10 @@ Scoped.define("module:FlashEmbedding", [ "base:Class", "base:Events.EventsMixin"
 					delete window[this.__namespace];
 				} catch (e) {}
 				Objs.iter(this.__wrappers, function (wrapper) {
-					wrapper.destroy();
+					wrapper.weakDestroy();
 				});
 				Objs.iter(this.__staticWrappers, function (wrapper) {
-					wrapper.destroy();
+					wrapper.weakDestroy();
 				});
 				this.__container.html("");
 				if (this.__helper_container)

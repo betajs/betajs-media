@@ -1,5 +1,5 @@
 /*!
-betajs-browser - v1.0.29 - 2016-06-12
+betajs-browser - v1.0.29 - 2016-06-14
 Copyright (c) Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -13,7 +13,7 @@ Scoped.binding('resumablejs', 'global:Resumable');
 Scoped.define("module:", function () {
 	return {
     "guid": "02450b15-9bbf-4be2-b8f6-b483bc015d06",
-    "version": "78.1465770610296"
+    "version": "78.1465945162742"
 };
 });
 Scoped.assumeVersion('base:version', 474);
@@ -2148,6 +2148,7 @@ Scoped.define("module:DomExtend.DomExtension", [
 			
 			computeActualBB: function (idealBB) {
 				var width = this._$element.width();
+				//var height = this._$element.height();
 				if (this._$element.width() < idealBB.width && !this._element.style.width) {
 					this._element.style.width = idealBB.width + "px";
 					width = this._$element.width();
@@ -2158,9 +2159,27 @@ Scoped.define("module:DomExtend.DomExtension", [
 					}
 					this._element.style.width = null;
 				}
+				/*
+				if (this._$element.height() < idealBB.height && !this._element.style.height) {
+					this._element.style.height = idealBB.height + "px";
+					height = this._$element.height();
+					var current = this._$element;
+					while (current.get(0) != document) {
+						current = current.parent();
+						height = Math.min(height, current.height());
+					}
+					this._element.style.height = null;
+				}
+				var arWidth = Math.round(height * idealBB.width / idealBB.height);
+				var arHeight = Math.round(width * idealBB.height / idealBB.width);
+				return {
+					width: Math.min(width, arWidth),
+					height: Math.min(height, arHeight)
+				};
+				*/
 				return {
 					width: width,
-					height: Math.round(width * idealBB.height / idealBB.width)
+					height: width * idealBB.height / idealBB.width
 				};
 			},
 			
