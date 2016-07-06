@@ -243,7 +243,8 @@ Scoped.define("module:WebRTC.WhammyAudioRecorderWrapper", [
 				this._whammyRecorder = new WhammyRecorder(this._stream, {
 					//recorderWidth: this._options.recordResolution.width,
 					//recorderHeight: this._options.recordResolution.height,
-					video: this._video
+					video: this._video,
+					framerate: this._options.framerate
 				});
 			}
 			if (this._hasAudio) {

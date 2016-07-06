@@ -19,7 +19,8 @@ Scoped.define("module:WebRTC.WhammyRecorder", [
 				this._options = Objs.extend({
 					recordWidth: 320,
 					recordHeight: 240,
-					video: null
+					video: null,
+					framerate: null
 				}, options);
 				this._started = false;
 			},
@@ -77,7 +78,8 @@ Scoped.define("module:WebRTC.WhammyRecorder", [
 		            this._isOnStartedDrawingNonBlankFramesInvoked = true;
 		            this.trigger("onStartedDrawingNonBlankFrames");
 		        }
-		        Async.eventually(this._process, [], this, Math.max(1, 10 - (Time.now() - now)));
+		        var maxTime = this._options.framerate ? 1000 / this._options.framerate : 10;
+		        Async.eventually(this._process, [], this, Math.max(1, maxTime - (Time.now() - now)));
 			},
 			
 			averageFrameRate: function () {

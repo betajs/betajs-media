@@ -110,6 +110,7 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
 					this._element = Dom.changeTag(this._element, "video");
 				this._recorder = RecorderWrapper.create({
 		            video: this._element,
+		            framerate: this._options.framerate,
 		            recordVideo: this._options.recordVideo,
 		            recordAudio: this._options.recordAudio,
 		            recordResolution: {
@@ -286,7 +287,8 @@ Scoped.define("module:Recorder.FlashVideoRecorderWrapper", [
 				this._recorder = new FlashRecorder(this._element, {
 					streamtype: this._options.rtmpStreamType,
 	            	camerawidth: this._options.recordingWidth,
-	            	cameraheight: this._options.recordingHeight
+	            	cameraheight: this._options.recordingHeight,
+	            	fps: this._options.framerate
 		        });
 				this._recorder.ready.forwardCallback(this.ready);
 				this._recorder.on("require_display", function () {

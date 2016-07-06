@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.26 - 2016-06-19
+betajs-media - v0.0.27 - 2016-07-05
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -709,7 +709,7 @@ Public.exports();
 	return Public;
 }).call(this);
 /*!
-betajs-media - v0.0.26 - 2016-06-19
+betajs-media - v0.0.27 - 2016-07-05
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -724,7 +724,7 @@ Scoped.binding('jquery', 'global:jQuery');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "57.1466393400225"
+    "version": "58.1467723647255"
 };
 });
 Scoped.assumeVersion('base:version', 502);
@@ -958,7 +958,7 @@ Scoped.define("module:Player.FlashPlayer", [
 			},
 			
 			pause: function () {
-				if (this._flashData.status !== "playing")
+				if (this._flashData.status === "paused")
 					return;
 				this._flashData.status = "paused";
 				this._flashObjs.stream.pauseVoid();
@@ -1310,7 +1310,6 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
 			
 			posterURL: function () {
 				var poster = this.poster();			
-				console.log(poster, typeof Blob !== 'undefined' , poster instanceof Blob);
 				if (poster && typeof Blob !== 'undefined' && poster instanceof Blob)
 					return (window.URL || window.webkitURL).createObjectURL(poster);
 				return poster;
@@ -2208,6 +2207,7 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
 					this._element = Dom.changeTag(this._element, "video");
 				this._recorder = RecorderWrapper.create({
 		            video: this._element,
+		            framerate: this._options.framerate,
 		            recordVideo: this._options.recordVideo,
 		            recordAudio: this._options.recordAudio,
 		            recordResolution: {
@@ -2384,7 +2384,8 @@ Scoped.define("module:Recorder.FlashVideoRecorderWrapper", [
 				this._recorder = new FlashRecorder(this._element, {
 					streamtype: this._options.rtmpStreamType,
 	            	camerawidth: this._options.recordingWidth,
-	            	cameraheight: this._options.recordingHeight
+	            	cameraheight: this._options.recordingHeight,
+	            	fps: this._options.framerate
 		        });
 				this._recorder.ready.forwardCallback(this.ready);
 				this._recorder.on("require_display", function () {
@@ -3108,7 +3109,8 @@ Scoped.define("module:WebRTC.WhammyAudioRecorderWrapper", [
 				this._whammyRecorder = new WhammyRecorder(this._stream, {
 					//recorderWidth: this._options.recordResolution.width,
 					//recorderHeight: this._options.recordResolution.height,
-					video: this._video
+					video: this._video,
+					framerate: this._options.framerate
 				});
 			}
 			if (this._hasAudio) {
@@ -3450,7 +3452,8 @@ Scoped.define("module:WebRTC.WhammyRecorder", [
 				this._options = Objs.extend({
 					recordWidth: 320,
 					recordHeight: 240,
-					video: null
+					video: null,
+					framerate: null
 				}, options);
 				this._started = false;
 			},
@@ -3508,7 +3511,8 @@ Scoped.define("module:WebRTC.WhammyRecorder", [
 		            this._isOnStartedDrawingNonBlankFramesInvoked = true;
 		            this.trigger("onStartedDrawingNonBlankFrames");
 		        }
-		        Async.eventually(this._process, [], this, Math.max(1, 10 - (Time.now() - now)));
+		        var maxTime = this._options.framerate ? 1000 / this._options.framerate : 10;
+		        Async.eventually(this._process, [], this, Math.max(1, maxTime - (Time.now() - now)));
 			},
 			
 			averageFrameRate: function () {

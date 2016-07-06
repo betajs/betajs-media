@@ -285,7 +285,6 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
 			
 			posterURL: function () {
 				var poster = this.poster();			
-				console.log(poster, typeof Blob !== 'undefined' , poster instanceof Blob);
 				if (poster && typeof Blob !== 'undefined' && poster instanceof Blob)
 					return (window.URL || window.webkitURL).createObjectURL(poster);
 				return poster;

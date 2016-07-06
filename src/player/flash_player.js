@@ -226,7 +226,7 @@ Scoped.define("module:Player.FlashPlayer", [
 			},
 			
 			pause: function () {
-				if (this._flashData.status !== "playing")
+				if (this._flashData.status === "paused")
 					return;
 				this._flashData.status = "paused";
 				this._flashObjs.stream.pauseVoid();
