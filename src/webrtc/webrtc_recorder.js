@@ -3,9 +3,10 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
     "base:Events.EventsMixin",
     "base:Objs",
     "module:WebRTC.Support",
-    "base:Time"
-], function (ConditionalInstance, EventsMixin, Objs, Support, Time, scoped) {
-	return ConditionalInstance.extend({scoped: scoped}, [EventsMixin, function (inherited) {
+    "base:Time",
+    "module:Recorder.PixelSampleMixin"
+], function (ConditionalInstance, EventsMixin, Objs, Support, Time, PixelSampleMixin, scoped) {
+	return ConditionalInstance.extend({scoped: scoped}, [EventsMixin, PixelSampleMixin, function (inherited) {
 		return {
 			
 			constructor: function (options) {
@@ -115,22 +116,32 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
 	        	return data;
 			},
 			
-			lightLevel: function (sampleRoot) {
-				sampleRoot = sampleRoot || 10;
+			_pixelSample: function (samples, callback, context) {
+				samples = samples || 100;
 			    var canvas = document.createElement('canvas');
-				canvas.width = this._video.videoWidth || this._video.clientWidth;
-				canvas.height = this._video.videoHeight || this._video.clientHeight;
-			    var context = canvas.getContext('2d');
-	        	context.drawImage(this._video, 0, 0, canvas.width, canvas.height);
-	        	var acc = 0.0;
-	        	for (var x = 0; x < sampleRoot; ++x)
-	        		for (var y = 0; y < sampleRoot; ++y) {
-	        			var data = context.getImageData(Math.floor(canvas.width * x / sampleRoot), Math.floor(canvas.height * y / sampleRoot), 1, 1).data;
-	        			acc += (data[0] + data[1] + data[2]) / 3; 
-	        		}
-	        	return acc / sampleRoot / sampleRoot;
+				var w = this._video.videoWidth || this._video.clientWidth;
+				var h = this._video.videoHeight || this._video.clientHeight;
+				canvas.width = w;
+				canvas.height = h;
+			    var ctx = canvas.getContext('2d');
+			    ctx.drawImage(this._video, 0, 0, w, h);
+				var multiple = 2;
+				while (samples > 0) {
+					for (var i = 1; i < multiple; ++i) {
+						for (var j = 1; j < multiple; ++j) {
+							var data = ctx.getImageData(Math.floor(i * w / multiple), Math.floor(j * h / multiple), 1, 1).data;
+							callback.call(context || this, data[0], data[1], data[2]);
+							--samples;
+							if (samples <= 0)
+								break;
+						}
+						if (samples <= 0)
+							break;
+					}
+					++multiple;
+				}
 			},
-			
+
 			_boundMedia: function () {},
 			
 			_unboundMedia: function () {},
@@ -201,6 +212,10 @@ Scoped.define("module:WebRTC.MediaRecorderWrapper", [
 		
 		_stopRecord: function () {
 			this._recorder.stop();
+		},
+		
+		averageFrameRate: function () {
+			return null;
 		}
 
 	}, function (inherited) {

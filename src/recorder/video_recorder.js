@@ -1,3 +1,52 @@
+Scoped.define("module:Recorder.PixelSampleMixin", [
+], function () {
+	return {
+		
+		lightLevel: function (samples) {
+			samples = samples || 100;
+			var total_light = 0.0;
+			this._pixelSample(samples, function (r, g, b) {
+				total_light += r + g + b;
+			});
+			return total_light / (3 * samples);
+		},
+		
+		blankLevel: function (samples) {
+			samples = samples || 100;
+			var total_light = 0.0;
+			this._pixelSample(samples, function (r, g, b) {
+				total_light += Math.pow(r, 2) + Math.pow(g, 2) + Math.pow(b, 2);
+			});
+			return Math.sqrt(total_light / (3 * samples));
+		},
+		
+		_materializePixelSample: function (sample) {
+			var result = [];
+			this._pixelSample(sample, function (r,g,b) {
+				result.push([r,g,b]);
+			});
+			return result;
+		},
+		
+		deltaCoefficient: function (samples) {
+			samples = samples || 100;
+			var current = this._materializePixelSample(samples);
+			if (!this.__deltaSample) {
+				this.__deltaSample = current;
+				return null;
+			}
+			var delta_total = 0.0;
+			for (var i = 0; i < current.length; ++i)
+				for (var j = 0; j < 3; ++j)
+					delta_total += Math.pow(current[i][j] - this.__deltaSample[i][j], 2);
+			this.__deltaSample = current;
+			return Math.sqrt(delta_total / (3 * samples));
+		}
+
+	};
+});
+
+
 Scoped.define("module:Recorder.VideoRecorderWrapper", [
     "base:Classes.ConditionalInstance",
     "base:Events.EventsMixin",
@@ -40,6 +89,8 @@ Scoped.define("module:Recorder.VideoRecorderWrapper", [
 			lightLevel: function () {},			
 			soundLevel: function () {},
 			testSoundLevel: function (activate) {},
+			blankLevel: function () {},			
+			deltaCoefficient: function () {},
 			
 			enumerateDevices: function () {},
 			currentDevices: function () {},
@@ -68,6 +119,10 @@ Scoped.define("module:Recorder.VideoRecorderWrapper", [
 			},
 			
 			localPlaybackSource: function () {
+				return null;
+			},
+			
+			averageFrameRate: function () {
 				return null;
 			}
 			
@@ -144,6 +199,14 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
 				return this._recorder.lightLevel();
 			},
 			
+			blankLevel: function () {
+				return this._recorder.blankLevel();
+			},			
+			
+			deltaCoefficient: function () {
+				return this._recorder.deltaCoefficient();
+			},
+
 			soundLevel: function () {
 				return this._analyser ? this._analyser.soundLevel() : 0.0;
 			},
@@ -253,6 +316,10 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
 			
 			localPlaybackSource: function () {
 				return this.__localPlaybackSource;
+			},
+			
+			averageFrameRate: function () {
+				return this._recorder.averageFrameRate();
 			}			
 			
 		};		
@@ -307,6 +374,14 @@ Scoped.define("module:Recorder.FlashVideoRecorderWrapper", [
 			
 			_unbindMedia: function () {
 				return this._recorder.unbindMedia();
+			},
+
+			blankLevel: function () {
+				return this._recorder.blankLevel();
+			},			
+			
+			deltaCoefficient: function () {
+				return this._recorder.deltaCoefficient();
 			},
 
 			lightLevel: function () {
@@ -432,7 +507,11 @@ Scoped.define("module:Recorder.FlashVideoRecorderWrapper", [
 			
 			isFlash: function () {
 				return true;
-			}			
+			},
+			
+			averageFrameRate: function () {
+				return this._recorder.averageFrameRate();
+			}
 		
 		};		
 	}, {

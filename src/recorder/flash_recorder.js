@@ -13,9 +13,10 @@ Scoped.define("module:Flash.FlashRecorder", [
     "base:Time",
     "jquery:",
     "base:Promise",
-    "base:Events.EventsMixin"
-], function (Class, Dom, Info, FlashClassRegistry, FlashEmbedding, Strings, Async, Objs, Functions, Types, Timer, Time, $, Promise, EventsMixin, scoped) {
-	var Cls = Class.extend({scoped: scoped}, [EventsMixin, function (inherited) {
+    "base:Events.EventsMixin",
+    "module:Recorder.PixelSampleMixin"
+], function (Class, Dom, Info, FlashClassRegistry, FlashEmbedding, Strings, Async, Objs, Functions, Types, Timer, Time, $, Promise, EventsMixin, PixelSampleMixin, scoped) {
+	var Cls = Class.extend({scoped: scoped}, [EventsMixin, PixelSampleMixin, function (inherited) {
 		return {
 			
 			constructor: function (element, attrs) {
@@ -36,6 +37,10 @@ Scoped.define("module:Flash.FlashRecorder", [
 				this.__streamType = this.readAttr("streamtype") || 'mp4';
 				this.__fps = this.readAttr('fps') || 20;				
 				this._embedding.ready(this.__initializeEmbedding, this);
+			},
+			
+			averageFrameRate: function () {
+				return this.__fps;
 			},
 			
 			__initializeEmbedding: function () {
@@ -225,22 +230,28 @@ Scoped.define("module:Flash.FlashRecorder", [
 					this._flashObjs.microphone.set(key, params[key]);
 			},
 			
-			lightLevel: function (samples) {
+			_pixelSample: function (samples, callback, context) {
+				samples = samples || 100;
 				var w = this._flashObjs.cameraVideo.get("width");
 				var h = this._flashObjs.cameraVideo.get("height");
 				var lightLevelBmp = this._embedding.newObject("flash.display.BitmapData", w, h);
 				lightLevelBmp.draw(this._flashObjs.cameraVideo);
-				samples = samples || 10;
-				var total_samples = samples * samples;
-				var total_light = 0;
-				for (var i = 0; i < samples; ++i)
-					for (var j = 0; j < samples; ++j) {
-						var rgb = lightLevelBmp.getPixel(Math.round(i * w / samples), Math.round(j * h / samples));
-						var light = ((rgb % 256) + ((rgb / 256) % 256) + ((rgb / 256 / 256) % 256)) / 3;
-						total_light += light;
-					}				
+				var multiple = 2;
+				while (samples > 0) {
+					for (var i = 1; i < multiple; ++i) {
+						for (var j = 1; j < multiple; ++j) {
+							var rgb = lightLevelBmp.getPixel(Math.floor(i * w / multiple), Math.floor(j * h / multiple));
+							callback.call(context || this, rgb % 256, (rgb / 256) % 256, (rgb / 256 / 256) % 256);
+							--samples;
+							if (samples <= 0)
+								break;
+						}
+						if (samples <= 0)
+							break;
+					}
+					++multiple;
+				}
 				lightLevelBmp.destroy();
-				return total_light / total_samples;
 			},
 			
 			testSoundLevel: function (activate) {
