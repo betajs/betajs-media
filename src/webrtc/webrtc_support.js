@@ -147,6 +147,16 @@ Scoped.define("module:WebRTC.Support", [
 						ideal: options.video.height
 					};
 				}
+				/* This is supposed to work according to docs, but it is not:
+				 * https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia#Frame_rate
+				 */
+				/*
+				if (options.video.frameRate) {
+					opts.video.frameRate = {
+						ideal: options.video.frameRate
+					};
+				}
+				*/
 				if (options.video.sourceId)
 					opts.video.sourceId = options.video.sourceId; 
 				return this.userMedia(opts);

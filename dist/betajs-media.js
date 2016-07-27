@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.29 - 2016-07-16
+betajs-media - v0.0.29 - 2016-07-25
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -709,7 +709,7 @@ Public.exports();
 	return Public;
 }).call(this);
 /*!
-betajs-media - v0.0.29 - 2016-07-16
+betajs-media - v0.0.29 - 2016-07-25
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -724,7 +724,7 @@ Scoped.binding('jquery', 'global:jQuery');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "60.1468716098987"
+    "version": "61.1469467877275"
 };
 });
 Scoped.assumeVersion('base:version', 502);
@@ -2954,6 +2954,16 @@ Scoped.define("module:WebRTC.MediaRecorder", [
 				this._stream = stream;
 				this._started = false;
 				var MediaRecorder = Support.globals().MediaRecorder;
+				/*
+				 * This is supposed to work according to the docs, but it is not:
+				 * 
+				 * https://developer.mozilla.org/en-US/docs/Web/API/MediaRecorder/MediaRecorder#Example
+				 */
+				/*
+				var mediaRecorderOptions = {};
+				mediaRecorderOptions.mimeType = "video/mp4";
+				this._mediaRecorder = new MediaRecorder(stream, mediaRecorderOptions);
+				*/
 				this._mediaRecorder = new MediaRecorder(stream);
 				this._mediaRecorder.ondataavailable = Functions.as_method(this._dataAvailable, this);
 			},
@@ -3489,6 +3499,16 @@ Scoped.define("module:WebRTC.Support", [
 						ideal: options.video.height
 					};
 				}
+				/* This is supposed to work according to docs, but it is not:
+				 * https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia#Frame_rate
+				 */
+				/*
+				if (options.video.frameRate) {
+					opts.video.frameRate = {
+						ideal: options.video.frameRate
+					};
+				}
+				*/
 				if (options.video.sourceId)
 					opts.video.sourceId = options.video.sourceId; 
 				return this.userMedia(opts);

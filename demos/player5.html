@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+		<script src="../vendors/scoped.js"></script>
+		<script src="../vendors/beta-noscoped.js"></script>
+		<script src="../vendors/betajs-browser-noscoped.js"></script>
+		<script src="../vendors/betajs-flash-noscoped.js"></script>
+	</head>
+	<body>
+	
+		<script>
+			var registry = new BetaJS.Flash.FlashClassRegistry();
+			registry.register("flash.media.Microphone", ["setLoopBack", "setSilenceLevel", "setUseEchoSuppression"], ["getMicrophone"]);
+			registry.register("flash.media.Camera", ["setMode", "setQuality", "setKeyFrameInterval", "addEventListener"], ["getCamera"]);
+			registry.register("flash.media.Video", ["attachCamera", "attachNetStream"]);
+			registry.register("flash.display.Sprite", ["addChild", "removeChild"]);
+			registry.register("flash.system.Security", [], ["allowDomain", "showSettings"]);
+			registry.register("flash.net.NetStream", ["play", "addEventListener", "attachCamera", "attachAudio", "publish", "close", "appendBytesAction", "appendBytes"]);
+			registry.register("flash.net.NetConnection", ["connect", "addEventListener", "call", "close"]);
+			registry.register("flash.media.H264VideoStreamSettings", ["setProfileLevel"]);
+			registry.register("flash.media.BitmapData", ["draw", "getPixel"]);
+			registry.register("flash.net.URLRequest", []);
+			registry.register("flash.net.URLLoader", ["addEventListener"]);
+			registry.register("flash.net.URLRequestHeader", []);
+			registry.register("flash.display.Loader", ["load"]);
+			registry.register("flash.utils.ByteArray", [])
+			registry.register("com.adobe.images.PNGEncoder", [], ["encode"]);
+			registry.register("com.adobe.images.JPGEncoder", ["encode"]);
+			
+			var embedding = new BetaJS.Flash.FlashEmbedding(document.body, {
+				registry: registry,
+				wrap: true
+			}, {
+				flashFile: "../vendors/betajs-flash.swf",
+				forceReload: true
+			});
+			
+			embedding.ready(function () {
+				var main = embedding.flashMain();
+				var stage = main.get("stage");
+				stage.set("scaleMode", "noScale");
+				stage.set("align", "TL");
+				
+				var video = embedding.newObject("flash.media.Video", stage.get("stageWidth"), stage.get("stageHeight"));
+				main.addChildVoid(video);
+				
+				var connection = embedding.newObject("flash.net.NetConnection");
+				var stream = null;
+				connection.addEventListener("netStatus", embedding.newCallback(function () {
+					stream = embedding.newObject("flash.net.NetStream", connection);
+					video.attachNetStreamVoid(stream);
+				}));
+				connection.connectVoid(null);
+				
+				var urlRequest = embedding.newObject("flash.net.URLRequest", "http://localhost:82/media/demos/movie.flv");
+				var urlLoader = embedding.newObject("flash.net.URLLoader", urlRequest);
+				urlLoader.set("dataFormat", "binary");
+				urlLoader.addEventListener("complete", embedding.newCallback(function () {
+			        var myByteArray = urlLoader.get("data");
+			        stream.playVoid(null);
+			        stream.appendBytesAction("resetBegin");
+			        stream.appendBytes(myByteArray);
+				}));
+			});
+		</script>
+	</body>
+</html>

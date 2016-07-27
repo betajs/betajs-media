@@ -13,6 +13,16 @@ Scoped.define("module:WebRTC.MediaRecorder", [
 				this._stream = stream;
 				this._started = false;
 				var MediaRecorder = Support.globals().MediaRecorder;
+				/*
+				 * This is supposed to work according to the docs, but it is not:
+				 * 
+				 * https://developer.mozilla.org/en-US/docs/Web/API/MediaRecorder/MediaRecorder#Example
+				 */
+				/*
+				var mediaRecorderOptions = {};
+				mediaRecorderOptions.mimeType = "video/mp4";
+				this._mediaRecorder = new MediaRecorder(stream, mediaRecorderOptions);
+				*/
 				this._mediaRecorder = new MediaRecorder(stream);
 				this._mediaRecorder.ondataavailable = Functions.as_method(this._dataAvailable, this);
 			},
