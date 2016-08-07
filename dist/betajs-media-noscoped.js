@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.30 - 2016-08-04
+betajs-media - v0.0.31 - 2016-08-06
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -14,7 +14,7 @@ Scoped.binding('jquery', 'global:jQuery');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "62.1470287200119"
+    "version": "63.1470533961366"
 };
 });
 Scoped.assumeVersion('base:version', 502);
@@ -826,11 +826,11 @@ Scoped.define("module:Player.FlashPlayerWrapper", [
             },
             
 	        videoWidth: function () {
-	        	return this._flashPlayer.videoWidth();
+	        	return this._flashPlayer ? this._flashPlayer.videoWidth() : null;
 	        },
 	        
 	        videoHeight: function () {
-	        	return this._flashPlayer.videoHeight();
+	        	return this._flashPlayer ? this._flashPlayer.videoHeight() : null;
 	        }
             
             

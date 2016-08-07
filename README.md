@@ -1,4 +1,4 @@
-# betajs-media 0.0.30
+# betajs-media 0.0.31
 [![Code Climate](https://codeclimate.com/github/betajs/betajs-media/badges/gpa.svg)](https://codeclimate.com/github/betajs/betajs-media)
 
 

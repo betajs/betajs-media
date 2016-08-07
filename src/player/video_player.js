@@ -496,11 +496,11 @@ Scoped.define("module:Player.FlashPlayerWrapper", [
             },
             
 	        videoWidth: function () {
-	        	return this._flashPlayer.videoWidth();
+	        	return this._flashPlayer ? this._flashPlayer.videoWidth() : null;
 	        },
 	        
 	        videoHeight: function () {
-	        	return this._flashPlayer.videoHeight();
+	        	return this._flashPlayer ? this._flashPlayer.videoHeight() : null;
 	        }
             
             
