@@ -179,21 +179,31 @@ Scoped.define("module:WebRTC.Support", [
 				}
 				if (options.video.sourceId)
 					opts.video.mandatory.sourceId = options.video.sourceId;
-				
-				var probe = function () {
+
+				var probe = function (count) {
 					var mandatory = opts.video.mandatory;
 					return this.userMedia(opts).mapError(function (e) {
+						count--;
 						if (e.name !== "ConstraintNotSatisfiedError")
 							return e;
-						var c = e.constraintName;
-						var flt = c.indexOf("aspect") > 0;
-						var d = c.indexOf("min") === 0 ? -1 : 1;
-						var u = Math.max(0, mandatory[c] * (1.0 + d / 10));
-						mandatory[c] = flt ? u : Math.round(u);
-						return probe.call(this);
+						var c = e.constraintName.toLowerCase();
+						Objs.iter(mandatory, function (value, key) {
+							var lkey = key.toLowerCase();
+							if (lkey.indexOf(c) >= 0) {
+								var flt = lkey.indexOf("aspect") > 0;
+								var d = lkey.indexOf("min") === 0 ? -1 : 1;
+								var u = Math.max(0, mandatory[key] * (1.0 + d / 10));
+								mandatory[key] = flt ? u : Math.round(u);
+								if (count < 0) {
+									delete mandatory[key];
+									count = 100;
+								}
+							}
+						}, this);
+						return probe.call(this, count);
 					}, this);
 				};
-				return probe.call(this);
+				return probe.call(this, 100);
 			}
 		},
 		

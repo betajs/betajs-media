@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.31 - 2016-08-06
+betajs-media - v0.0.32 - 2016-08-17
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -14,7 +14,7 @@ Scoped.binding('jquery', 'global:jQuery');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "63.1470533961366"
+    "version": "64.1471468239913"
 };
 });
 Scoped.assumeVersion('base:version', 502);
@@ -2836,21 +2836,31 @@ Scoped.define("module:WebRTC.Support", [
 				}
 				if (options.video.sourceId)
 					opts.video.mandatory.sourceId = options.video.sourceId;
-				
-				var probe = function () {
+
+				var probe = function (count) {
 					var mandatory = opts.video.mandatory;
 					return this.userMedia(opts).mapError(function (e) {
+						count--;
 						if (e.name !== "ConstraintNotSatisfiedError")
 							return e;
-						var c = e.constraintName;
-						var flt = c.indexOf("aspect") > 0;
-						var d = c.indexOf("min") === 0 ? -1 : 1;
-						var u = Math.max(0, mandatory[c] * (1.0 + d / 10));
-						mandatory[c] = flt ? u : Math.round(u);
-						return probe.call(this);
+						var c = e.constraintName.toLowerCase();
+						Objs.iter(mandatory, function (value, key) {
+							var lkey = key.toLowerCase();
+							if (lkey.indexOf(c) >= 0) {
+								var flt = lkey.indexOf("aspect") > 0;
+								var d = lkey.indexOf("min") === 0 ? -1 : 1;
+								var u = Math.max(0, mandatory[key] * (1.0 + d / 10));
+								mandatory[key] = flt ? u : Math.round(u);
+								if (count < 0) {
+									delete mandatory[key];
+									count = 100;
+								}
+							}
+						}, this);
+						return probe.call(this, count);
 					}, this);
 				};
-				return probe.call(this);
+				return probe.call(this, 100);
 			}
 		},
 		
