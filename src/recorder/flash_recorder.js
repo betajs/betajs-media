@@ -35,6 +35,7 @@ Scoped.define("module:Flash.FlashRecorder", [
 				this.__cameraWidth = this.readAttr('camerawidth') || 640;
 				this.__cameraHeight = this.readAttr('cameraheight') || 480;
 				this.__streamType = this.readAttr("streamtype") || 'mp4';
+				this.__microphoneCodec = this.readAttr("microphonecodec") || 'speex';
 				this.__fps = this.readAttr('fps') || 20;				
 				this._embedding.ready(this.__initializeEmbedding, this);
 			},
@@ -221,13 +222,10 @@ Scoped.define("module:Flash.FlashRecorder", [
 				this._flashObjs.microphone.set("gain", profile.gain || 55);
 				this._flashObjs.microphone.setSilenceLevel(profile.silenceLevel || 0);
 				this._flashObjs.microphone.setUseEchoSuppression(profile.echoSuppression || false);
+				this._flashObjs.microphone.set("rate", profile.rate || 44);
+				this._flashObjs.microphone.set("encodeQuality", profile.encodeQuality || 10);
+				this._flashObjs.microphone.set("codec", profile.codec || this.__microphoneCodec);
 				this._currentMicrophoneProfile = profile;
-			},
-			
-			setMicrophoneCodec: function (codec, params) {
-				this._flashObjs.microphone.set("codec", codec);
-				for (var key in params || {})
-					this._flashObjs.microphone.set(key, params[key]);
 			},
 			
 			_pixelSample: function (samples, callback, context) {

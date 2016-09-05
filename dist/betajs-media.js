@@ -1,24 +1,45 @@
 /*!
-betajs-media - v0.0.32 - 2016-08-17
+betajs-media - v0.0.33 - 2016-09-05
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
 /** @flow **//*!
-betajs-scoped - v0.0.10 - 2016-04-07
+betajs-scoped - v0.0.11 - 2016-06-28
 Copyright (c) Oliver Friedmann
 Apache-2.0 Software License.
 */
 var Scoped = (function () {
-var Globals = {
-
+var Globals = (function () {  
+/** 
+ * This helper module provides functions for reading and writing globally accessible namespaces, both in the browser and in NodeJS.
+ * 
+ * @module Globals
+ * @access private
+ */
+return { 
+		
+	/**
+	 * Returns the value of a global variable.
+	 * 
+	 * @param {string} key identifier of a global variable
+	 * @return value of global variable or undefined if not existing
+	 */
 	get : function(key/* : string */) {
 		if (typeof window !== "undefined")
 			return window[key];
 		if (typeof global !== "undefined")
 			return global[key];
-		return null;
+		return undefined;
 	},
 
+	
+	/**
+	 * Sets a global variable.
+	 * 
+	 * @param {string} key identifier of a global variable
+	 * @param value value to be set
+	 * @return value that has been set
+	 */
 	set : function(key/* : string */, value) {
 		if (typeof window !== "undefined")
 			window[key] = value;
@@ -27,6 +48,42 @@ var Globals = {
 		return value;
 	},
 	
+	
+	/**
+	 * Returns the value of a global variable under a namespaced path.
+	 * 
+	 * @param {string} path namespaced path identifier of variable
+	 * @return value of global variable or undefined if not existing
+	 * 
+	 * @example
+	 * // returns window.foo.bar / global.foo.bar 
+	 * Globals.getPath("foo.bar")
+	 */
+	getPath: function (path/* : string */) {
+		var args = path.split(".");
+		if (args.length == 1)
+			return this.get(path);		
+		var current = this.get(args[0]);
+		for (var i = 1; i < args.length; ++i) {
+			if (!current)
+				return current;
+			current = current[args[i]];
+		}
+		return current;
+	},
+
+
+	/**
+	 * Sets a global variable under a namespaced path.
+	 * 
+	 * @param {string} path namespaced path identifier of variable
+	 * @param value value to be set
+	 * @return value that has been set
+	 * 
+	 * @example
+	 * // sets window.foo.bar / global.foo.bar 
+	 * Globals.setPath("foo.bar", 42);
+	 */
 	setPath: function (path/* : string */, value) {
 		var args = path.split(".");
 		if (args.length == 1)
@@ -39,36 +96,47 @@ var Globals = {
 		}
 		current[args[args.length - 1]] = value;
 		return value;
-	},
-	
-	getPath: function (path/* : string */) {
-		var args = path.split(".");
-		if (args.length == 1)
-			return this.get(path);		
-		var current = this.get(args[0]);
-		for (var i = 1; i < args.length; ++i) {
-			if (!current)
-				return current;
-			current = current[args[i]];
-		}
-		return current;
 	}
-
-};
+	
+};}).call(this);
 /*::
 declare module Helper {
 	declare function extend<A, B>(a: A, b: B): A & B;
 }
 */
 
-var Helper = {
+var Helper = (function () {  
+/** 
+ * This helper module provides auxiliary functions for the Scoped system.
+ * 
+ * @module Helper
+ * @access private
+ */
+return { 
 		
+	/**
+	 * Attached a context to a function.
+	 * 
+	 * @param {object} obj context for the function
+	 * @param {function} func function
+	 * 
+	 * @return function with attached context
+	 */
 	method: function (obj, func) {
 		return function () {
 			return func.apply(obj, arguments);
 		};
 	},
 
+	
+	/**
+	 * Extend a base object with all attributes of a second object.
+	 * 
+	 * @param {object} base base object
+	 * @param {object} overwrite second object
+	 * 
+	 * @return {object} extended base object
+	 */
 	extend: function (base, overwrite) {
 		base = base || {};
 		overwrite = overwrite || {};
@@ -77,10 +145,26 @@ var Helper = {
 		return base;
 	},
 	
+	
+	/**
+	 * Returns the type of an object, particulary returning 'array' for arrays.
+	 * 
+	 * @param obj object in question
+	 * 
+	 * @return {string} type of object
+	 */
 	typeOf: function (obj) {
 		return Object.prototype.toString.call(obj) === '[object Array]' ? "array" : typeof obj;
 	},
 	
+	
+	/**
+	 * Returns whether an object is null, undefined, an empty array or an empty object.
+	 * 
+	 * @param obj object in question
+	 * 
+	 * @return true if object is empty
+	 */
 	isEmpty: function (obj) {
 		if (obj === null || typeof obj === "undefined")
 			return true;
@@ -93,6 +177,15 @@ var Helper = {
 		return true;
 	},
 	
+	
+    /**
+     * Matches function arguments against some pattern.
+     * 
+     * @param {array} args function arguments
+     * @param {object} pattern typed pattern
+     * 
+     * @return {object} matched arguments as associative array 
+     */	
 	matchArgs: function (args, pattern) {
 		var i = 0;
 		var result = {};
@@ -106,18 +199,41 @@ var Helper = {
 		return result;
 	},
 	
+	
+	/**
+	 * Stringifies a value as JSON and functions to string representations.
+	 * 
+	 * @param value value to be stringified
+	 * 
+	 * @return stringified value
+	 */
 	stringify: function (value) {
 		if (this.typeOf(value) == "function")
 			return "" + value;
 		return JSON.stringify(value);
 	}	
 
-};
-var Attach = {
+	
+};}).call(this);
+var Attach = (function () {  
+/** 
+ * This module provides functionality to attach the Scoped system to the environment.
+ * 
+ * @module Attach
+ * @access private
+ */
+return { 
 		
 	__namespace: "Scoped",
 	__revert: null,
 	
+	
+	/**
+	 * Upgrades a pre-existing Scoped system to the newest version present. 
+	 * 
+	 * @param {string} namespace Optional namespace (default is 'Scoped')
+	 * @return {object} the attached Scoped system
+	 */
 	upgrade: function (namespace/* : ?string */) {
 		var current = Globals.get(namespace || Attach.__namespace);
 		if (current && Helper.typeOf(current) == "object" && current.guid == this.guid && Helper.typeOf(current.version) == "string") {
@@ -134,6 +250,13 @@ var Attach = {
 			return this.attach(namespace);		
 	},
 
+
+	/**
+	 * Attaches the Scoped system to the environment. 
+	 * 
+	 * @param {string} namespace Optional namespace (default is 'Scoped')
+	 * @return {object} the attached Scoped system
+	 */
 	attach : function(namespace/* : ?string */) {
 		if (namespace)
 			Attach.__namespace = namespace;
@@ -154,6 +277,13 @@ var Attach = {
 		return this;
 	},
 	
+
+	/**
+	 * Detaches the Scoped system from the environment. 
+	 * 
+	 * @param {boolean} forceDetach Overwrite any attached scoped system by null.
+	 * @return {object} the detached Scoped system
+	 */
 	detach: function (forceDetach/* : ?boolean */) {
 		if (forceDetach)
 			Globals.set(Attach.__namespace, null);
@@ -165,6 +295,15 @@ var Attach = {
 		return this;
 	},
 	
+
+	/**
+	 * Exports an object as a module if possible. 
+	 * 
+	 * @param {object} mod a module object (optional, default is 'module')
+	 * @param {object} object the object to be exported
+	 * @param {boolean} forceExport overwrite potentially pre-existing exports
+	 * @return {object} the Scoped system
+	 */
 	exports: function (mod, object, forceExport) {
 		mod = mod || (typeof module != "undefined" ? module : null);
 		if (typeof mod == "object" && mod && "exports" in mod && (forceExport || mod.exports == this || !mod.exports || Helper.isEmpty(mod.exports)))
@@ -172,7 +311,7 @@ var Attach = {
 		return this;
 	}	
 
-};
+};}).call(this);
 
 function newNamespace (opts/* : {tree ?: boolean, global ?: boolean, root ?: Object} */) {
 
@@ -337,12 +476,30 @@ function newNamespace (opts/* : {tree ?: boolean, global ?: boolean, root ?: Obj
 		return result;
 	}
 
+	/** 
+	 * The namespace module manages a namespace in the Scoped system.
+	 * 
+	 * @module Namespace
+	 * @access public
+	 */
 	return {
 		
+		/**
+		 * Extend a node in the namespace by an object.
+		 * 
+		 * @param {string} path path to the node in the namespace
+		 * @param {object} value object that should be used for extend the namespace node
+		 */
 		extend: function (path, value) {
 			nodeSetData(nodeNavigate(path), value);
 		},
 		
+		/**
+		 * Set the object value of a node in the namespace.
+		 * 
+		 * @param {string} path path to the node in the namespace
+		 * @param {object} value object that should be used as value for the namespace node
+		 */
 		set: function (path, value) {
 			var node = nodeNavigate(path);
 			if (node.data)
@@ -350,11 +507,25 @@ function newNamespace (opts/* : {tree ?: boolean, global ?: boolean, root ?: Obj
 			nodeSetData(node, value);
 		},
 		
+		/**
+		 * Read the object value of a node in the namespace.
+		 * 
+		 * @param {string} path path to the node in the namespace
+		 * @return {object} object value of the node or null if undefined
+		 */
 		get: function (path) {
 			var node = nodeNavigate(path);
 			return node.ready ? node.data : null;
 		},
 		
+		/**
+		 * Lazily navigate to a node in the namespace.
+		 * Will asynchronously call the callback as soon as the node is being touched.
+		 *
+		 * @param {string} path path to the node in the namespace
+		 * @param {function} callback callback function accepting the node's object value
+		 * @param {context} context optional callback context
+		 */
 		lazy: function (path, callback, context) {
 			var node = nodeNavigate(path);
 			if (node.ready)
@@ -367,14 +538,33 @@ function newNamespace (opts/* : {tree ?: boolean, global ?: boolean, root ?: Obj
 			}
 		},
 		
+		/**
+		 * Digest a node path, checking whether it has been defined by an external system.
+		 * 
+		 * @param {string} path path to the node in the namespace
+		 */
 		digest: function (path) {
 			nodeDigest(nodeNavigate(path));
 		},
 		
+		/**
+		 * Asynchronously access a node in the namespace.
+		 * Will asynchronously call the callback as soon as the node is being defined.
+		 *
+		 * @param {string} path path to the node in the namespace
+		 * @param {function} callback callback function accepting the node's object value
+		 * @param {context} context optional callback context
+		 */
 		obtain: function (path, callback, context) {
 			nodeAddWatcher(nodeNavigate(path), callback, context);
 		},
 		
+		/**
+		 * Returns all unresolved watchers under a certain path.
+		 * 
+		 * @param {string} path path to the node in the namespace
+		 * @return {array} list of all unresolved watchers 
+		 */
 		unresolvedWatchers: function (path) {
 			return nodeUnresolvedWatchers(nodeNavigate(path), path);
 		},
@@ -473,6 +663,12 @@ function newScope (parent, parentNS, rootNS, globalNS) {
 		return this;
 	};
 	
+	/** 
+	 * This module provides all functionality in a scope.
+	 * 
+	 * @module Scoped
+	 * @access public
+	 */
 	return {
 		
 		getGlobal: Helper.method(Globals, Globals.getPath),
@@ -489,12 +685,23 @@ function newScope (parent, parentNS, rootNS, globalNS) {
 		
 		dependencies: {},
 		
+		
+		/**
+		 * Returns a reference to the next scope that will be obtained by a subScope call.
+		 * 
+		 * @return {object} next scope
+		 */
 		nextScope: function () {
 			if (!nextScope)
 				nextScope = newScope(this, localNamespace, rootNamespace, globalNamespace);
 			return nextScope;
 		},
 		
+		/**
+		 * Creates a sub scope of the current scope and returns it.
+		 * 
+		 * @return {object} sub scope
+		 */
 		subScope: function () {
 			var sub = this.nextScope();
 			childScopes.push(sub);
@@ -502,6 +709,14 @@ function newScope (parent, parentNS, rootNS, globalNS) {
 			return sub;
 		},
 		
+		/**
+		 * Creates a binding within in the scope. 
+		 * 
+		 * @param {string} alias identifier of the new binding
+		 * @param {string} namespaceLocator identifier of an existing namespace path
+		 * @param {object} options options for the binding
+		 * 
+		 */
 		binding: function (alias, namespaceLocator, options) {
 			if (!bindings[alias] || !bindings[alias].readonly) {
 				var ns;
@@ -520,6 +735,14 @@ function newScope (parent, parentNS, rootNS, globalNS) {
 			return this;
 		},
 		
+		
+		/**
+		 * Resolves a name space locator to a name space.
+		 * 
+		 * @param {string} namespaceLocator name space locator
+		 * @return {object} resolved name space
+		 * 
+		 */
 		resolve: function (namespaceLocator) {
 			var parts = namespaceLocator.split(":");
 			if (parts.length == 1) {
@@ -537,7 +760,18 @@ function newScope (parent, parentNS, rootNS, globalNS) {
 				};
 			}
 		},
+
 		
+		/**
+		 * Defines a new name space once a list of name space locators is available.
+		 * 
+		 * @param {string} namespaceLocator the name space that is to be defined
+		 * @param {array} dependencies a list of name space locator dependencies (optional)
+		 * @param {array} hiddenDependencies a list of hidden name space locators (optional)
+		 * @param {function} callback a callback function accepting all dependencies as arguments and returning the new definition
+		 * @param {object} context a callback context (optional)
+		 * 
+		 */
 		define: function () {
 			return custom.call(this, arguments, "define", function (ns, result) {
 				if (ns.namespace.get(ns.path))
@@ -546,22 +780,14 @@ function newScope (parent, parentNS, rootNS, globalNS) {
 			});
 		},
 		
-		assume: function () {
-			var args = Helper.matchArgs(arguments, {
-				assumption: true,
-				dependencies: "array",
-				callback: true,
-				context: "object",
-				error: "string"
-			});
-			var dependencies = args.dependencies || [];
-			dependencies.unshift(args.assumption);
-			this.require(dependencies, function (assumptionValue) {
-				if (!args.callback.apply(args.context || this, arguments))
-					throw ("Scoped Assumption '" + args.assumption + "' failed, value is " + assumptionValue + (args.error ? ", but assuming " + args.error : "")); 
-			});
-		},
 		
+		/**
+		 * Assume a specific version of a module and fail if it is not met.
+		 * 
+		 * @param {string} assumption name space locator
+		 * @param {string} version assumed version
+		 * 
+		 */
 		assumeVersion: function () {
 			var args = Helper.matchArgs(arguments, {
 				assumption: true,
@@ -590,19 +816,33 @@ function newScope (parent, parentNS, rootNS, globalNS) {
 			});
 		},
 		
+		
+		/**
+		 * Extends a potentiall existing name space once a list of name space locators is available.
+		 * 
+		 * @param {string} namespaceLocator the name space that is to be defined
+		 * @param {array} dependencies a list of name space locator dependencies (optional)
+		 * @param {array} hiddenDependencies a list of hidden name space locators (optional)
+		 * @param {function} callback a callback function accepting all dependencies as arguments and returning the new additional definitions.
+		 * @param {object} context a callback context (optional)
+		 * 
+		 */
 		extend: function () {
 			return custom.call(this, arguments, "extend", function (ns, result) {
 				ns.namespace.extend(ns.path, result);
 			});
 		},
+				
 		
-		condition: function () {
-			return custom.call(this, arguments, "condition", function (ns, result) {
-				if (result)
-					ns.namespace.set(ns.path, result);
-			});
-		},
-		
+		/**
+		 * Requires a list of name space locators and calls a function once they are present.
+		 * 
+		 * @param {array} dependencies a list of name space locator dependencies (optional)
+		 * @param {array} hiddenDependencies a list of hidden name space locators (optional)
+		 * @param {function} callback a callback function accepting all dependencies as arguments
+		 * @param {object} context a callback context (optional)
+		 * 
+		 */
 		require: function () {
 			var args = Helper.matchArgs(arguments, {
 				dependencies: "array",
@@ -641,18 +881,36 @@ function newScope (parent, parentNS, rootNS, globalNS) {
 			}
 			return this;
 		},
+
 		
+		/**
+		 * Digest a name space locator, checking whether it has been defined by an external system.
+		 * 
+		 * @param {string} namespaceLocator name space locator
+		 */
 		digest: function (namespaceLocator) {
 			var ns = this.resolve(namespaceLocator);
 			ns.namespace.digest(ns.path);
 			return this;
 		},
 		
+		
+		/**
+		 * Returns all unresolved definitions under a namespace locator
+		 * 
+		 * @param {string} namespaceLocator name space locator, e.g. "global:"
+		 * @return {array} list of all unresolved definitions 
+		 */
 		unresolved: function (namespaceLocator) {
 			var ns = this.resolve(namespaceLocator);
 			return ns.namespace.unresolvedWatchers(ns.path);
 		},
 		
+		/**
+		 * Exports the scope.
+		 * 
+		 * @return {object} exported scope
+		 */
 		__export: function () {
 			return {
 				parentNamespace: parentNamespace.__export(),
@@ -663,6 +921,12 @@ function newScope (parent, parentNS, rootNS, globalNS) {
 			};
 		},
 		
+		/**
+		 * Imports a scope from an exported scope.
+		 * 
+		 * @param {object} data exported scope to be imported
+		 * 
+		 */
 		__import: function (data) {
 			parentNamespace.__import(data.parentNamespace);
 			rootNamespace.__import(data.rootNamespace);
@@ -678,16 +942,31 @@ var globalNamespace = newNamespace({tree: true, global: true});
 var rootNamespace = newNamespace({tree: true});
 var rootScope = newScope(null, rootNamespace, rootNamespace, globalNamespace);
 
-var Public = Helper.extend(rootScope, {
+var Public = Helper.extend(rootScope, (function () {  
+/** 
+ * This module includes all public functions of the Scoped system.
+ * 
+ * It includes all methods of the root scope and the Attach module.
+ * 
+ * @module Public
+ * @access public
+ */
+return {
 		
 	guid: "4b6878ee-cb6a-46b3-94ac-27d91f58d666",
-	version: '43.1460041676769',
+	version: '48.1467144390733',
 		
 	upgrade: Attach.upgrade,
 	attach: Attach.attach,
 	detach: Attach.detach,
 	exports: Attach.exports,
 	
+	/**
+	 * Exports all data contained in the Scoped system.
+	 * 
+	 * @return data of the Scoped system.
+	 * @access private
+	 */
 	__exportScoped: function () {
 		return {
 			globalNamespace: globalNamespace.__export(),
@@ -696,20 +975,28 @@ var Public = Helper.extend(rootScope, {
 		};
 	},
 	
+	/**
+	 * Import data into the Scoped system.
+	 * 
+	 * @param data of the Scoped system.
+	 * @access private
+	 */
 	__importScoped: function (data) {
 		globalNamespace.__import(data.globalNamespace);
 		rootNamespace.__import(data.rootNamespace);
 		rootScope.__import(data.rootScope);
 	}
 	
-});
+};
+
+}).call(this));
 
 Public = Public.upgrade();
 Public.exports();
 	return Public;
 }).call(this);
 /*!
-betajs-media - v0.0.32 - 2016-08-17
+betajs-media - v0.0.33 - 2016-09-05
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -724,12 +1011,483 @@ Scoped.binding('jquery', 'global:jQuery');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "64.1471468239913"
+    "version": "65.1473091161644"
 };
 });
 Scoped.assumeVersion('base:version', 502);
 Scoped.assumeVersion('browser:version', 78);
 Scoped.assumeVersion('flash:version', 33);
+
+Scoped.define("module:Encoding.WaveEncoder.Support", [
+    "base:Promise",
+    "base:Scheduling.Helper"
+], function (Promise, SchedulingHelper) {
+	return {
+		
+		dumpInputBuffer: function (inputBuffer, audioChannels, bufferSize, offset) {
+			return {
+				left: new Float32Array(inputBuffer.getChannelData(0)),
+				right: audioChannels > 1 ? new Float32Array(inputBuffer.getChannelData(1)) : null,
+				offset: offset || 0,
+				endOffset: bufferSize
+			};
+		},
+		
+		waveChannelTransform: function (dumpedInputBuffer, volume, schedulable, schedulableCtx) {
+			var promise = Promise.create();
+			var volumeFactor = 0x7FFF * (volume || 1);
+			var offset = dumpedInputBuffer.offset;
+			var endOffset = dumpedInputBuffer.endOffset;
+			var left = dumpedInputBuffer.left;
+			var right = dumpedInputBuffer.right;
+			var result = new Int16Array((endOffset - offset) * (right ? 2 : 1));
+			var resultOffset = 0;
+			SchedulingHelper.schedulable(function (steps) {
+				while (steps > 0) {
+					steps--;
+					if (offset >= endOffset) {
+						promise.asyncSuccess(result);
+						return true;
+					}
+ 					result[resultOffset] = left[offset] * volumeFactor;
+ 					resultOffset++;
+ 					if (right) {
+ 	 					result[resultOffset] = right[offset] * volumeFactor;
+ 	 					resultOffset++;
+ 					}
+ 					offset++;
+				}
+				return false;
+			} , 100, schedulable, schedulableCtx);
+			return promise;
+		},
+		
+		generateHeader: function (totalSize, audioChannels, sampleRate, buffer) {
+			buffer = buffer || new ArrayBuffer(44);
+			var view = new DataView(buffer);
+			view.writeUTFBytes = function (offset, string) {
+				for (var i = 0; i < string.length; i++)
+					this.setUint8(offset + i, string.charCodeAt(i));
+			};
+			// RIFF chunk descriptor
+			view.writeUTFBytes(0, 'RIFF');
+			view.setUint32(4, 44 + totalSize, true);
+			view.writeUTFBytes(8, 'WAVE');
+			// FMT sub-chunk
+			view.writeUTFBytes(12, 'fmt ');
+			view.setUint32(16, 16, true);
+			view.setUint16(20, 1, true);
+			// stereo (2 channels)
+			view.setUint16(22, audioChannels, true);
+			view.setUint32(24, sampleRate, true);
+			view.setUint32(28, sampleRate * 4, true);
+			view.setUint16(32, audioChannels * 2, true);
+			view.setUint16(34, 16, true);
+			// data sub-chunk
+			view.writeUTFBytes(36, 'data');
+			view.setUint32(40, totalSize, true);
+			return buffer;
+		}
+
+	};
+});
+
+/*
+Scoped.define("module:Encoding.WaveEncoder.InputBufferDataTransformer", [
+	"module:Encoding.WaveEncoder.Support",
+	"base:Packetizer.DataTransformer"
+], function (Support, DataTransformer, scoped) {
+	return DataTransformer.extend({scoped: scoped}, function (inherited) {
+		return {
+			
+			constructor: function (audioChannels, bufferSize) {
+				inherited.constructor.call(this);
+				this.__audioChannels = audioChannels;
+				this.__bufferSize = bufferSize;
+			},
+			
+			_consume: function (inputBuffer, packetNumber) {
+				this._produce(Support.dumpInputBuffer(inputBuffer, this.__audioChannels, this.__bufferSize), packetNumber);
+			}
+						
+		};
+	});
+});
+
+
+Scoped.define("module:Encoding.WaveEncoder.WaveChannelDataTransformer", [
+ 	"module:Encoding.WaveEncoder.Support",
+ 	"base:Packetizer.DataTransformer",
+ 	"base:Scheduling.SchedulableMixin"
+], function (Support, DataTransformer, SchedulableMixin, scoped) {
+ 	return DataTransformer.extend({scoped: scoped}, [SchedulableMixin, function (inherited) {
+ 		return {
+ 			
+			constructor: function (volume) {
+				inherited.constructor.call(this);
+				this.__volume = volume || 1;
+			},
+
+			_consume: function (data, packetNumber) {
+				Support.waveChannelTransform(data, this.__volume, this.schedulable, this).success(function (result) {
+					this._produce(result, packetNumber);
+				}, this);
+ 			}
+ 			
+ 		};
+ 	}]);
+});
+
+
+
+Scoped.define("module:Encoding.WaveEncoder.WaveHeaderPacketDataTransformer", [
+   	"module:Encoding.WaveEncoder.Support",
+	"base:Packetizer.HeaderPacketDataTransformer"
+], function (Support, HeaderPacketDataTransformer, scoped) {
+	return HeaderPacketDataTransformer.extend({scoped: scoped}, function (inherited) {
+		return {
+			
+			constructor: function (audioChannels, sampleRate) {
+				inherited.constructor.call(this);
+				this.__audioChannels = audioChannels;
+				this.__sampleRate = sampleRate;
+				this.__totalSize = 0;
+			},
+			
+			_reset: function () {
+				this.__totalSize = 0;
+			},
+			
+			_registerPacket: function (packet, packetNumber) {
+				this.__totalSize += packet.length * packet.BYTES_PER_ELEMENT;
+			},
+			
+			_headerPacket: function (totalPackets) {
+				return Support.generateHeader(totalSize, this.__audioChannels, this.__sampleRate);
+			}		
+
+		};
+	});
+});
+
+
+Scoped.define("module:Encoding.WaveEncoder.WaveDataPacketAssembler", [
+	"module:Packetizer.PacketAssembler"
+], function (PacketAssembler, scoped) {
+ 	return PacketAssembler.extend({scoped: scoped}, function (inherited) {
+ 		return {
+ 			
+			_packetSegmentizer: function (packetNumber) {
+				return packetNumber > 0 ? 1 : 0;
+			},
+			
+			_packetDesegmentizer: function (packetNumberInSegment, segmentNumber) {
+				return packetNumberInSegment + segmentNumber;
+			},
+			
+			_packetSize: function (packet, packetNumber) {
+				return packet.length * packet.BYTES_PER_ELEMENT;
+			},
+			
+			_packetSerialize: function (packet, packetNumber, offset, length, dataView) {
+				if (packetNumber > 0) {
+					for (var i = 0; i < length / 2; ++i)
+						dataView.setInt16(i * 2, packet[offset / 2 + i], true);
+				} else {
+					var packetView = new Uint8Array(packet);
+					for (var i = 0; i < length; ++i)
+						dataView.setUint8(i, packetView.get(i + offset));
+				}
+			}
+			
+ 		};
+ 	});
+});
+*/
+
+Scoped.define("module:Encoding.WebmEncoder.Support", [
+    "base:Promise",
+    "base:Scheduling.Helper",
+    "base:Types"
+], function (Promise, SchedulingHelper, Types) {
+	return {
+
+	    parseWebP: function (riff) {
+	        var VP8 = riff.RIFF[0].WEBP[0];
+
+	        var frame_start = VP8.indexOf('\x9d\x01\x2a'); // A VP8 keyframe starts with the 0x9d012a header
+	        for (var i = 0, c = []; i < 4; i++) c[i] = VP8.charCodeAt(frame_start + 3 + i);
+
+	        var width, height, tmp;
+
+	        //the code below is literally copied verbatim from the bitstream spec
+	        tmp = (c[1] << 8) | c[0];
+	        width = tmp & 0x3FFF;
+	        tmp = (c[3] << 8) | c[2];
+	        height = tmp & 0x3FFF;
+	        return {
+	            width: width,
+	            height: height,
+	            data: VP8,
+	            riff: riff
+	        };
+	    },
+	    
+		parseRIFF: function (string) {
+	        var offset = 0;
+	        var chunks = {};
+
+            var f = function(i) {
+                var unpadded = i.charCodeAt(0).toString(2);
+                return (new Array(8 - unpadded.length + 1)).join('0') + unpadded;
+            }; 
+
+            while (offset < string.length) {
+	            var id = string.substr(offset, 4);
+	            var len = parseInt(string.substr(offset + 4, 4).split('').map(f).join(''), 2);
+	            var data = string.substr(offset + 4 + 4, len);
+	            offset += 4 + 4 + len;
+	            chunks[id] = chunks[id] || [];
+
+	            if (id == 'RIFF' || id == 'LIST')
+	                chunks[id].push(this.parseRIFF(data));
+	            else
+	                chunks[id].push(data);
+	        }
+	        return chunks;
+	    },
+	    
+	    isBlankFrame: function (canvas, frame, _pixTolerance, _frameTolerance) {
+	        var localCanvas = document.createElement('canvas');
+	        localCanvas.width = canvas.width;
+	        localCanvas.height = canvas.height;
+	        var context2d = localCanvas.getContext('2d');
+
+	        var sampleColor = {
+	            r: 0,
+	            g: 0,
+	            b: 0
+	        };
+	        var maxColorDifference = Math.sqrt(
+	            Math.pow(255, 2) +
+	            Math.pow(255, 2) +
+	            Math.pow(255, 2)
+	        );
+	        var pixTolerance = _pixTolerance && _pixTolerance >= 0 && _pixTolerance <= 1 ? _pixTolerance : 0;
+	        var frameTolerance = _frameTolerance && _frameTolerance >= 0 && _frameTolerance <= 1 ? _frameTolerance : 0;
+
+	        var matchPixCount, endPixCheck, maxPixCount;
+
+	        var image = new Image();
+	        image.src = frame.image;
+	        context2d.drawImage(image, 0, 0, canvas.width, canvas.height);
+	        var imageData = context2d.getImageData(0, 0, canvas.width, canvas.height);
+	        matchPixCount = 0;
+	        endPixCheck = imageData.data.length;
+	        maxPixCount = imageData.data.length / 4;
+
+	        for (var pix = 0; pix < endPixCheck; pix += 4) {
+	            var currentColor = {
+	                r: imageData.data[pix],
+	                g: imageData.data[pix + 1],
+	                b: imageData.data[pix + 2]
+	            };
+	            var colorDifference = Math.sqrt(
+	                Math.pow(currentColor.r - sampleColor.r, 2) +
+	                Math.pow(currentColor.g - sampleColor.g, 2) +
+	                Math.pow(currentColor.b - sampleColor.b, 2)
+	            );
+	            if (colorDifference <= maxColorDifference * pixTolerance)
+	                matchPixCount++;
+	        }
+
+	        return maxPixCount - matchPixCount <= maxPixCount * frameTolerance;
+	    },
+	    
+	    makeSimpleBlock: function (data) {
+	        var flags = 0;
+	        if (data.keyframe) flags |= 128;
+	        if (data.invisible) flags |= 8;
+	        if (data.lacing) flags |= (data.lacing << 1);
+	        if (data.discardable) flags |= 1;
+	        if (data.trackNum > 127)
+	            throw "TrackNumber > 127 not supported";
+	        var out = [data.trackNum | 0x80, data.timecode >> 8, data.timecode & 0xff, flags].map(function(e) {
+	            return String.fromCharCode(e);
+	        }).join('') + data.frame;
+	        return out;
+	    },
+	    
+	    generateEBMLHeader: function (duration, width, height) {
+	    	
+			var doubleToString = function (num) {
+		        return [].slice.call(
+	                new Uint8Array((new Float64Array([num])).buffer), 0).map(function(e) {
+	                return String.fromCharCode(e);
+	            }).reverse().join('');
+			};
+
+	    	return [{
+	            "id": 0x1a45dfa3, // EBML
+	            "data": [{
+	                "data": 1,
+	                "id": 0x4286 // EBMLVersion
+	            }, {
+	                "data": 1,
+	                "id": 0x42f7 // EBMLReadVersion
+	            }, {
+	                "data": 4,
+	                "id": 0x42f2 // EBMLMaxIDLength
+	            }, {
+	                "data": 8,
+	                "id": 0x42f3 // EBMLMaxSizeLength
+	            }, {
+	                "data": "webm",
+	                "id": 0x4282 // DocType
+	            }, {
+	                "data": 2,
+	                "id": 0x4287 // DocTypeVersion
+	            }, {
+	                "data": 2,
+	                "id": 0x4285 // DocTypeReadVersion
+	            }]
+	        }, {
+	            "id": 0x18538067, // Segment
+	            "data": [{
+	                "id": 0x1549a966, // Info
+	                "data": [{
+	                    "data": 1e6, //do things in millisecs (num of nanosecs for duration scale)
+	                    "id": 0x2ad7b1 // TimecodeScale
+	                }, {
+	                    "data": "whammy",
+	                    "id": 0x4d80 // MuxingApp
+	                }, {
+	                    "data": "whammy",
+	                    "id": 0x5741 // WritingApp
+	                }, {
+	                    "data": doubleToString(duration),
+	                    "id": 0x4489 // Duration
+	                }]
+	            }, {
+	                "id": 0x1654ae6b, // Tracks
+	                "data": [{
+	                    "id": 0xae, // TrackEntry
+	                    "data": [{
+	                        "data": 1,
+	                        "id": 0xd7 // TrackNumber
+	                    }, {
+	                        "data": 1,
+	                        "id": 0x63c5 // TrackUID
+	                    }, {
+	                        "data": 0,
+	                        "id": 0x9c // FlagLacing
+	                    }, {
+	                        "data": "und",
+	                        "id": 0x22b59c // Language
+	                    }, {
+	                        "data": "V_VP8",
+	                        "id": 0x86 // CodecID
+	                    }, {
+	                        "data": "VP8",
+	                        "id": 0x258688 // CodecName
+	                    }, {
+	                        "data": 1,
+	                        "id": 0x83 // TrackType
+	                    }, {
+	                        "id": 0xe0, // Video
+	                        "data": [{
+	                            "data": width,
+	                            "id": 0xb0 // PixelWidth
+	                        }, {
+	                            "data": height,
+	                            "id": 0xba // PixelHeight
+	                        }]
+	                    }]
+	                }]
+	            }]
+	        }];
+	    },
+	    
+	    __numToBuffer: function (num) {
+	        var parts = [];
+	        while (num > 0) {
+	            parts.push(num & 0xff);
+	            num = num >> 8;
+	        }
+	        return new Uint8Array(parts.reverse());
+	    },
+
+	    __strToBuffer: function (str) {
+	        return new Uint8Array(str.split('').map(function(e) {
+	            return e.charCodeAt(0);
+	        }));
+	    },
+
+	    __bitsToBuffer: function (bits) {
+	        var data = [];
+	        var pad = (bits.length % 8) ? (new Array(1 + 8 - (bits.length % 8))).join('0') : '';
+	        bits = pad + bits;
+	        for (var i = 0; i < bits.length; i += 8)
+	            data.push(parseInt(bits.substr(i, 8), 2));
+	        return new Uint8Array(data);
+	    },
+
+	    serializeEBML: function (json) {
+	    	if (!Types.is_array(json))
+	    		return json;
+	        var ebml = [];
+	        json.forEach(function (entry) {
+	        	var data = entry.data;
+	        	var tp = typeof data;
+	        	if (tp === "object")
+	        		data = this.serializeEBML(data);
+	        	else if (tp === "number")
+	        		data = this.__bitsToBuffer(data.toString(2));
+	        	else if (tp === "string")
+	        		data = this.__strToBuffer(data);
+	        	if (tp === "undefined")
+	        		console.log(entry);
+	            var len = data.size || data.byteLength || data.length;
+	            var zeroes = Math.ceil(Math.ceil(Math.log(len) / Math.log(2)) / 8);
+	            var size_str = len.toString(2);
+	            var padded = (new Array((zeroes * 7 + 7 + 1) - size_str.length)).join('0') + size_str;
+	            var size = (new Array(zeroes)).join('0') + '1' + padded;
+	            ebml.push(this.__numToBuffer(entry.id));
+	            ebml.push(this.__bitsToBuffer(size));
+	            ebml.push(data);
+	        }, this);
+	        return new Blob(ebml, { type: "video/webm" });
+	    },
+	    
+		makeTimecodeDataBlock: function (data, clusterDuration) {
+	        return {
+	            data: this.makeSimpleBlock({
+	                discardable: 0,
+	                frame: data.slice(4),
+	                invisible: 0,
+	                keyframe: 1,
+	                lacing: 0,
+	                trackNum: 1,
+	                timecode: Math.round(clusterDuration)
+	            }),
+	            id: 0xa3
+	        };
+		},
+		
+    	makeCluster: function (clusterFrames, clusterTimecode) {
+        	clusterFrames.unshift({
+        		"data": clusterTimecode,
+        		"id": 0xe7 // Timecode
+        	});
+        	return {
+                "id": 0x1f43b675, // Cluster
+                "data": clusterFrames
+            };
+    	}		
+		
+	};
+});
+
 Scoped.define("module:Player.FlashPlayer", [
     "browser:DomExtend.DomExtension",
 	"browser:Dom",
@@ -1604,6 +2362,7 @@ Scoped.define("module:Flash.FlashRecorder", [
 				this.__cameraWidth = this.readAttr('camerawidth') || 640;
 				this.__cameraHeight = this.readAttr('cameraheight') || 480;
 				this.__streamType = this.readAttr("streamtype") || 'mp4';
+				this.__microphoneCodec = this.readAttr("microphonecodec") || 'speex';
 				this.__fps = this.readAttr('fps') || 20;				
 				this._embedding.ready(this.__initializeEmbedding, this);
 			},
@@ -1790,13 +2549,10 @@ Scoped.define("module:Flash.FlashRecorder", [
 				this._flashObjs.microphone.set("gain", profile.gain || 55);
 				this._flashObjs.microphone.setSilenceLevel(profile.silenceLevel || 0);
 				this._flashObjs.microphone.setUseEchoSuppression(profile.echoSuppression || false);
+				this._flashObjs.microphone.set("rate", profile.rate || 44);
+				this._flashObjs.microphone.set("encodeQuality", profile.encodeQuality || 10);
+				this._flashObjs.microphone.set("codec", profile.codec || this.__microphoneCodec);
 				this._currentMicrophoneProfile = profile;
-			},
-			
-			setMicrophoneCodec: function (codec, params) {
-				this._flashObjs.microphone.set("codec", codec);
-				for (var key in params || {})
-					this._flashObjs.microphone.set(key, params[key]);
 			},
 			
 			_pixelSample: function (samples, callback, context) {
@@ -2760,12 +3516,13 @@ Scoped.define("module:WebRTC.AudioAnalyser", [
 // Co-Credits: https://github.com/streamproc/MediaStreamRecorder/blob/master/MediaStreamRecorder-standalone.js
 
 Scoped.define("module:WebRTC.AudioRecorder", [
-                                              "base:Class",
-                                              "base:Events.EventsMixin",
-                                              "base:Objs",
-                                              "base:Functions",
-                                              "module:WebRTC.Support"
-                                              ], function (Class, EventsMixin, Objs, Functions, Support, scoped) {
+  "base:Class",
+  "base:Events.EventsMixin",
+  "base:Objs",
+  "base:Functions",
+  "module:WebRTC.Support",
+  "module:Encoding.WaveEncoder.Support"
+], function (Class, EventsMixin, Objs, Functions, Support, WaveEncoder, scoped) {
 	return Class.extend({scoped: scoped}, [EventsMixin, function (inherited) {
 		return {
 
@@ -2787,6 +3544,8 @@ Scoped.define("module:WebRTC.AudioRecorder", [
 			_audioProcess: function (e) {
 				if (!this._started)					
 					return;
+				this._channels.push(WaveEncoder.dumpInputBuffer(e.inputBuffer, this._options.audioChannels, this._actualBufferSize));
+				this._recordingLength += this._actualBufferSize;
 				/*
 				var sampleStartTime = e.playbackTime;
 				var sampleStopTime = e.playbackTime + this._actualBufferSize / this._actualSampleRate;
@@ -2799,23 +3558,14 @@ Scoped.define("module:WebRTC.AudioRecorder", [
 					this._generateData();
 					return;
 				}
-				*/
 				var offset = 0;
 				var endOffset = this._actualBufferSize;
-				/*
 				if (sampleStartTime < this._startContextTime)
 					offset = Math.round((this._startContextTime - sampleStartTime) * this._actualSampleRate);
 				if (this._stopped && sampleStopTime > this._stopContextTime)
 					endOffset = Math.round((this._stopContextTime - sampleStartTime) * this._actualSampleRate);
-				*/
-				this._channels.push({
-					left: new Float32Array(e.inputBuffer.getChannelData(0)),
-					right: this._options.audioChannels > 1 ? new Float32Array(e.inputBuffer.getChannelData(1)) : null,
-					offset: offset,
-					endOffset: endOffset
-				});
+				this._channels.push(WaveEncoder.dumpInputBuffer(e.inputBuffer, this._options.audioChannels, endOffset, offset));
 				this._recordingLength += endOffset - offset;
-				/*
 				if (this._stopped && sampleStopTime > this._stopContextTime) {
 					this._started = false;
 					this._generateData();
@@ -2885,64 +3635,24 @@ Scoped.define("module:WebRTC.AudioRecorder", [
 			},
 
 			_generateData: function () {
-				var interleaved = new Float32Array(this._recordingLength * this._options.audioChannels);
-				var offset = 0;
-				for (var channelIdx = 0; channelIdx < this._channels.length; ++channelIdx) {
-					var channelOffset = this._channels[channelIdx].offset;
-					var endOffset = this._channels[channelIdx].endOffset;
-					var left = this._channels[channelIdx].left;
-					var right = this._channels[channelIdx].right;
-					while (channelOffset < endOffset) {
-						interleaved[offset] = left[channelOffset];
-						if (right) 
-							interleaved[offset+1] = right[channelOffset];
-						++channelOffset;
-						offset += this._options.audioChannels;
-					}
-				}
-				// we create our wav file
-				var buffer = new ArrayBuffer(44 + interleaved.length * 2);
-				var view = new DataView(buffer);
-				// RIFF chunk descriptor
-				this.__writeUTFBytes(view, 0, 'RIFF');
-				view.setUint32(4, 44 + interleaved.length * 2, true);
-				this.__writeUTFBytes(view, 8, 'WAVE');
-				// FMT sub-chunk
-				this.__writeUTFBytes(view, 12, 'fmt ');
-				view.setUint32(16, 16, true);
-				view.setUint16(20, 1, true);
-				// stereo (2 channels)
-				view.setUint16(22, this._options.audioChannels, true);
-				view.setUint32(24, this._actualSampleRate, true);
-				view.setUint32(28, this._actualSampleRate * 4, true);
-				view.setUint16(32, this._options.audioChannels * 2, true);
-				view.setUint16(34, 16, true);
-				// data sub-chunk
-				this.__writeUTFBytes(view, 36, 'data');
-				view.setUint32(40, interleaved.length * 2, true);
-				// write the PCM samples
-				var lng = interleaved.length;
-				var index = 44;
 				var volume = 1;
-				for (var j = 0; j < lng; j++) {
-					view.setInt16(index, interleaved[j] * (0x7FFF * volume), true);
-					index += 2;
-				}
-				// our final binary blob
-				this._data = new Blob([view], {
-					type: 'audio/wav'
+				var index = 44;
+				var totalSize = this._recordingLength * this._options.audioChannels * 2 + 44;
+				var buffer = new ArrayBuffer(totalSize);
+				var view = new DataView(buffer);
+				WaveEncoder.generateHeader(totalSize, this._options.audioChannels, this._actualSampleRate, buffer);
+				this._channels.forEach(function (channel) {
+					WaveEncoder.waveChannelTransform(channel, volume).value().forEach(function (v) {
+						view.setInt16(index, v, true);
+						index += 2;
+					});
 				});
+				this._data = new Blob([view], { type: 'audio/wav' });
 				this._leftChannel = [];
 				this._rightChannel = [];
 				this._recordingLength = 0;
 				this.trigger("data", this._data);
-			},
-
-			__writeUTFBytes: function (view, offset, string) {
-				for (var i = 0; i < string.length; i++)
-					view.setUint8(offset + i, string.charCodeAt(i));
 			}
-
 
 		};		
 	}], {
@@ -2977,6 +3687,13 @@ Scoped.define("module:WebRTC.MediaRecorder", [
 				/*
 				var mediaRecorderOptions = {};
 				mediaRecorderOptions.mimeType = "video/mp4";
+				if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) {
+				  options = {mimeType: 'video/webm, codecs=vp9'};
+				} else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp8')) {
+				   options = {mimeType: 'video/webm, codecs=vp8'};
+				} else {
+				  // ...
+				}
 				this._mediaRecorder = new MediaRecorder(stream, mediaRecorderOptions);
 				*/
 				this._mediaRecorder = new MediaRecorder(stream);
@@ -3383,7 +4100,16 @@ Scoped.define("module:WebRTC.Support", [
 		},
 		
 		getGlobals: function () {
-			var getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
+			var getUserMedia = null;
+			var getUserMediaCtx = null;
+			/*
+			if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+				getUserMedia = navigator.mediaDevices.getUserMedia;
+				getUserMediaCtx = navigator.mediaDevices;
+			} else { */
+				getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
+				getUserMediaCtx = navigator;
+			//}
 			var URL = window.URL || window.webkitURL;
 			var MediaRecorder = window.MediaRecorder;
 			var AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -3396,6 +4122,7 @@ Scoped.define("module:WebRTC.Support", [
 			}
 			return {
 				getUserMedia: getUserMedia,
+				getUserMediaCtx: getUserMediaCtx,
 				URL: URL,
 				MediaRecorder: MediaRecorder,
 				AudioContext: AudioContext,
@@ -3413,10 +4140,6 @@ Scoped.define("module:WebRTC.Support", [
 		
 		userMediaSupported: function () {
 			return !!this.globals().getUserMedia;
-		},
-		
-		mediaStreamTrackSourcesSupported: function () {
-			return ;
 		},
 		
 		enumerateMediaSources: function () {
@@ -3447,10 +4170,10 @@ Scoped.define("module:WebRTC.Support", [
 				promise.asyncSuccess(result);
 			};
 			try {
-				if (MediaStreamTrack && MediaStreamTrack.getSources)
-					MediaStreamTrack.getSources(promiseCallback);
-				else if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices)
+				if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices)
 					navigator.mediaDevices.enumerateDevices().then(promiseCallback);
+				else if (MediaStreamTrack && MediaStreamTrack.getSources)
+					MediaStreamTrack.getSources(promiseCallback);
 				else
 					promise.asyncError("Unsupported");
 			} catch (e) {
@@ -3477,7 +4200,7 @@ Scoped.define("module:WebRTC.Support", [
 		
 		userMedia: function (options) {
 			var promise = Promise.create();
-			this.globals().getUserMedia.call(navigator, options, function (stream) {
+			this.globals().getUserMedia.call(this.globals().getUserMediaCtx, options, function (stream) {
 				promise.asyncSuccess(stream);
 			}, function (e) {
 				promise.asyncError(e);
@@ -3628,15 +4351,19 @@ Scoped.define("module:WebRTC.Support", [
 // Co-Credits: https://github.com/streamproc/MediaStreamRecorder/blob/master/MediaStreamRecorder-standalone.js
 
 Scoped.define("module:WebRTC.WhammyRecorder", [
-                                              "base:Class",
-                                              "base:Events.EventsMixin",
-                                              "base:Objs",
-                                              "base:Time",
-                                              "base:Functions",
-                                              "base:Async",
-                                              "module:WebRTC.Support"
-                                              ], function (Class, EventsMixin, Objs, Time, Functions, Async, Support, scoped) {
+  "base:Class",
+  "base:Events.EventsMixin",
+  "base:Objs",
+  "base:Time",
+  "base:Functions",
+  "base:Async",
+  "module:WebRTC.Support",
+  "module:Encoding.WebmEncoder.Support"
+], function (Class, EventsMixin, Objs, Time, Functions, Async, Support, WebmSupport, scoped) {
 	return Class.extend({scoped: scoped}, [EventsMixin, function (inherited) {
+
+		var CLUSTER_MAX_DURATION = 30000;
+
 		return {
 
 			constructor: function (stream, options) {
@@ -3674,7 +4401,7 @@ Scoped.define("module:WebRTC.WhammyRecorder", [
 				this._canvas.height = this._options.recordHeight;
 	            this._context = this._canvas.getContext('2d');
 			    this._frames = [];
-			    this._isOnStartedDrawingNonBlankFramesInvoked = false;
+			    //this._isOnStartedDrawingNonBlankFramesInvoked = false;
 			    this._lastTime = Time.now();
 			    this._startTime = this._lastTime;
 				this.trigger("started");
@@ -3695,15 +4422,17 @@ Scoped.define("module:WebRTC.WhammyRecorder", [
 				var now = Time.now();
 				var duration = now - this._lastTime;
 		        this._lastTime = now;
-	        	this._context.drawImage(this._video, 0, 0, this._canvas.width, this._canvas.height);
+		        this._context.drawImage(this._video, 0, 0, this._canvas.width, this._canvas.height);
 			    this._frames.push({
 		            duration: duration,
 		            image: this._canvas.toDataURL('image/webp')
 		        });
-		        if (!this._isOnStartedDrawingNonBlankFramesInvoked && !this.__isBlankFrame(this._canvas, this._frames[this._frames.length - 1])) {
+			    /*
+		        if (!this._isOnStartedDrawingNonBlankFramesInvoked && !WebmSupport.isBlankFrame(this._canvas, this._frames[this._frames.length - 1])) {
 		            this._isOnStartedDrawingNonBlankFramesInvoked = true;
 		            this.trigger("onStartedDrawingNonBlankFrames");
 		        }
+		        */
 		        var maxTime = this._options.framerate ? 1000 / this._options.framerate : 10;
 		        Async.eventually(this._process, [], this, Math.max(1, maxTime - (Time.now() - now)));
 			},
@@ -3715,414 +4444,62 @@ Scoped.define("module:WebRTC.WhammyRecorder", [
 			_generateData: function () {
 		        if (!this._frames.length)
 		            return;
-		        this._data = this.__compile(this.__dropBlackFrames(this._canvas, this._frames, -1));
+		        this._data = this.__compile(this.__dropBlackFrames(this._canvas, this._frames));
 		        this.trigger("data", this._data);
 			},
 			
-			clearOldRecordedFrames: function () {
-				this._frames = [];
-			},
-			
-			__doubleToString: function (num) {
-		        return [].slice.call(
-	                new Uint8Array((new Float64Array([num])).buffer), 0).map(function(e) {
-	                return String.fromCharCode(e);
-	            }).reverse().join('');
-			},
-			
-			__parseRIFF: function (string) {
-		        var offset = 0;
-		        var chunks = {};
-
-	            var f = function(i) {
-	                var unpadded = i.charCodeAt(0).toString(2);
-	                return (new Array(8 - unpadded.length + 1)).join('0') + unpadded;
-	            }; 
-
-	            while (offset < string.length) {
-		            var id = string.substr(offset, 4);
-		            var len = parseInt(string.substr(offset + 4, 4).split('').map(f).join(''), 2);
-		            var data = string.substr(offset + 4 + 4, len);
-		            offset += 4 + 4 + len;
-		            chunks[id] = chunks[id] || [];
-
-		            if (id == 'RIFF' || id == 'LIST') {
-		                chunks[id].push(this.__parseRIFF(data));
-		            } else {
-		                chunks[id].push(data);
-		            }
-		        }
-		        return chunks;
-		    },
-		    
-		    __parseWebP: function (riff) {
-		        var VP8 = riff.RIFF[0].WEBP[0];
-
-		        var frame_start = VP8.indexOf('\x9d\x01\x2a'); // A VP8 keyframe starts with the 0x9d012a header
-		        for (var i = 0, c = []; i < 4; i++) c[i] = VP8.charCodeAt(frame_start + 3 + i);
-
-		        var width, height, tmp;
-
-		        //the code below is literally copied verbatim from the bitstream spec
-		        tmp = (c[1] << 8) | c[0];
-		        width = tmp & 0x3FFF;
-		        tmp = (c[3] << 8) | c[2];
-		        height = tmp & 0x3FFF;
-		        return {
-		            width: width,
-		            height: height,
-		            data: VP8,
-		            riff: riff
-		        };
-		    },
-		    
-		    __checkFrames: function (frames) {
-		        if (!frames[0])
-		            return null;
-		        var duration = 0;
-		        Objs.iter(frames, function (frame) {
-		        	duration += frame.duration;
-		        });
-		        return {
-		            duration: duration,
-		            width: frames[0].width,
-		            height: frames[0].height
-		        };
-		    },
-
-		    __makeSimpleBlock: function (data) {
-		        var flags = 0;
-		        if (data.keyframe) flags |= 128;
-		        if (data.invisible) flags |= 8;
-		        if (data.lacing) flags |= (data.lacing << 1);
-		        if (data.discardable) flags |= 1;
-		        if (data.trackNum > 127)
-		            throw "TrackNumber > 127 not supported";
-		        var out = [data.trackNum | 0x80, data.timecode >> 8, data.timecode & 0xff, flags].map(function(e) {
-		            return String.fromCharCode(e);
-		        }).join('') + data.frame;
-		        return out;
-		    },
-		    
-		    __numToBuffer: function (num) {
-		        var parts = [];
-		        while (num > 0) {
-		            parts.push(num & 0xff);
-		            num = num >> 8;
-		        }
-		        return new Uint8Array(parts.reverse());
-		    },
-
-		    __strToBuffer: function (str) {
-		        return new Uint8Array(str.split('').map(function(e) {
-		            return e.charCodeAt(0);
-		        }));
-		    },
-
-		    __bitsToBuffer: function (bits) {
-		        var data = [];
-		        var pad = (bits.length % 8) ? (new Array(1 + 8 - (bits.length % 8))).join('0') : '';
-		        bits = pad + bits;
-		        for (var i = 0; i < bits.length; i += 8) {
-		            data.push(parseInt(bits.substr(i, 8), 2));
-		        }
-		        return new Uint8Array(data);
-		    },
-		    
-		    __generateEBML: function (json) {
-		        var ebml = [];
-		        for (var i = 0; i < json.length; i++) {
-		            var data = json[i].data;
-		            if (typeof data == 'object') data = this.__generateEBML(data);
-		            if (typeof data == 'number') data = this.__bitsToBuffer(data.toString(2));
-		            if (typeof data == 'string') data = this.__strToBuffer(data);
-
-		            var len = data.size || data.byteLength || data.length;
-		            var zeroes = Math.ceil(Math.ceil(Math.log(len) / Math.log(2)) / 8);
-		            var size_str = len.toString(2);
-		            var padded = (new Array((zeroes * 7 + 7 + 1) - size_str.length)).join('0') + size_str;
-		            var size = (new Array(zeroes)).join('0') + '1' + padded;
-
-		            ebml.push(this.__numToBuffer(json[i].id));
-		            ebml.push(this.__bitsToBuffer(size));
-		            ebml.push(data);
-		        }
-		        return new Blob(ebml, {
-		            type: "video/webm"
-		        });
-		    },
-		    
-		    __toWebM: function (frames) {
-		        var info = this.__checkFrames(frames);
-
-		        var CLUSTER_MAX_DURATION = 30000;
-
-		        var EBML = [{
-		            "id": 0x1a45dfa3, // EBML
-		            "data": [{
-		                "data": 1,
-		                "id": 0x4286 // EBMLVersion
-		            }, {
-		                "data": 1,
-		                "id": 0x42f7 // EBMLReadVersion
-		            }, {
-		                "data": 4,
-		                "id": 0x42f2 // EBMLMaxIDLength
-		            }, {
-		                "data": 8,
-		                "id": 0x42f3 // EBMLMaxSizeLength
-		            }, {
-		                "data": "webm",
-		                "id": 0x4282 // DocType
-		            }, {
-		                "data": 2,
-		                "id": 0x4287 // DocTypeVersion
-		            }, {
-		                "data": 2,
-		                "id": 0x4285 // DocTypeReadVersion
-		            }]
-		        }, {
-		            "id": 0x18538067, // Segment
-		            "data": [{
-		                "id": 0x1549a966, // Info
-		                "data": [{
-		                    "data": 1e6, //do things in millisecs (num of nanosecs for duration scale)
-		                    "id": 0x2ad7b1 // TimecodeScale
-		                }, {
-		                    "data": "whammy",
-		                    "id": 0x4d80 // MuxingApp
-		                }, {
-		                    "data": "whammy",
-		                    "id": 0x5741 // WritingApp
-		                }, {
-		                    "data": this.__doubleToString(info.duration),
-		                    "id": 0x4489 // Duration
-		                }]
-		            }, {
-		                "id": 0x1654ae6b, // Tracks
-		                "data": [{
-		                    "id": 0xae, // TrackEntry
-		                    "data": [{
-		                        "data": 1,
-		                        "id": 0xd7 // TrackNumber
-		                    }, {
-		                        "data": 1,
-		                        "id": 0x63c5 // TrackUID
-		                    }, {
-		                        "data": 0,
-		                        "id": 0x9c // FlagLacing
-		                    }, {
-		                        "data": "und",
-		                        "id": 0x22b59c // Language
-		                    }, {
-		                        "data": "V_VP8",
-		                        "id": 0x86 // CodecID
-		                    }, {
-		                        "data": "VP8",
-		                        "id": 0x258688 // CodecName
-		                    }, {
-		                        "data": 1,
-		                        "id": 0x83 // TrackType
-		                    }, {
-		                        "id": 0xe0, // Video
-		                        "data": [{
-		                            "data": info.width,
-		                            "id": 0xb0 // PixelWidth
-		                        }, {
-		                            "data": info.height,
-		                            "id": 0xba // PixelHeight
-		                        }]
-		                    }]
-		                }]
-		            }]
-		        }];
-
-		        //Generate clusters (max duration)
-		        var frameNumber = 0;
-		        var clusterTimecode = 0;
-		        var self = this;
-		        var clusterCounter = 0;
-		        
-		        var f = function(webp) {
-                    var block = self.__makeSimpleBlock({
-                        discardable: 0,
-                        frame: webp.data.slice(4),
-                        invisible: 0,
-                        keyframe: 1,
-                        lacing: 0,
-                        trackNum: 1,
-                        timecode: Math.round(clusterCounter)
-                    });
-                    clusterCounter += webp.duration;
-                    return {
-                        data: block,
-                        id: 0xa3
-                    };
-                };
-		        
-		        while (frameNumber < frames.length) {
-
-		            var clusterFrames = [];
-		            var clusterDuration = 0;
-		            do {
-		                clusterFrames.push(frames[frameNumber]);
-		                clusterDuration += frames[frameNumber].duration;
-		                frameNumber++;
-		            } while (frameNumber < frames.length && clusterDuration < CLUSTER_MAX_DURATION);
-
-		            clusterCounter = 0;
-		            var cluster = {
-		                "id": 0x1f43b675, // Cluster
-		                "data": [{
-		                    "data": clusterTimecode,
-		                    "id": 0xe7 // Timecode
-		                }].concat(clusterFrames.map(f))
-		            }; //Add cluster to segment
-		            EBML[1].data.push(cluster);
-		            clusterTimecode += clusterDuration;
-		        }
-
-		        return this.__generateEBML(EBML);
-		    },
-		    
 		    __compile: function (frames) {
-		    	var self = this;
-		        var result = this.__toWebM(frames.map(function(frame) {
-		            var webp = self.__parseWebP(self.__parseRIFF(atob(frame.image.slice(23))));
-		            webp.duration = frame.duration;
-		            return webp;
-		        }));
-		        //return new result;
-		        return result;
-		    },
-		    
-		    __dropBlackFrames: function (canvas, _frames, _framesToCheck, _pixTolerance, _frameTolerance) {
-		        var localCanvas = document.createElement('canvas');
-		        localCanvas.width = canvas.width;
-		        localCanvas.height = canvas.height;
-		        var context2d = localCanvas.getContext('2d');
-		        var resultFrames = [];
+		    	var totalDuration = 0;
+		    	var width = null;
+		    	var height = null;
+		    	var clusters = [];
 
-		        var checkUntilNotBlack = _framesToCheck === -1;
-		        var endCheckFrame = (_framesToCheck && _framesToCheck > 0 && _framesToCheck <= _frames.length) ?
-		            _framesToCheck : _frames.length;
-		        var sampleColor = {
-		            r: 0,
-		            g: 0,
-		            b: 0
-		        };
-		        var maxColorDifference = Math.sqrt(
-		            Math.pow(255, 2) +
-		            Math.pow(255, 2) +
-		            Math.pow(255, 2)
-		        );
-		        var pixTolerance = _pixTolerance && _pixTolerance >= 0 && _pixTolerance <= 1 ? _pixTolerance : 0;
-		        var frameTolerance = _frameTolerance && _frameTolerance >= 0 && _frameTolerance <= 1 ? _frameTolerance : 0;
-		        var doNotCheckNext = false;
+	            var clusterTimecode = 0;
 
-		        for (var f = 0; f < endCheckFrame; f++) {
-		            var matchPixCount, endPixCheck, maxPixCount;
+	            var clusterFrames = null;
+	            var clusterDuration = null;
+		    	
+		    	frames.forEach(function (frame) {
+		    		if (!clusterFrames) {
+		    			clusterFrames = [];
+		    			clusterDuration = 0;
+		    		}
 
-		            if (!doNotCheckNext) {
-		                var image = new Image();
-		                image.src = _frames[f].image;
-		                context2d.drawImage(image, 0, 0, canvas.width, canvas.height);
-		                var imageData = context2d.getImageData(0, 0, canvas.width, canvas.height);
-		                matchPixCount = 0;
-		                endPixCheck = imageData.data.length;
-		                maxPixCount = imageData.data.length / 4;
-
-		                for (var pix = 0; pix < endPixCheck; pix += 4) {
-		                    var currentColor = {
-		                        r: imageData.data[pix],
-		                        g: imageData.data[pix + 1],
-		                        b: imageData.data[pix + 2]
-		                    };
-		                    var colorDifference = Math.sqrt(
-		                        Math.pow(currentColor.r - sampleColor.r, 2) +
-		                        Math.pow(currentColor.g - sampleColor.g, 2) +
-		                        Math.pow(currentColor.b - sampleColor.b, 2)
-		                    );
-		                    // difference in color it is difference in color vectors (r1,g1,b1) <=> (r2,g2,b2)
-		                    if (colorDifference <= maxColorDifference * pixTolerance) {
-		                        matchPixCount++;
-		                    }
-		                }
+		    		var webp = WebmSupport.parseWebP(WebmSupport.parseRIFF(atob(frame.image.slice(23))));
+		            
+		    		clusterFrames.push(WebmSupport.serializeEBML(WebmSupport.makeTimecodeDataBlock(webp.data, clusterDuration)));
+		            
+		            clusterDuration += frame.duration;
+		            totalDuration += frame.duration;
+		            width = width || webp.width;
+		            height = height || webp.height;
+		            
+		            if (clusterDuration >= CLUSTER_MAX_DURATION) {
+		            	clusters.push(WebmSupport.serializeEBML(WebmSupport.makeCluster(clusterFrames, clusterTimecode)));
+		            	clusterTimecode = totalDuration;
+		            	clusterFrames = null;
+		            	clusterDuration = 0;
 		            }
-
-		            if (!doNotCheckNext && maxPixCount - matchPixCount <= maxPixCount * frameTolerance) {
-		            } else {
-		                if (checkUntilNotBlack) {
-		                    doNotCheckNext = true;
-		                }
-		                resultFrames.push(_frames[f]);
-		            }
-		        }
-
-		        resultFrames = resultFrames.concat(_frames.slice(endCheckFrame));
-
-		        if (resultFrames.length <= 0) {
-		            // at least one last frame should be available for next manipulation
-		            // if total duration of all frames will be < 1000 than ffmpeg doesn't work well...
-		            resultFrames.push(_frames[_frames.length - 1]);
-		        }
-
-		        return resultFrames;
+		    	}, this);
+		    	
+		    	if (clusterFrames)
+	            	clusters.push(WebmSupport.serializeEBML(WebmSupport.makeCluster(clusterFrames, clusterTimecode)));
+		    	
+		        var EBML = WebmSupport.generateEBMLHeader(totalDuration, width, height);
+	            EBML[1].data = EBML[1].data.concat(clusters);
+		        return WebmSupport.serializeEBML(EBML);		    	
 		    },
-		    
-		    __isBlankFrame: function (canvas, frame, _pixTolerance, _frameTolerance) {
-		        var localCanvas = document.createElement('canvas');
-		        localCanvas.width = canvas.width;
-		        localCanvas.height = canvas.height;
-		        var context2d = localCanvas.getContext('2d');
 
-		        var sampleColor = {
-		            r: 0,
-		            g: 0,
-		            b: 0
-		        };
-		        var maxColorDifference = Math.sqrt(
-		            Math.pow(255, 2) +
-		            Math.pow(255, 2) +
-		            Math.pow(255, 2)
-		        );
-		        var pixTolerance = _pixTolerance && _pixTolerance >= 0 && _pixTolerance <= 1 ? _pixTolerance : 0;
-		        var frameTolerance = _frameTolerance && _frameTolerance >= 0 && _frameTolerance <= 1 ? _frameTolerance : 0;
+		    __dropBlackFrames: function (canvas, _frames, _pixTolerance, _frameTolerance) {
+		    	var idx = 0;
+		    	while (idx < _frames.length) {
+		    		if (!WebmSupport.isBlankFrame(canvas, _frames[idx], _pixTolerance, _frameTolerance))
+		    			break;
+		    		idx++;
+		    	}
+		    	return _frames.slice(idx);
+		    },		    
 
-		        var matchPixCount, endPixCheck, maxPixCount;
-
-		        var image = new Image();
-		        image.src = frame.image;
-		        context2d.drawImage(image, 0, 0, canvas.width, canvas.height);
-		        var imageData = context2d.getImageData(0, 0, canvas.width, canvas.height);
-		        matchPixCount = 0;
-		        endPixCheck = imageData.data.length;
-		        maxPixCount = imageData.data.length / 4;
-
-		        for (var pix = 0; pix < endPixCheck; pix += 4) {
-		            var currentColor = {
-		                r: imageData.data[pix],
-		                g: imageData.data[pix + 1],
-		                b: imageData.data[pix + 2]
-		            };
-		            var colorDifference = Math.sqrt(
-		                Math.pow(currentColor.r - sampleColor.r, 2) +
-		                Math.pow(currentColor.g - sampleColor.g, 2) +
-		                Math.pow(currentColor.b - sampleColor.b, 2)
-		            );
-		            // difference in color it is difference in color vectors (r1,g1,b1) <=> (r2,g2,b2)
-		            if (colorDifference <= maxColorDifference * pixTolerance) {
-		                matchPixCount++;
-		            }
-		        }
-
-		        if (maxPixCount - matchPixCount <= maxPixCount * frameTolerance) {
-		            return false;
-		        } else {
-		            return true;
-		        }
-		    },
-			
 			createSnapshot: function (type) {
 				this._context.drawImage(this._video, 0, 0, this._canvas.width, this._canvas.height);
 				return this._canvas.toDataURL(type);
@@ -4137,5 +4514,6 @@ Scoped.define("module:WebRTC.WhammyRecorder", [
 
 	});
 });
+
 
 }).call(Scoped);

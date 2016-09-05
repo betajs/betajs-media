@@ -16,7 +16,16 @@ Scoped.define("module:WebRTC.Support", [
 		},
 		
 		getGlobals: function () {
-			var getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
+			var getUserMedia = null;
+			var getUserMediaCtx = null;
+			/*
+			if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+				getUserMedia = navigator.mediaDevices.getUserMedia;
+				getUserMediaCtx = navigator.mediaDevices;
+			} else { */
+				getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
+				getUserMediaCtx = navigator;
+			//}
 			var URL = window.URL || window.webkitURL;
 			var MediaRecorder = window.MediaRecorder;
 			var AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -29,6 +38,7 @@ Scoped.define("module:WebRTC.Support", [
 			}
 			return {
 				getUserMedia: getUserMedia,
+				getUserMediaCtx: getUserMediaCtx,
 				URL: URL,
 				MediaRecorder: MediaRecorder,
 				AudioContext: AudioContext,
@@ -46,10 +56,6 @@ Scoped.define("module:WebRTC.Support", [
 		
 		userMediaSupported: function () {
 			return !!this.globals().getUserMedia;
-		},
-		
-		mediaStreamTrackSourcesSupported: function () {
-			return ;
 		},
 		
 		enumerateMediaSources: function () {
@@ -80,10 +86,10 @@ Scoped.define("module:WebRTC.Support", [
 				promise.asyncSuccess(result);
 			};
 			try {
-				if (MediaStreamTrack && MediaStreamTrack.getSources)
-					MediaStreamTrack.getSources(promiseCallback);
-				else if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices)
+				if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices)
 					navigator.mediaDevices.enumerateDevices().then(promiseCallback);
+				else if (MediaStreamTrack && MediaStreamTrack.getSources)
+					MediaStreamTrack.getSources(promiseCallback);
 				else
 					promise.asyncError("Unsupported");
 			} catch (e) {
@@ -110,7 +116,7 @@ Scoped.define("module:WebRTC.Support", [
 		
 		userMedia: function (options) {
 			var promise = Promise.create();
-			this.globals().getUserMedia.call(navigator, options, function (stream) {
+			this.globals().getUserMedia.call(this.globals().getUserMediaCtx, options, function (stream) {
 				promise.asyncSuccess(stream);
 			}, function (e) {
 				promise.asyncError(e);

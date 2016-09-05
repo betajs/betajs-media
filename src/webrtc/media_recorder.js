@@ -21,6 +21,13 @@ Scoped.define("module:WebRTC.MediaRecorder", [
 				/*
 				var mediaRecorderOptions = {};
 				mediaRecorderOptions.mimeType = "video/mp4";
+				if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) {
+				  options = {mimeType: 'video/webm, codecs=vp9'};
+				} else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp8')) {
+				   options = {mimeType: 'video/webm, codecs=vp8'};
+				} else {
+				  // ...
+				}
 				this._mediaRecorder = new MediaRecorder(stream, mediaRecorderOptions);
 				*/
 				this._mediaRecorder = new MediaRecorder(stream);
