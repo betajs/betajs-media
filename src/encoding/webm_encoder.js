@@ -239,8 +239,6 @@ Scoped.define("module:Encoding.WebmEncoder.Support", [
 	        		data = this.__bitsToBuffer(data.toString(2));
 	        	else if (tp === "string")
 	        		data = this.__strToBuffer(data);
-	        	if (tp === "undefined")
-	        		console.log(entry);
 	            var len = data.size || data.byteLength || data.length;
 	            var zeroes = Math.ceil(Math.ceil(Math.log(len) / Math.log(2)) / 8);
 	            var size_str = len.toString(2);

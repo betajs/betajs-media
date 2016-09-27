@@ -1011,7 +1011,7 @@ Scoped.binding('jquery', 'global:jQuery');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "66.1475008099608"
+    "version": "67.1475012335933"
 };
 });
 Scoped.assumeVersion('base:version', 502);
@@ -1445,8 +1445,6 @@ Scoped.define("module:Encoding.WebmEncoder.Support", [
 	        		data = this.__bitsToBuffer(data.toString(2));
 	        	else if (tp === "string")
 	        		data = this.__strToBuffer(data);
-	        	if (tp === "undefined")
-	        		console.log(entry);
 	            var len = data.size || data.byteLength || data.length;
 	            var zeroes = Math.ceil(Math.ceil(Math.log(len) / Math.log(2)) / 8);
 	            var size_str = len.toString(2);

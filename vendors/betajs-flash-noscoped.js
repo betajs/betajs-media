@@ -1,5 +1,5 @@
 /*!
-betajs-flash - v0.0.15 - 2016-06-12
+betajs-flash - v0.0.16 - 2016-09-27
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -13,7 +13,7 @@ Scoped.binding('jquery', 'global:jQuery');
 Scoped.define("module:", function () {
 	return {
     "guid": "3adc016a-e639-4d1a-b4cb-e90cab02bc4f",
-    "version": "33.1465770701066"
+    "version": "34.1475008142785"
 };
 });
 Scoped.assumeVersion('base:version', 444);
