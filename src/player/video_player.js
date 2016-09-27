@@ -278,7 +278,8 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
 					this._setup();
 				}, this);
 				try {
-					this._$element.get(0).load();
+					if (!Info.isChrome())
+						this._$element.get(0).load();
 				} catch (e) {}
 				return promise;
 			},
