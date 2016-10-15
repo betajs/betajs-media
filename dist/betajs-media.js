@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.34 - 2016-09-27
+betajs-media - v0.0.34 - 2016-10-15
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -996,7 +996,7 @@ Public.exports();
 	return Public;
 }).call(this);
 /*!
-betajs-media - v0.0.34 - 2016-09-27
+betajs-media - v0.0.34 - 2016-10-15
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -1011,7 +1011,7 @@ Scoped.binding('jquery', 'global:jQuery');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "67.1475012335933"
+    "version": "68.1476574091338"
 };
 });
 Scoped.assumeVersion('base:version', 502);
@@ -3697,6 +3697,7 @@ Scoped.define("module:WebRTC.MediaRecorder", [
 				*/
 				this._mediaRecorder = new MediaRecorder(stream);
 				this._mediaRecorder.ondataavailable = Functions.as_method(this._dataAvailable, this);
+				this._mediaRecorder.onstop = Functions.as_method(this._dataStop, this);
 			},
 			
 			destroy: function () {
@@ -3708,6 +3709,7 @@ Scoped.define("module:WebRTC.MediaRecorder", [
 				if (this._started)
 					return;
 				this._started = true;
+				this._chunks = [];
 				this._mediaRecorder.start();
 				this.trigger("started");
 			},
@@ -3721,10 +3723,23 @@ Scoped.define("module:WebRTC.MediaRecorder", [
 			},
 			
 			_dataAvailable: function (e) {
-				this._data = new Blob([e.data], {
-					type: e.data.type
-				});
-				this.trigger("data", this._data);
+				this._chunks.push(e.data);
+			},
+
+			_dataStop: function (e) {
+				this._data = new Blob(this._chunks, { type: "video/webm" });
+				this._chunks = [];
+				if (Info.isFirefox()) {
+					var self = this;
+					var arrayBuffer;
+					var fileReader = new FileReader();
+					fileReader.onload = function() {
+					    self._data = new Blob([this.result], {type: self._data.type});
+						self.trigger("data", self._data);
+					};
+					fileReader.readAsArrayBuffer(this._data);
+				} else
+					this.trigger("data", this._data);
 			}
 						
 		};		

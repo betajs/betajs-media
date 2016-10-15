@@ -32,6 +32,7 @@ Scoped.define("module:WebRTC.MediaRecorder", [
 				*/
 				this._mediaRecorder = new MediaRecorder(stream);
 				this._mediaRecorder.ondataavailable = Functions.as_method(this._dataAvailable, this);
+				this._mediaRecorder.onstop = Functions.as_method(this._dataStop, this);
 			},
 			
 			destroy: function () {
@@ -43,6 +44,7 @@ Scoped.define("module:WebRTC.MediaRecorder", [
 				if (this._started)
 					return;
 				this._started = true;
+				this._chunks = [];
 				this._mediaRecorder.start();
 				this.trigger("started");
 			},
@@ -56,10 +58,23 @@ Scoped.define("module:WebRTC.MediaRecorder", [
 			},
 			
 			_dataAvailable: function (e) {
-				this._data = new Blob([e.data], {
-					type: e.data.type
-				});
-				this.trigger("data", this._data);
+				this._chunks.push(e.data);
+			},
+
+			_dataStop: function (e) {
+				this._data = new Blob(this._chunks, { type: "video/webm" });
+				this._chunks = [];
+				if (Info.isFirefox()) {
+					var self = this;
+					var arrayBuffer;
+					var fileReader = new FileReader();
+					fileReader.onload = function() {
+					    self._data = new Blob([this.result], {type: self._data.type});
+						self.trigger("data", self._data);
+					};
+					fileReader.readAsArrayBuffer(this._data);
+				} else
+					this.trigger("data", this._data);
 			}
 						
 		};		
