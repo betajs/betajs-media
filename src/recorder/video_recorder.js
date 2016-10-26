@@ -92,6 +92,9 @@ Scoped.define("module:Recorder.VideoRecorderWrapper", [
 			blankLevel: function () {},			
 			deltaCoefficient: function () {},
 			
+			getVolumeGain: function () {},
+			setVolumeGain: function (volumeGain) {},
+			
 			enumerateDevices: function () {},
 			currentDevices: function () {},
 			setCurrentDevices: function (devices) {},
@@ -165,6 +168,7 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
 					this._element = Dom.changeTag(this._element, "video");
 				this._recorder = RecorderWrapper.create({
 		            video: this._element,
+		            flip: !!this._options.flip,
 		            framerate: this._options.framerate,
 		            recordVideo: this._options.recordVideo,
 		            recordAudio: this._options.recordAudio,
@@ -203,6 +207,14 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
 				return this._recorder.blankLevel();
 			},			
 			
+			getVolumeGain: function () {
+				return this._recorder.getVolumeGain();
+			},
+			
+			setVolumeGain: function (volumeGain) {
+				this._recorder.setVolumeGain(volumeGain);
+			},
+
 			deltaCoefficient: function () {
 				return this._recorder.deltaCoefficient();
 			},
@@ -352,6 +364,7 @@ Scoped.define("module:Recorder.FlashVideoRecorderWrapper", [
 				if (this._element.tagName.toLowerCase() !== "div")
 					this._element = Dom.changeTag(this._element, "div");
 				this._recorder = new FlashRecorder(this._element, {
+		            flip: !!this._options.flip,
 					streamtype: this._options.rtmpStreamType,
 	            	camerawidth: this._options.recordingWidth,
 	            	cameraheight: this._options.recordingHeight,
@@ -391,6 +404,14 @@ Scoped.define("module:Recorder.FlashVideoRecorderWrapper", [
 			soundLevel: function () {
 				var sl = this._recorder.soundLevel();
 				return sl <= 1 ? 1.0 : (1.0 + (sl-1)/100);
+			},
+
+			getVolumeGain: function () {
+				return this._recorder.getVolumeGain();
+			},
+			
+			setVolumeGain: function (volumeGain) {
+				this._recorder.setVolumeGain(volumeGain);
 			},
 
 			testSoundLevel: function (activate) {

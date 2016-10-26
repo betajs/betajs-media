@@ -294,8 +294,8 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
 			destroy: function () {
 				if (this._audioElement)
 					this._audioElement.remove();
-				if (this.supportsFullscreen())
-					Dom.elementOffFullscreenChange(this._element);
+				if (this.supportsFullscreen() && this.__fullscreenListener)
+					Dom.elementOffFullscreenChange(this._element, this.__fullscreenListener);
 				this._$element.html("");
 				inherited.destroy.call(this);
 			},
@@ -338,7 +338,7 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
 				}
 				if (this.supportsFullscreen()) {
 					this.__videoClassBackup = "";
-					Dom.elementOnFullscreenChange(this._element, function (element, inFullscreen) {
+					this.__fullscreenListener = Dom.elementOnFullscreenChange(this._element, function (element, inFullscreen) {
 						if (inFullscreen) {
 							this.__videoClassBackup = this._$element.attr("class");
 							this._$element.attr("class", "");

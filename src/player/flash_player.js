@@ -48,7 +48,7 @@ Scoped.define("module:Player.FlashPlayer", [
 							sources.push(element.childNodes[i].src.toLowerCase());
 					}
 				} else {
-					var $current = this._$element;
+					var $current = $(this._element);
 					while (true) {
 						var $next = $current.next();
 						var next = $next.get(0);
@@ -178,10 +178,10 @@ Scoped.define("module:Player.FlashPlayer", [
 			},
 			
 			setActualBB: function (actualBB) {
-				this._$element.find("object").css("width", actualBB.width + "px");
-				this._$element.find("embed").css("width", actualBB.width + "px");
-				this._$element.find("object").css("height", actualBB.height + "px");
-				this._$element.find("embed").css("height", actualBB.height + "px");
+				$(this._element).find("object").css("width", actualBB.width + "px");
+				$(this._element).find("embed").css("width", actualBB.width + "px");
+				$(this._element).find("object").css("height", actualBB.height + "px");
+				$(this._element).find("embed").css("height", actualBB.height + "px");
 				if (this.__metaLoaded) {
 					this._flashObjs.video.set("width", actualBB.width);
 					this._flashObjs.video.set("height", actualBB.height);

@@ -24,6 +24,7 @@ Scoped.define("module:WebRTC.AudioRecorder", [
 				this._stream = stream;
 				this._started = false;
 				this._stopped = false;
+				this._volumeGainValue = 1.0;
 				//this.__initializeContext();
 			},
 
@@ -66,11 +67,22 @@ Scoped.define("module:WebRTC.AudioRecorder", [
 				inherited.destroy.call(this);
 			},
 			
+			getVolumeGain: function () {
+				return this._volumeGainValue;
+			},
+			
+			setVolumeGain: function (volumeGain) {
+				this._volumeGainValue = volumeGain;
+				if (this._volumeGain)
+					this._volumeGain.value.gain = volumeGain;
+			},
+
 			__initializeContext: function () {
 				var AudioContext = Support.globals().AudioContext;
 				this._audioContext = new AudioContext();
 				this._actualSampleRate = this._audioContext.sampleRate || this._options.sampleRate;
 				this._volumeGain = this._audioContext.createGain();
+				this._volumeGain.gain.value = this._volumeGainValue;
 				this._audioInput = this._audioContext.createMediaStreamSource(this._stream);
 				this._audioInput.connect(this._volumeGain);
 				this._scriptProcessor = Support.globals().audioContextScriptProcessor.call(

@@ -16,6 +16,7 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
 				this._bound = false;
 				this._hasAudio = false;
 				this._hasVideo = false;
+				this._flip = !!options.flip;
 			},
 			
 			_getConstraints: function () {
@@ -51,7 +52,7 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
 					this._hasVideo = this._options.recordVideo && stream.getVideoTracks().length > 0;
 					this._bound = true;
 					this._stream = stream;
-					Support.bindStreamToVideo(stream, this._video);
+					Support.bindStreamToVideo(stream, this._video, this._flip);
 					this.trigger("bound", stream);
 					this._boundMedia();
 				}, this);
@@ -150,6 +151,10 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
 			
 			_stopRecord: function () {},
 			
+			getVolumeGain: function () {},
+			
+			setVolumeGain: function (volumeGain) {},
+
 			_dataAvailable: function (videoBlob, audioBlob) {
 				if (this.destroyed())
 					return;
@@ -214,6 +219,12 @@ Scoped.define("module:WebRTC.MediaRecorderWrapper", [
 			this._recorder.stop();
 		},
 		
+		getVolumeGain: function () {
+		},
+		
+		setVolumeGain: function (volumeGain) {
+		},
+
 		averageFrameRate: function () {
 			return null;
 		}
@@ -304,6 +315,15 @@ Scoped.define("module:WebRTC.WhammyAudioRecorderWrapper", [
 				this._whammyRecorder.stop();
 			if (this._hasAudio)
 				this._audioRecorder.stop();
+		},
+		
+		getVolumeGain: function () {
+			return this._audioRecorder ? this._audioRecorder.getVolumeGain() : 1.0;
+		},
+		
+		setVolumeGain: function (volumeGain) {
+			if (this._audioRecorder)
+				this._audioRecorder.setVolumeGain(volumeGain);
 		},
 		
 		averageFrameRate: function () {

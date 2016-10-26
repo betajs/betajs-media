@@ -225,7 +225,7 @@ Scoped.define("module:WebRTC.Support", [
 			} catch (e) {}
 		},
 		
-		bindStreamToVideo: function (stream, video) {
+		bindStreamToVideo: function (stream, video, flip) {
 			if (!video)
 				video = document.createElement("video");
 			video.volume = 0;
@@ -234,6 +234,19 @@ Scoped.define("module:WebRTC.Support", [
                 video.mozSrcObject = stream;
             else
             	video.src = this.globals().URL.createObjectURL(stream);
+			if (flip) {
+				video.style["-moz-transform"] = "scale(-1, 1)";
+				video.style["-webkit-transform"] = "scale(-1, 1)";
+				video.style["-o-transform"] = "scale(-1, 1)";
+				video.style.transform = "scale(-1, 1)";
+				video.style.filter = "FlipH";
+			} else {
+				delete video.style["-moz-transform"];
+				delete video.style["-webkit-transform"];
+				delete video.style["-o-transform"];
+				delete video.style.transform;
+				delete video.style.filter;
+			}
 			video.autoplay = true;
 			video.play();
 			return video;

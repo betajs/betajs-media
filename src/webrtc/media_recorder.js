@@ -66,7 +66,6 @@ Scoped.define("module:WebRTC.MediaRecorder", [
 				this._chunks = [];
 				if (Info.isFirefox()) {
 					var self = this;
-					var arrayBuffer;
 					var fileReader = new FileReader();
 					fileReader.onload = function() {
 					    self._data = new Blob([this.result], {type: self._data.type});

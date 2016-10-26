@@ -9,7 +9,7 @@
         <script src="../dist/betajs-media-noscoped.js"></script>
 	</head>
 	<body>
-		<video style="width:50%">
+		<video style="width:50%; background-color: #FFF">
 		</video>
 		<script>
 	        BetaJS.Flash.options = {
@@ -17,7 +17,8 @@
                 forceReload : true
             };
 		    var instance = BetaJS.Media.Recorder.VideoRecorderWrapper.create({
-				element: $("video").get(0)
+				element: $("video").get(0),
+				flip: false
 		    	//forceflash: true
 		    });
 		    
