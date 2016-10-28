@@ -538,7 +538,7 @@ Scoped.define("module:Recorder.FlashVideoRecorderWrapper", [
 	}, {
 		
 		supported: function (options) {
-			return !Info.isMobile() && !options.noflash;
+			return !Info.isMobile() && !options.noflash && Info.flash().installed();
 		}
 		
 	});	
