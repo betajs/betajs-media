@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.37 - 2016-10-28
+betajs-media - v0.0.38 - 2016-11-01
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -14,7 +14,7 @@ Scoped.binding('jquery', 'global:jQuery');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "70.1477628703998"
+    "version": "71.1478001208547"
 };
 });
 Scoped.assumeVersion('base:version', 502);
@@ -2167,6 +2167,8 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
 			},
 
 			soundLevel: function () {
+				if (!this._analyser && this._recorder && this._recorder.stream())
+					this._analyser = new AudioAnalyser(this._recorder.stream());
 				return this._analyser ? this._analyser.soundLevel() : 0.0;
 			},
 			

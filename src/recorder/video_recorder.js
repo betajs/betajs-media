@@ -220,6 +220,8 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
 			},
 
 			soundLevel: function () {
+				if (!this._analyser && this._recorder && this._recorder.stream())
+					this._analyser = new AudioAnalyser(this._recorder.stream());
 				return this._analyser ? this._analyser.soundLevel() : 0.0;
 			},
 			
