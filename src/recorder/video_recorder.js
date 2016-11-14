@@ -367,9 +367,11 @@ Scoped.define("module:Recorder.FlashVideoRecorderWrapper", [
 					this._element = Dom.changeTag(this._element, "div");
 				this._recorder = new FlashRecorder(this._element, {
 		            flip: !!this._options.flip,
+		            disableaudio: !this._options.recordAudio,
 					streamtype: this._options.rtmpStreamType,
 	            	camerawidth: this._options.recordingWidth,
 	            	cameraheight: this._options.recordingHeight,
+	            	microphonecodec: this._options.rtmpMicrophoneCodec,
 	            	fps: this._options.framerate
 		        });
 				this._recorder.ready.forwardCallback(this.ready);

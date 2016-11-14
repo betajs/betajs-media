@@ -7,4 +7,4 @@ node_modules
 browserstack*.*
 BrowserStackLocal
 jsdoc.conf.json
-*.mp4
+tests/server/temp

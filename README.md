@@ -1,4 +1,4 @@
-# betajs-media 0.0.38
+# betajs-media 0.0.39
 [![Code Climate](https://codeclimate.com/github/betajs/betajs-media/badges/gpa.svg)](https://codeclimate.com/github/betajs/betajs-media)
 
 
@@ -118,11 +118,10 @@ You can use the library in the browser and compile it as well.
 | betajs-shims | [Open](https://github.com/betajs/betajs-shims) |
 
 
-## Contributors
+## Main Contributors
 
 - Ziggeo
 - Oliver Friedmann
-
 
 ## License
 
@@ -135,3 +134,13 @@ This software may include modified and unmodified portions of:
 - TypedArray, From microphone to .WAV with: getUserMedia and Web Audio, (c) Thibault Imbert
 - Media Stream Recorder, https://github.com/streamproc/MediaStreamRecorder
 - Whammy Recorder, https://github.com/antimatter15/whammy
+
+
+
+
+## Sponsors
+
+- Ziggeo
+- Browserstack
+
+

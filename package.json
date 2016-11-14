@@ -15,7 +15,7 @@
         "url": "https://github.com/betajs/betajs-media/issues"
     },
     "name": "betajs-media",
-    "version": "0.0.38",
+    "version": "0.0.39",
     "description": "BetaJS-Media is a JavaScript media framework",
     "contributors": [
         "Ziggeo",
@@ -49,6 +49,10 @@
     "meta": {
         "blog": "http://blog.betajs.com",
         "twitter": "http://twitter.com/thebetajs",
+        "sponsors": [
+            "Ziggeo",
+            "Browserstack"
+        ],
         "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
         "installdoc": "docsrc/common/install.md",
         "summarydoc": "docsrc/common/summary.md",

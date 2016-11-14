@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.38 - 2016-11-01
+betajs-media - v0.0.39 - 2016-11-13
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -1004,7 +1004,7 @@ Public.exports();
 	return Public;
 }).call(this);
 /*!
-betajs-media - v0.0.38 - 2016-11-01
+betajs-media - v0.0.39 - 2016-11-13
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -1019,7 +1019,7 @@ Scoped.binding('jquery', 'global:jQuery');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "71.1478001208547"
+    "version": "72.1479092382804"
 };
 });
 Scoped.assumeVersion('base:version', 502);
@@ -2366,6 +2366,7 @@ Scoped.define("module:Flash.FlashRecorder", [
 				this._flashObjs = {};
 				this.ready = Promise.create();
 				this.__status = "idle";
+				this.__disableAudio = this.readAttr('disableaudio') || false;
 				this.__cameraWidth = this.readAttr('camerawidth') || 640;
 				this.__cameraHeight = this.readAttr('cameraheight') || 480;
 				this.__streamType = this.readAttr("streamtype") || 'mp4';
@@ -2788,7 +2789,8 @@ Scoped.define("module:Flash.FlashRecorder", [
 							this._flashObjs.stream.set("videoStreamSettings", this._flashObjs.h264Settings);
 						}
 						this._flashObjs.stream.attachCameraVoid(this._flashObjs.camera);
-						this._flashObjs.stream.attachAudioVoid(this._flashObjs.microphone);
+						if (!this.__disableAudio)
+							this._flashObjs.stream.attachAudioVoid(this._flashObjs.microphone);
 						this._flashObjs.stream.publish(streamName, "record");
 					}
 				}, this)));
@@ -3319,9 +3321,11 @@ Scoped.define("module:Recorder.FlashVideoRecorderWrapper", [
 					this._element = Dom.changeTag(this._element, "div");
 				this._recorder = new FlashRecorder(this._element, {
 		            flip: !!this._options.flip,
+		            disableaudio: !this._options.recordAudio,
 					streamtype: this._options.rtmpStreamType,
 	            	camerawidth: this._options.recordingWidth,
 	            	cameraheight: this._options.recordingHeight,
+	            	microphonecodec: this._options.rtmpMicrophoneCodec,
 	            	fps: this._options.framerate
 		        });
 				this._recorder.ready.forwardCallback(this.ready);

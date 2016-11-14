@@ -32,6 +32,7 @@ Scoped.define("module:Flash.FlashRecorder", [
 				this._flashObjs = {};
 				this.ready = Promise.create();
 				this.__status = "idle";
+				this.__disableAudio = this.readAttr('disableaudio') || false;
 				this.__cameraWidth = this.readAttr('camerawidth') || 640;
 				this.__cameraHeight = this.readAttr('cameraheight') || 480;
 				this.__streamType = this.readAttr("streamtype") || 'mp4';
@@ -454,7 +455,8 @@ Scoped.define("module:Flash.FlashRecorder", [
 							this._flashObjs.stream.set("videoStreamSettings", this._flashObjs.h264Settings);
 						}
 						this._flashObjs.stream.attachCameraVoid(this._flashObjs.camera);
-						this._flashObjs.stream.attachAudioVoid(this._flashObjs.microphone);
+						if (!this.__disableAudio)
+							this._flashObjs.stream.attachAudioVoid(this._flashObjs.microphone);
 						this._flashObjs.stream.publish(streamName, "record");
 					}
 				}, this)));
