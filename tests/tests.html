@@ -21,7 +21,7 @@
 		<div id="qunit-fixture"></div>
 		<div id="visible-fixture"></div>
 		<script src="http://code.jquery.com/qunit/qunit-1.12.0.js"></script>
-		<script>
+		<script>		
 			QUnit.launcher = function (method, ctx) {
 				method.apply(ctx);
 			};
@@ -41,11 +41,40 @@
 	            flashFile: window.BrowserStack ? "http://files.betajs.com/betajs-flash.swf" : "../vendors/betajs-flash.swf",
 	            forceReload: true
 	        };
-		</script>
-		<script>
-			window.onerror = function (a,b,c,d,e,f,g,h) {
-				console.log("Error", a,b,c,d,e,f,g,h);
-			};
+    	    var testasset = function (s) {
+    	    	return (window.BrowserStack ? "http://files.betajs.com/" : (BetaJS.Strings.splitLast(document.location.href, "/").head + "/tests/")) + s;
+    	    };
+    	    var haveSelenium = !window.BrowserStack;
+    	    function mytest(name, callback, opts) {
+    	    	opts = opts || {};
+    	    	if (opts.flash) {
+    	    		if (!BetaJS.Browser.Info.flash().installed() || BetaJS.Browser.Info.isMobile())
+    	    			return;
+    	    		if (BetaJS.Browser.Info.isSafari() && BetaJS.Browser.Info.safariVersion() >= 10)
+    	    			return;
+    	    	}
+    	    	if (opts.native_video) {
+    	    		if (BetaJS.Browser.Info.isInternetExplorer() && BetaJS.Browser.Info.internetExplorerVersion() <= 8)
+    	    			return;
+    	    	}
+    	    	if (opts.selenium_if_mobile) {
+    	    		if (BetaJS.Browser.Info.isMobile() && !haveSelenium)
+    	    			return;
+    	    	}
+    	    	if (opts.selenium) {
+    	    		if (!haveSelenium)
+    	    			return;
+    	    	}
+    	    	test(name, function () {
+    	    		stop();
+    	    		setTimeout(function () {
+    	    			$("#visible-fixture").html("");
+    	    			setTimeout(function () {
+    	    				callback();
+    	    			}, BetaJS.Browser.Info.isInternetExplorer() && BetaJS.Browser.Info.internetExplorerVersion() <= 8 ? 1000 : 0);
+    	    		}, BetaJS.Browser.Info.isInternetExplorer() && BetaJS.Browser.Info.internetExplorerVersion() <= 8 ? 1000 : 0);
+    	    	});
+    	    }
 		</script>
 		<script src="tests/scoped.js"></script>
 		<script src="tests/player.js"></script>

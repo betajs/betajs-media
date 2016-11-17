@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+		<script src="../vendors/scoped.js"></script>
+		<script src="../vendors/beta-noscoped.js"></script>
+		<script src="../vendors/betajs-browser-noscoped.js"></script>
+		<script src="../vendors/betajs-flash-noscoped.js"></script>
+	</head>
+	<body>
+		<!-- iOS 10 -->
+		<video   loop poster="movie.png" style="width:50%" playsinline onclick="$('video').get(0).muted=false">
+			<source src="movie.mp4" type="video/mp4" />
+		</video>
+		
+		<script>
+			setTimeout(function () {
+				var v = $("video").get(0);
+				v.muted = true;
+				v.play();
+			}, 1000);
+		</script>
+	</body>
+</html>
