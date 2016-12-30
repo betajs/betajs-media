@@ -1,4 +1,4 @@
-# betajs-media 0.0.40
+# betajs-media 0.0.41
 [![Code Climate](https://codeclimate.com/github/betajs/betajs-media/badges/gpa.svg)](https://codeclimate.com/github/betajs/betajs-media)
 
 
@@ -69,16 +69,17 @@ You can use the library in the browser and compile it as well.
 | :--------- | --: |
 | Homepage   | [http://betajs.com](http://betajs.com) |
 | Git        | [git://github.com/betajs/betajs-media.git](git://github.com/betajs/betajs-media.git) |
-| Repository | [http://github.com/betajs/betajs-media](http://github.com/betajs/betajs-media) |
+| Repository | [https://github.com/betajs/betajs-media](https://github.com/betajs/betajs-media) |
 | Blog       | [http://blog.betajs.com](http://blog.betajs.com) | 
 | Twitter    | [http://twitter.com/thebetajs](http://twitter.com/thebetajs) | 
+ 
 
 
 
 ## Compatability
 | Target | Versions |
 | :----- | -------: |
-| Firefox | 30 - Latest |
+| Firefox | 32 - Latest |
 | Chrome | 18 - Latest |
 | Safari | 4 - Latest |
 | Opera | 25 - Latest |

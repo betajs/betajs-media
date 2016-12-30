@@ -15,7 +15,7 @@
         "url": "https://github.com/betajs/betajs-media/issues"
     },
     "name": "betajs-media",
-    "version": "0.0.40",
+    "version": "0.0.41",
     "description": "BetaJS-Media is a JavaScript media framework",
     "contributors": [
         "Ziggeo",
@@ -76,7 +76,7 @@
             "betajs-flash": "https://github.com/betajs/betajs-flash"
         },
         "compatability": {
-            "Firefox": "30 - Latest",
+            "Firefox": "32 - Latest",
             "Chrome": "18 - Latest",
             "Safari": "4 - Latest",
             "Opera": "25 - Latest",

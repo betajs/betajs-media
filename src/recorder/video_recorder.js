@@ -186,7 +186,7 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
 			
 			destroy: function () {
 				if (this._analyser)
-					this._analyser.destroy();
+					this._analyser.weakDestroy();
 				this._recorder.destroy();
 				inherited.destroy.call(this);
 			},
@@ -227,7 +227,7 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
 			
 			testSoundLevel: function (activate) {
 				if (this._analyser) {
-					this._analyser.destroy();
+					this._analyser.weakDestroy();
 					delete this._analyser;
 				}
 				if (activate)
@@ -308,9 +308,11 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
 						multiUploader.addUploader(FileUploader.create(Objs.extend({
 							source: videoBlob
 						}, options.video)));
-						multiUploader.addUploader(FileUploader.create(Objs.extend({
-							source: audioBlob
-						}, options.audio)));
+						if (audioBlob) {
+							multiUploader.addUploader(FileUploader.create(Objs.extend({
+								source: audioBlob
+							}, options.audio)));
+						}
 					}
 					promise.asyncSuccess(multiUploader);
 				}, this);
