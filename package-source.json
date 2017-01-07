@@ -36,7 +36,7 @@
 		"badges": {
 			"codeclimate": true,
 			"travis": false,
-			"npm": false
+			"npm": true
 		},
 		"credits": [
 			"TypedArray, From microphone to .WAV with: getUserMedia and Web Audio, (c) Thibault Imbert",
