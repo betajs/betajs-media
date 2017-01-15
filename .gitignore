@@ -8,3 +8,4 @@ browserstack*.*
 BrowserStackLocal
 jsdoc.conf.json
 tests/server/temp
+test-delete.html

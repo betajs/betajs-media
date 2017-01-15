@@ -1,5 +1,6 @@
-# betajs-media 0.0.41
+# betajs-media 0.0.42
 [![Code Climate](https://codeclimate.com/github/betajs/betajs-media/badges/gpa.svg)](https://codeclimate.com/github/betajs/betajs-media)
+[![NPM](https://img.shields.io/npm/v/betajs-media.svg?style=flat)](https://www.npmjs.com/package/betajs-media)
 
 
 BetaJS-Media is a JavaScript media framework

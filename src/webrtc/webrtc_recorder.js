@@ -74,11 +74,11 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
 				}
 			},
 
-			startRecord: function () {
+			startRecord: function (options) {
 				if (this._recording)
 					return;
 				this._recording = true;
-				this._startRecord();
+				this._startRecord(options);
 				this._startTime = Time.now();
 			},
 			
@@ -147,9 +147,13 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
 			
 			_unboundMedia: function () {},
 			
-			_startRecord: function () {},
+			_startRecord: function (options) {},
 			
 			_stopRecord: function () {},
+			
+			_error: function (errorType, errorData) {
+				this.trigger("error", errorType, errorData);
+			},
 			
 			getVolumeGain: function () {},
 			
@@ -191,6 +195,54 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
 		}		
 		
 	});
+});
+
+
+Scoped.define("module:WebRTC.PeerRecorderWrapper", [
+    "module:WebRTC.RecorderWrapper",
+    "module:WebRTC.PeerRecorder"
+], function (RecorderWrapper, PeerRecorder, scoped) {
+	return RecorderWrapper.extend({scoped: scoped}, {
+
+		_boundMedia: function () {
+			this._recorder = new PeerRecorder(this._stream, this._options.webrtcStreaming);
+			this._recorder.on("error", this._error, this);
+		},
+		
+		_unboundMedia: function () {
+			this._recorder.destroy();
+		},
+		
+		_startRecord: function (options) {
+			this._recorder.start(options.webrtcStreaming);
+		},
+		
+		_stopRecord: function () {
+			this._recorder.stop();
+			this._dataAvailable();
+		},
+		
+		getVolumeGain: function () {
+		},
+		
+		setVolumeGain: function (volumeGain) {
+		},
+
+		averageFrameRate: function () {
+			return null;
+		}
+
+	}, function (inherited) {
+		return {
+			
+			supported: function (options) {
+				if (!inherited.supported.call(this, options))
+					return false;
+				return options.webrtcStreaming && PeerRecorder.supported();
+			}
+		
+		};		
+	});	
 });
 
 
@@ -353,9 +405,11 @@ Scoped.define("module:WebRTC.WhammyAudioRecorderWrapper", [
 
 Scoped.extend("module:WebRTC.RecorderWrapper", [
 	"module:WebRTC.RecorderWrapper",
+	"module:WebRTC.PeerRecorderWrapper",
 	"module:WebRTC.MediaRecorderWrapper",
 	"module:WebRTC.WhammyAudioRecorderWrapper"
-], function (RecorderWrapper, MediaRecorderWrapper, WhammyAudioRecorderWrapper) {
+], function (RecorderWrapper, PeerRecorderWrapper, MediaRecorderWrapper, WhammyAudioRecorderWrapper) {
+	RecorderWrapper.register(PeerRecorderWrapper, 3);
 	RecorderWrapper.register(MediaRecorderWrapper, 2);
 	RecorderWrapper.register(WhammyAudioRecorderWrapper, 1);
 	return {};

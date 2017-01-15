@@ -1,10 +1,10 @@
 /*!
-betajs-media - v0.0.41 - 2016-12-22
+betajs-media - v0.0.42 - 2017-01-15
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
 /** @flow **//*!
-betajs-scoped - v0.0.12 - 2016-10-02
+betajs-scoped - v0.0.13 - 2017-01-15
 Copyright (c) Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -808,7 +808,7 @@ function newScope (parent, parentNS, rootNS, globalNS) {
 			dependencies.unshift(args.assumption);
 			this.require(dependencies, function () {
 				var argv = arguments;
-				var assumptionValue = argv[0];
+				var assumptionValue = argv[0].replace(/[^\d\.]/g, "");
 				argv[0] = assumptionValue.split(".");
 				for (var i = 0; i < argv[0].length; ++i)
 					argv[0][i] = parseInt(argv[0][i], 10);
@@ -816,7 +816,7 @@ function newScope (parent, parentNS, rootNS, globalNS) {
 					if (!args.callback.apply(args.context || this, args))
 						throw ("Scoped Assumption '" + args.assumption + "' failed, value is " + assumptionValue + (args.error ? ", but assuming " + args.error : ""));
 				} else {
-					var version = (args.callback + "").split(".");
+					var version = (args.callback + "").replace(/[^\d\.]/g, "").split(".");
 					for (var j = 0; j < Math.min(argv[0].length, version.length); ++j)
 						if (parseInt(version[j], 10) > argv[0][j])
 							throw ("Scoped Version Assumption '" + args.assumption + "' failed, value is " + assumptionValue + ", but assuming at least " + args.callback);
@@ -962,7 +962,7 @@ var Public = Helper.extend(rootScope, (function () {
 return {
 		
 	guid: "4b6878ee-cb6a-46b3-94ac-27d91f58d666",
-	version: '49.1475462345450',
+	version: '0.0.13',
 		
 	upgrade: Attach.upgrade,
 	attach: Attach.attach,
@@ -1004,7 +1004,7 @@ Public.exports();
 	return Public;
 }).call(this);
 /*!
-betajs-media - v0.0.41 - 2016-12-22
+betajs-media - v0.0.42 - 2017-01-15
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -1019,12 +1019,12 @@ Scoped.binding('jquery', 'global:jQuery');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "75.1482454576545"
+    "version": "0.0.42"
 };
 });
-Scoped.assumeVersion('base:version', 502);
-Scoped.assumeVersion('browser:version', 78);
-Scoped.assumeVersion('flash:version', 33);
+Scoped.assumeVersion('base:version', '~1.0.96');
+Scoped.assumeVersion('browser:version', '~1.0.61');
+Scoped.assumeVersion('flash:version', '~0.0.18');
 
 Scoped.define("module:Encoding.WaveEncoder.Support", [
     "base:Promise",
@@ -3129,7 +3129,8 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
 		            recordResolution: {
 		            	width: this._options.recordingWidth,
 		            	height: this._options.recordingHeight
-		            }
+		            },
+		            webrtcStreaming: this._options.webrtcStreaming
 		        });
 				this._recorder.on("bound", function () {
 					if (this._analyser)
@@ -3246,7 +3247,7 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
 			
 			startRecord: function (options) {
 				this.__localPlaybackSource = null;
-				this._recorder.startRecord();
+				this._recorder.startRecord(options);
 				return Promise.value(true);
 			},
 			
@@ -3259,9 +3260,11 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
 					};
 					var multiUploader = new MultiUploader();
 					if (!this._options.simulate) {
-						multiUploader.addUploader(FileUploader.create(Objs.extend({
-							source: videoBlob
-						}, options.video)));
+						if (videoBlob) {
+							multiUploader.addUploader(FileUploader.create(Objs.extend({
+								source: videoBlob
+							}, options.video)));
+						}
 						if (audioBlob) {
 							multiUploader.addUploader(FileUploader.create(Objs.extend({
 								source: audioBlob
@@ -3275,7 +3278,7 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
 			},
 			
 			supportsLocalPlayback: function () {
-				return true;
+				return !!this.__localPlaybackSource.src;
 			},
 			
 			snapshotToLocalPoster: function (snapshot) {
@@ -3827,6 +3830,174 @@ Scoped.define("module:WebRTC.MediaRecorder", [
 });
 		
 
+Scoped.define("module:WebRTC.PeerRecorder", [
+    "base:Class",
+    "base:Events.EventsMixin",
+    "base:Functions",
+    "base:Objs",
+    "browser:Info",
+    "module:WebRTC.Support"
+], function (Class, EventsMixin, Functions, Objs, Info, Support, scoped) {
+	return Class.extend({scoped: scoped}, [EventsMixin, function (inherited) {
+		return {
+			
+			constructor: function (stream, options) {
+				inherited.constructor.call(this);
+				this._stream = stream;
+				this._videoBitrate = options.videoBitrate || 360;
+				this._audioBitrate = options.audioBitrate || 64;
+				this._started = false;
+			},
+			
+			destroy: function () {
+				this.stop();
+				inherited.destroy.call(this);
+			},
+			
+			start: function (options) {
+				if (this._started)
+					return;
+				this._wssUrl = options.wssUrl;
+				this._streamInfo = options.streamInfo;
+				this._userData = options.userData || {};
+				this._started = true;
+				this._wsConnection = new (Support.globals()).WebSocket(this._wssUrl);
+				this._wsConnection.binaryType = 'arraybuffer';
+				this._wsConnection.onopen = Functions.as_method(this._wsOnOpen, this);
+				this._wsConnection.onmessage = Functions.as_method(this._wsOnMessage, this);
+				this._wsConnection.onclose = Functions.as_method(this._wsOnClose, this);
+				this._wsConnection.onerror = this._errorCallback("WS_CONNECTION");
+				this.trigger("started");
+			},
+			
+			stop: function () {
+				if (!this._started)
+					return;
+				this._started = false;
+				if (this._peerConnection)
+					this._peerConnection.close();
+				this._peerConnection = null;
+				if (this._wsConnection)
+					this._wsConnection.close();
+				this._wsConnection = null;
+				this.trigger("stopped");
+			},
+			
+			_wsOnOpen: function () {
+				this._peerConnection = new (Support.globals()).RTCPeerConnection({ 'iceServers' : [] });
+				if (this._stream.getTracks && this._peerConnection.addTrack) {
+					Objs.iter(this._stream.getTracks(), function (localTrack) {
+						this._peerConnection.addTrack(localTrack, localStream);
+					}, this);
+				} else
+					this._peerConnection.addStream(this._stream);
+				this._peerConnection.createOffer(Functions.as_method(this._offerGotDescription, this), this._errorCallback("PEER_CREATE_OFFER"));
+			},			
+			
+			_wsOnMessage: function (evt) {
+				var data = JSON.parse(evt.data);
+				var status = parseInt(data.status, 10);
+				var command = data.command;
+				if (status !== 200) {
+					this._error("MESSAGE_ERROR", {status: status, description: data.statusDescription});
+				} else {
+					if (data.sdp !== undefined) {
+						this._peerConnection.setRemoteDescription(new (Support.globals()).RTCSessionDescription(data.sdp), function() {
+							// peerConnection.createAnswer(gotDescription, errorHandler);
+						}, this._errorCallback("PEER_REMOTE_DESCRIPTION"));
+					}
+					if (data.iceCandidates) {
+						Objs.iter(data.iceCandidates, function (iceCandidate) {
+							this._peerConnection.addIceCandidate(new (Support.globals()).RTCIceCandidate(iceCandidate));
+						}, this);
+					}
+				}
+				if (this._wsConnection)
+					this._wsConnection.close();
+				this._wsConnection = null;		
+			},
+
+			_offerGotDescription: function (description) {
+				var enhanceData = {};
+				if (this._audioBitrate)
+					enhanceData.audioBitrate = this._audioBitrate;
+				if (this._videoBitrate)
+					enhanceData.videoBitrate = this._videoBitrate;
+				description.sdp = this._enhanceSDP(description.sdp, enhanceData);
+				this._peerConnection.setLocalDescription(description, Functions.as_method(function () {
+					this._wsConnection.send(JSON.stringify({
+						direction: "publish",
+						command: "sendOffer",
+						streamInfo: this._streamInfo,
+						sdp: description,
+						userData: this._userData
+					}));
+				}, this), this._errorCallback("PEER_LOCAL_DESCRIPTION"));
+			},
+			
+			_enhanceSDP: function (sdpStr, enhanceData) {
+				var sdpLines = sdpStr.split(/\r\n/);
+				var sdpSection = 'header';
+				var hitMID = false;
+				var sdpStrRet = '';
+				Objs.iter(sdpLines, function (sdpLine) {
+					if (sdpLine.length <= 0)
+						return;
+					sdpStrRet += sdpLine + '\r\n';
+					if (sdpLine.indexOf("m=audio") === 0) {
+						sdpSection = 'audio';
+						hitMID = false;
+					} else if (sdpLine.indexOf("m=video") === 0) {
+						sdpSection = 'video';
+						hitMID = false;
+					}
+					if (sdpLine.indexOf("a=mid:") !== 0)
+						return;
+					if (hitMID)
+						return;
+					if ('audio'.localeCompare(sdpSection) === 0) {
+						if (enhanceData.audioBitrate !== undefined) {
+							sdpStrRet += 'b=AS:' + enhanceData.audioBitrate + '\r\n';
+							sdpStrRet += 'b=TIAS:' + (enhanceData.audioBitrate * 1024) + '\r\n';
+						}
+					} else if ('video'.localeCompare(sdpSection) === 0) {
+						if (enhanceData.videoBitrate !== undefined) {
+							sdpStrRet += 'b=AS:' + enhanceData.videoBitrate + '\r\n';
+							sdpStrRet += 'b=TIAS:' + (enhanceData.videoBitrate * 1024) + '\r\n';
+						}
+					}
+					hitMID = true;
+				}, this);
+				return sdpStrRet;
+			},
+			
+			_wsOnClose: function () {},
+			
+			_error: function (errorName, errorData) {
+				this.trigger("error", errorName, errorData);
+				this.stop();
+			},
+			
+			_errorCallback: function (errorName) {
+				return Functions.as_method(function (errorData) {
+					this._error(errorName, errorData);
+				}, this);
+			}
+						
+		};		
+	}], {
+		
+		supported: function () {
+			return (Support.globals()).RTCPeerConnection &&
+			       (Support.globals()).RTCIceCandidate &&
+			       (Support.globals()).RTCSessionDescription &&
+			       (Support.globals()).WebSocket;
+		}
+		
+	});
+});
+		
+
 Scoped.define("module:WebRTC.RecorderWrapper", [
     "base:Classes.ConditionalInstance",
     "base:Events.EventsMixin",
@@ -3903,11 +4074,11 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
 				}
 			},
 
-			startRecord: function () {
+			startRecord: function (options) {
 				if (this._recording)
 					return;
 				this._recording = true;
-				this._startRecord();
+				this._startRecord(options);
 				this._startTime = Time.now();
 			},
 			
@@ -3976,9 +4147,13 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
 			
 			_unboundMedia: function () {},
 			
-			_startRecord: function () {},
+			_startRecord: function (options) {},
 			
 			_stopRecord: function () {},
+			
+			_error: function (errorType, errorData) {
+				this.trigger("error", errorType, errorData);
+			},
 			
 			getVolumeGain: function () {},
 			
@@ -4020,6 +4195,54 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
 		}		
 		
 	});
+});
+
+
+Scoped.define("module:WebRTC.PeerRecorderWrapper", [
+    "module:WebRTC.RecorderWrapper",
+    "module:WebRTC.PeerRecorder"
+], function (RecorderWrapper, PeerRecorder, scoped) {
+	return RecorderWrapper.extend({scoped: scoped}, {
+
+		_boundMedia: function () {
+			this._recorder = new PeerRecorder(this._stream, this._options.webrtcStreaming);
+			this._recorder.on("error", this._error, this);
+		},
+		
+		_unboundMedia: function () {
+			this._recorder.destroy();
+		},
+		
+		_startRecord: function (options) {
+			this._recorder.start(options.webrtcStreaming);
+		},
+		
+		_stopRecord: function () {
+			this._recorder.stop();
+			this._dataAvailable();
+		},
+		
+		getVolumeGain: function () {
+		},
+		
+		setVolumeGain: function (volumeGain) {
+		},
+
+		averageFrameRate: function () {
+			return null;
+		}
+
+	}, function (inherited) {
+		return {
+			
+			supported: function (options) {
+				if (!inherited.supported.call(this, options))
+					return false;
+				return options.webrtcStreaming && PeerRecorder.supported();
+			}
+		
+		};		
+	});	
 });
 
 
@@ -4182,9 +4405,11 @@ Scoped.define("module:WebRTC.WhammyAudioRecorderWrapper", [
 
 Scoped.extend("module:WebRTC.RecorderWrapper", [
 	"module:WebRTC.RecorderWrapper",
+	"module:WebRTC.PeerRecorderWrapper",
 	"module:WebRTC.MediaRecorderWrapper",
 	"module:WebRTC.WhammyAudioRecorderWrapper"
-], function (RecorderWrapper, MediaRecorderWrapper, WhammyAudioRecorderWrapper) {
+], function (RecorderWrapper, PeerRecorderWrapper, MediaRecorderWrapper, WhammyAudioRecorderWrapper) {
+	RecorderWrapper.register(PeerRecorderWrapper, 3);
 	RecorderWrapper.register(MediaRecorderWrapper, 2);
 	RecorderWrapper.register(WhammyAudioRecorderWrapper, 1);
 	return {};
@@ -4228,6 +4453,10 @@ Scoped.define("module:WebRTC.Support", [
 				audioContextScriptProcessor = audioContext.createJavaScriptNode || audioContext.createScriptProcessor;
 				createAnalyser = audioContext.createAnalyser;
 			}
+			var RTCPeerConnection = window.RTCPeerConnection || window.mozRTCPeerConnection || window.webkitRTCPeerConnection;
+			var RTCIceCandidate = window.RTCIceCandidate || window.mozRTCIceCandidate || window.webkitRTCIceCandidate;
+			var RTCSessionDescription = window.RTCSessionDescription || window.mozRTCSessionDescription || window.webkitRTCSessionDescription;
+			var WebSocket = window.WebSocket;
 			return {
 				getUserMedia: getUserMedia,
 				getUserMediaCtx: getUserMediaCtx,
@@ -4236,7 +4465,11 @@ Scoped.define("module:WebRTC.Support", [
 				AudioContext: AudioContext,
 				createAnalyser: createAnalyser,
 				audioContextScriptProcessor: audioContextScriptProcessor,
-				webpSupport: this.canvasSupportsImageFormat("image/webp") 
+				webpSupport: this.canvasSupportsImageFormat("image/webp"),
+				RTCPeerConnection: RTCPeerConnection,
+				RTCIceCandidate: RTCIceCandidate,
+				RTCSessionDescription: RTCSessionDescription,
+				WebSocket: WebSocket
 			};
 		},
 		

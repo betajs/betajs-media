@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script
+	src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.js"></script>
+		<script src="../node_modules/betajs-shims/dist/betajs-shims.js"></script>		
+        <script src="../node_modules/betajs-scoped/dist/scoped.js"></script>
+        <script src="../node_modules/betajs/dist/beta-noscoped.js"></script>
+        <script src="../node_modules/betajs-browser/dist/betajs-browser-noscoped.js"></script>
+        <script src="../node_modules/betajs-flash/dist/betajs-flash-noscoped.js"></script>
+	<script src="../dist/betajs-media-noscoped.js?xgff"></script>
+</head>
+<body>
+	<video style="width: 50%; background-color: #FFF" id="localVideo">
+	</video>
+	<input type="button" onclick="start()" value="Click" />
+
+
+
+	<script>
+		var peerRecorder = null ;
+		BetaJS.Media.WebRTC.Support.userMedia2({video: true, audio: true}).success(function(stream) {
+			console.log("Success", stream);
+			document.getElementById('localVideo').src = window.URL.createObjectURL(stream);
+			peerRecorder = new BetaJS.Media.WebRTC.PeerRecorder(stream, {
+				wssUrl: "wss://localhost:4444/webrtc-session.json",
+				streamInfo: {
+					applicationName : "webrtc",
+					streamName : "myStream",
+					sessionId : "[empty]"
+				},
+				userData: {},
+				videoBitrate: 360,
+				audioBitrate: 64
+			});
+			peerRecorder.on("error", function (a, b, c) {
+				console.log("error", a, b, c);
+			});
+		}).error(function(error) {
+			console.log("Error", error);
+		});
+
+		function start() {
+			if (peerRecorder._started)
+				peerRecorder.stop();
+			else
+				peerRecorder.start();
+		}
+	</script>
+</body>
+</html>

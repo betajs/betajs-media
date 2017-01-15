@@ -15,7 +15,7 @@
         "url": "https://github.com/betajs/betajs-media/issues"
     },
     "name": "betajs-media",
-    "version": "0.0.41",
+    "version": "0.0.42",
     "description": "BetaJS-Media is a JavaScript media framework",
     "contributors": [
         "Ziggeo",
@@ -29,19 +29,22 @@
         "grunt-contrib-uglify": "",
         "grunt-contrib-clean": "",
         "grunt-preprocess": "",
-        "grunt-git-revision-count": "",
         "grunt-closure-tools": "",
         "grunt-node-qunit": "",
         "qunit": "",
         "grunt-contrib-connect": "",
-        "grunt-wget": "",
         "grunt-jsdoc": "",
         "grunt-shell": "",
         "grunt-template": "",
-        "grunt-betajs-docs-compile": "",
-        "betajs-scoped": "",
-        "betajs-compile": "betajs/betajs-compile"
+        "grunt-betajs-docs-compile": "~0.0.19",
+        "betajs-scoped": "~0.0.13",
+        "betajs-compile": "~0.0.28",
+        "betajs-shims": "~0.0.12",
+        "betajs": "~1.0.96",
+        "betajs-browser": "~1.0.61",
+        "betajs-flash": "~0.0.18"
     },
+    "main": "dist/betajs-media.js",
     "repository": {
         "type": "git",
         "url": "git://github.com/betajs/betajs-media.git"

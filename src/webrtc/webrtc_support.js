@@ -36,6 +36,10 @@ Scoped.define("module:WebRTC.Support", [
 				audioContextScriptProcessor = audioContext.createJavaScriptNode || audioContext.createScriptProcessor;
 				createAnalyser = audioContext.createAnalyser;
 			}
+			var RTCPeerConnection = window.RTCPeerConnection || window.mozRTCPeerConnection || window.webkitRTCPeerConnection;
+			var RTCIceCandidate = window.RTCIceCandidate || window.mozRTCIceCandidate || window.webkitRTCIceCandidate;
+			var RTCSessionDescription = window.RTCSessionDescription || window.mozRTCSessionDescription || window.webkitRTCSessionDescription;
+			var WebSocket = window.WebSocket;
 			return {
 				getUserMedia: getUserMedia,
 				getUserMediaCtx: getUserMediaCtx,
@@ -44,7 +48,11 @@ Scoped.define("module:WebRTC.Support", [
 				AudioContext: AudioContext,
 				createAnalyser: createAnalyser,
 				audioContextScriptProcessor: audioContextScriptProcessor,
-				webpSupport: this.canvasSupportsImageFormat("image/webp") 
+				webpSupport: this.canvasSupportsImageFormat("image/webp"),
+				RTCPeerConnection: RTCPeerConnection,
+				RTCIceCandidate: RTCIceCandidate,
+				RTCSessionDescription: RTCSessionDescription,
+				WebSocket: WebSocket
 			};
 		},
 		

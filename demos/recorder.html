@@ -2,10 +2,11 @@
 <html lang="en">
 	<head>
 		<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
-		<script src="../vendors/scoped.js"></script>
-		<script src="../vendors/beta-noscoped.js"></script>
-		<script src="../vendors/betajs-browser-noscoped.js"></script>
-		<script src="../vendors/betajs-flash-noscoped.js"></script>
+		<script src="../node_modules/betajs-shims/dist/betajs-shims.js"></script>		
+        <script src="../node_modules/betajs-scoped/dist/scoped.js"></script>
+        <script src="../node_modules/betajs/dist/beta-noscoped.js"></script>
+        <script src="../node_modules/betajs-browser/dist/betajs-browser-noscoped.js"></script>
+        <script src="../node_modules/betajs-flash/dist/betajs-flash-noscoped.js"></script>
 	</head>
 	<body>
 	
@@ -31,7 +32,7 @@
 				registry: registry,
 				wrap: true
 			}, {
-				flashFile: "../vendors/betajs-flash.swf",
+				flashFile: "../node_modules/betajs-flash/dist/betajs-flash.swf",
 				forceReload: true
 			});
 			
