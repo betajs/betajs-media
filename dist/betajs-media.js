@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.42 - 2017-01-15
+betajs-media - v0.0.42 - 2017-01-28
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -1004,7 +1004,7 @@ Public.exports();
 	return Public;
 }).call(this);
 /*!
-betajs-media - v0.0.42 - 2017-01-15
+betajs-media - v0.0.42 - 2017-01-28
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -1924,44 +1924,46 @@ Scoped.define("module:Player.VideoPlayerWrapper", [
 			},
 			
 			enterFullscreen: function () {},
-			
+
+      exitFullscreen: function () {},
+
 			error: function () {
 				return this._error;
 			},
 			
-            play: function () {
-            	if (this._reloadonplay)
-            		this._element.load();
-            	this._element.play();
-            },
-            
-            pause: function () {
-            	this._element.pause();
-	        },
-	        
-	        setPosition: function (position) {
-	        	this._element.currentTime = position;
-	        },
-	        
-	        muted: function () {
-	        	return this._element.muted;
-	        },
-	        
-	        setMuted: function (muted) {
-	        	this._element.muted = muted;
-	        },
-	        
-	        volume: function () {
-	        	return this._element.volume;
-	        },
-	        
-	        setVolume: function (volume) {
-	        	this._element.volume = volume;
-	        },
-	        
-	        videoWidth: function () {},
-	        
-	        videoHeight: function () {}
+      play: function () {
+        if (this._reloadonplay)
+          this._element.load();
+        this._element.play();
+      },
+
+      pause: function () {
+        this._element.pause();
+      },
+
+      setPosition: function (position) {
+        this._element.currentTime = position;
+      },
+
+      muted: function () {
+        return this._element.muted;
+      },
+
+      setMuted: function (muted) {
+        this._element.muted = muted;
+      },
+
+      volume: function () {
+        return this._element.volume;
+      },
+
+      setVolume: function (volume) {
+        this._element.volume = volume;
+      },
+
+      videoWidth: function () {},
+
+      videoHeight: function () {}
 			
 		};
 	}], {
@@ -2162,55 +2164,59 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
 				return Dom.elementSupportsFullscreen(this._element);
 			},
 			
-            enterFullscreen: function () {
-            	Dom.elementEnterFullscreen(this._element);
-            },
-            
-	        videoWidth: function () {
-	        	return this._$element.get(0).width || this.__imageWidth || NaN;
-	        },
-	        
-	        videoHeight: function () {
-	        	return this._$element.get(0).height || this.__imageHeight || NaN;
-	        },
-	        
-            play: function () {
-            	inherited.play.call(this);
-            	if (this._audioElement) {
-	            	if (this._reloadonplay)
-	            		this._audioElement.load();
-	            	this._audioElement.play();
-            	}
-            },
-            
-            pause: function () {
-            	this._element.pause();
-            	if (this._audioElement)
-	            	this._audioElement.pause();
-	        },
-	        
-	        setPosition: function (position) {
-	        	this._element.currentTime = position;
-            	if (this._audioElement)
-	            	this._audioElement.currentTime = position;
-	        },
-	        
-	        muted: function () {
-	        	return (this._audioElement ? this._audioElement : this._element).muted;
-	        },
-	        
-	        setMuted: function (muted) {
-	        	(this._audioElement ? this._audioElement : this._element).muted = muted;
-	        },
-	        
-	        volume: function () {
-	        	return (this._audioElement ? this._audioElement : this._element).volume;
-	        },
-	        
-	        setVolume: function (volume) {
-	        	(this._audioElement ? this._audioElement : this._element).volume = volume;
-	        }	        
-		
+      enterFullscreen: function () {
+        Dom.elementEnterFullscreen(this._element);
+      },
+
+      exitFullscreen: function() {
+        Dom.documentExitFullscreen();
+      },
+
+      videoWidth: function () {
+        return this._$element.get(0).width || this.__imageWidth || NaN;
+      },
+
+      videoHeight: function () {
+        return this._$element.get(0).height || this.__imageHeight || NaN;
+      },
+
+      play: function () {
+        inherited.play.call(this);
+        if (this._audioElement) {
+          if (this._reloadonplay)
+            this._audioElement.load();
+          this._audioElement.play();
+        }
+      },
+
+      pause: function () {
+        this._element.pause();
+        if (this._audioElement)
+          this._audioElement.pause();
+      },
+
+      setPosition: function (position) {
+        this._element.currentTime = position;
+          if (this._audioElement)
+            this._audioElement.currentTime = position;
+      },
+
+      muted: function () {
+        return (this._audioElement ? this._audioElement : this._element).muted;
+      },
+
+      setMuted: function (muted) {
+        (this._audioElement ? this._audioElement : this._element).muted = muted;
+      },
+
+      volume: function () {
+        return (this._audioElement ? this._audioElement : this._element).volume;
+      },
+
+      setVolume: function (volume) {
+        (this._audioElement ? this._audioElement : this._element).volume = volume;
+      }
+
 		};		
 	});	
 });
@@ -2292,23 +2298,22 @@ Scoped.define("module:Player.FlashPlayerWrapper", [
 				return this.position();
 			},
 			
-            setPosition: function (position) {
-            	this._element.set("currentTime", position);
-            },
-            
-            setVolume: function (volume) {
-            	this._element.set("volume", volume);
-            },
-            
-	        videoWidth: function () {
-	        	return this._flashPlayer ? this._flashPlayer.videoWidth() : null;
-	        },
-	        
-	        videoHeight: function () {
-	        	return this._flashPlayer ? this._flashPlayer.videoHeight() : null;
-	        }
-            
-            
+      setPosition: function (position) {
+        this._element.set("currentTime", position);
+      },
+
+      setVolume: function (volume) {
+        this._element.set("volume", volume);
+      },
+
+      videoWidth: function () {
+        return this._flashPlayer ? this._flashPlayer.videoWidth() : null;
+      },
+
+      videoHeight: function () {
+        return this._flashPlayer ? this._flashPlayer.videoHeight() : null;
+      }
+
 		};		
 	});	
 });
