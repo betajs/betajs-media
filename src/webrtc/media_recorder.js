@@ -8,7 +8,8 @@ Scoped.define("module:WebRTC.MediaRecorder", [
 	return Class.extend({scoped: scoped}, [EventsMixin, function (inherited) {
 		return {
 			
-			constructor: function (stream) {
+			constructor: function (stream, options) {
+				options = options || {};
 				inherited.constructor.call(this);
 				this._stream = stream;
 				this._started = false;
@@ -30,7 +31,12 @@ Scoped.define("module:WebRTC.MediaRecorder", [
 				}
 				this._mediaRecorder = new MediaRecorder(stream, mediaRecorderOptions);
 				*/
-				this._mediaRecorder = new MediaRecorder(stream);
+				var mediaRecorderOptions = {};
+				if (options.videoBitrate)
+					mediaRecorderOptions.videoBitsPerSecond = options.videoBitrate * 1000;
+				if (options.audioBitrate)
+					mediaRecorderOptions.audioBitsPerSecond = options.audioBitrate * 1000;
+				this._mediaRecorder = new MediaRecorder(stream, mediaRecorderOptions);
 				this._mediaRecorder.ondataavailable = Functions.as_method(this._dataAvailable, this);
 				this._mediaRecorder.onstop = Functions.as_method(this._dataStop, this);
 			},

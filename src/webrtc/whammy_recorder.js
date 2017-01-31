@@ -23,6 +23,7 @@ Scoped.define("module:WebRTC.WhammyRecorder", [
 				this._options = Objs.extend({
 					recordWidth: 320,
 					recordHeight: 240,
+					quality: undefined,
 					video: null,
 					framerate: null
 				}, options);
@@ -76,7 +77,7 @@ Scoped.define("module:WebRTC.WhammyRecorder", [
 		        this._context.drawImage(this._video, 0, 0, this._canvas.width, this._canvas.height);
 			    this._frames.push({
 		            duration: duration,
-		            image: this._canvas.toDataURL('image/webp')
+		            image: this._canvas.toDataURL('image/webp', this._options.quality)
 		        });
 			    /*
 		        if (!this._isOnStartedDrawingNonBlankFramesInvoked && !WebmSupport.isBlankFrame(this._canvas, this._frames[this._frames.length - 1])) {

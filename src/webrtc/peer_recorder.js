@@ -12,8 +12,8 @@ Scoped.define("module:WebRTC.PeerRecorder", [
 			constructor: function (stream, options) {
 				inherited.constructor.call(this);
 				this._stream = stream;
-				this._videoBitrate = options.videoBitrate || 360;
-				this._audioBitrate = options.audioBitrate || 64;
+				this._videoBitrate = options.videoBitrate || 700;
+				this._audioBitrate = options.audioBitrate || 128;
 				this._started = false;
 			},
 			
@@ -156,6 +156,12 @@ Scoped.define("module:WebRTC.PeerRecorder", [
 	}], {
 		
 		supported: function () {
+			if (document.location.href.indexOf("https://") !== 0 && document.location.hostname !== "localhost") {
+				if (Info.isChrome() && Info.chromeVersion() >= 47)
+					return false;
+				if (Info.isOpera() && Info.operaVersion() >= 34)
+					return false;
+			}
 			return (Support.globals()).RTCPeerConnection &&
 			       (Support.globals()).RTCIceCandidate &&
 			       (Support.globals()).RTCSessionDescription &&

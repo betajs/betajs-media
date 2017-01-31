@@ -176,6 +176,8 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
 		            	width: this._options.recordingWidth,
 		            	height: this._options.recordingHeight
 		            },
+		            videoBitrate: this._options.videoBitrate,
+		            audioBitrate: this._options.audioBitrate,
 		            webrtcStreaming: this._options.webrtcStreaming
 		        });
 				this._recorder.on("bound", function () {
@@ -376,7 +378,9 @@ Scoped.define("module:Recorder.FlashVideoRecorderWrapper", [
 	            	camerawidth: this._options.recordingWidth,
 	            	cameraheight: this._options.recordingHeight,
 	            	microphonecodec: this._options.rtmpMicrophoneCodec,
-	            	fps: this._options.framerate
+	            	fps: this._options.framerate,
+	            	audioRate: this._options.audioBitrate ? Math.floor(this._options.audioBitrate / 1000) : undefined,
+	            	videoRate: this._options.videoBitrate ? this._options.videoBitrate * 1000 : undefined 
 		        });
 				this._recorder.ready.forwardCallback(this.ready);
 				this._recorder.on("require_display", function () {

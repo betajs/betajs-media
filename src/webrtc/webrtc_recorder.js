@@ -205,7 +205,10 @@ Scoped.define("module:WebRTC.PeerRecorderWrapper", [
 	return RecorderWrapper.extend({scoped: scoped}, {
 
 		_boundMedia: function () {
-			this._recorder = new PeerRecorder(this._stream, this._options.webrtcStreaming);
+			this._recorder = new PeerRecorder(this._stream, {
+				videoBitrate: this._options.videoBitrate,
+				audioBitrate: this._options.audioBitrate
+			});
 			this._recorder.on("error", this._error, this);
 		},
 		
@@ -253,7 +256,10 @@ Scoped.define("module:WebRTC.MediaRecorderWrapper", [
 	return RecorderWrapper.extend({scoped: scoped}, {
 
 		_boundMedia: function () {
-			this._recorder = new MediaRecorder(this._stream);
+			this._recorder = new MediaRecorder(this._stream, {
+				videoBitrate: this._options.videoBitrate,
+				audioBitrate: this._options.audioBitrate
+			});
 			this._recorder.on("data", function (blob) {
 				this._dataAvailable(blob);
 			}, this);

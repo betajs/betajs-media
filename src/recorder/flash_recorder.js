@@ -35,6 +35,10 @@ Scoped.define("module:Flash.FlashRecorder", [
 				this.__disableAudio = this.readAttr('disableaudio') || false;
 				this.__cameraWidth = this.readAttr('camerawidth') || 640;
 				this.__cameraHeight = this.readAttr('cameraheight') || 480;
+				this.__audioRate = this.readAttr('audiorate') || 44;
+				this.__audioQuality = this.readAttr('audioquality') || 10;
+				this.__videoRate = this.readAttr('videorate') || 0;
+				this.__videoQuality = this.readAttr('videoquality') || 90;
 				this.__streamType = this.readAttr("streamtype") || 'mp4';
 				this.__microphoneCodec = this.readAttr("microphonecodec") || 'speex';
 				this.__fps = this.readAttr('fps') || 20;				
@@ -147,7 +151,7 @@ Scoped.define("module:Flash.FlashRecorder", [
 			
 			_attachCamera: function () {
 				this._flashObjs.camera.setMode(this.__cameraWidth, this.__cameraHeight, this.__fps);
-				this._flashObjs.camera.setQuality(0, 90);
+				this._flashObjs.camera.setQuality(this.__videoRate, this.__videoQuality);
 				this._flashObjs.camera.setKeyFrameInterval(5);
 				this._flashObjs.video.attachCamera(this._flashObjs.camera);
 				this._flashObjs.cameraVideo.attachCamera(this._flashObjs.camera);
@@ -230,8 +234,8 @@ Scoped.define("module:Flash.FlashRecorder", [
 				this._flashObjs.microphone.set("gain", profile.gain || this.__defaultGain);
 				this._flashObjs.microphone.setSilenceLevel(profile.silenceLevel || 0);
 				this._flashObjs.microphone.setUseEchoSuppression(profile.echoSuppression || false);
-				this._flashObjs.microphone.set("rate", profile.rate || 44);
-				this._flashObjs.microphone.set("encodeQuality", profile.encodeQuality || 10);
+				this._flashObjs.microphone.set("rate", profile.rate || this.__audioRate);
+				this._flashObjs.microphone.set("encodeQuality", profile.encodeQuality || this.__audioQuality);
 				this._flashObjs.microphone.set("codec", profile.codec || this.__microphoneCodec);
 				this._currentMicrophoneProfile = profile;
 			},
@@ -242,7 +246,7 @@ Scoped.define("module:Flash.FlashRecorder", [
 			},
 			
 			setVolumeGain: function (volumeGain) {
-				this.__defaultGain = Math.max(Math.min(0, Math.round(volumeGain * 55)), 100);
+				this.__defaultGain = Math.min(Math.max(0, Math.round(volumeGain * 55)), 100);
 				if (this._mediaBound)
 					this._flashObjs.microphone.set("gain", this.__defaultGain);
 			},
