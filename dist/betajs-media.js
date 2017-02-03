@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.43 - 2017-01-31
+betajs-media - v0.0.43 - 2017-02-03
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -1004,7 +1004,7 @@ Public.exports();
 	return Public;
 }).call(this);
 /*!
-betajs-media - v0.0.43 - 2017-01-31
+betajs-media - v0.0.43 - 2017-02-03
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -1925,6 +1925,8 @@ Scoped.define("module:Player.VideoPlayerWrapper", [
 			
 			enterFullscreen: function () {},
 
+      enterParentFullscreen: function () {},
+
       exitFullscreen: function () {},
 
 			error: function () {
@@ -2166,6 +2168,10 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
 			
       enterFullscreen: function () {
         Dom.elementEnterFullscreen(this._element);
+      },
+
+			enterParentFullscreen: function () {
+        Dom.elementEnterFullscreen(this._element.parentElement);
       },
 
       exitFullscreen: function() {
