@@ -156,9 +156,8 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
     "base:Objs",
     "browser:Upload.FileUploader",
     "browser:Upload.MultiUploader",
-    "base:Promise",
-    "jquery:"
-], function (VideoRecorderWrapper, RecorderWrapper, Support, AudioAnalyser, Dom, Objs, FileUploader, MultiUploader, Promise, $, scoped) {
+    "base:Promise"
+], function (VideoRecorderWrapper, RecorderWrapper, Support, AudioAnalyser, Dom, Objs, FileUploader, MultiUploader, Promise, scoped) {
 	return VideoRecorderWrapper.extend({scoped: scoped}, function (inherited) {
 		return {
 			
@@ -272,7 +271,7 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
 				image.style.position = "absolute";
 				this.updateSnapshotDisplay(snapshot, image, x, y, w, h);
 				image.src = url;
-				$(parent).prepend(image);
+				Dom.elementPrependChild(parent, image);
 				return image;
 			},
 			

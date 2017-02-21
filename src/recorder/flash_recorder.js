@@ -11,11 +11,10 @@ Scoped.define("module:Flash.FlashRecorder", [
     "base:Types",
     "base:Timers.Timer",
     "base:Time",
-    "jquery:",
     "base:Promise",
     "base:Events.EventsMixin",
     "module:Recorder.PixelSampleMixin"
-], function (Class, Dom, Info, FlashClassRegistry, FlashEmbedding, Strings, Async, Objs, Functions, Types, Timer, Time, $, Promise, EventsMixin, PixelSampleMixin, scoped) {
+], function (Class, Dom, Info, FlashClassRegistry, FlashEmbedding, Strings, Async, Objs, Functions, Types, Timer, Time, Promise, EventsMixin, PixelSampleMixin, scoped) {
 	var Cls = Class.extend({scoped: scoped}, [EventsMixin, PixelSampleMixin, function (inherited) {
 		return {
 			
@@ -375,10 +374,14 @@ Scoped.define("module:Flash.FlashRecorder", [
 			},
 			
 			setActualBB: function (actualBB) {
-				$(this._element).find("object").css("width", actualBB.width + "px");
-				$(this._element).find("embed").css("width", actualBB.width + "px");
-				$(this._element).find("object").css("height", actualBB.height + "px");
-				$(this._element).find("embed").css("height", actualBB.height + "px");
+				["object", "embed"].forEach(function (tag) {
+					var container = this._element.getElementsByTagName(tag.toUpperCase())[0];
+					if (container) {
+						["width", "height"].forEach(function (attr) {
+							container.style[attr] = actualBB[attr] + "px";
+						});
+					}
+				}, this);
 				var video = this._flashObjs.video;
 				if (video) {
 					video.set("width", actualBB.width);

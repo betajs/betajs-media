@@ -23,12 +23,6 @@
 			console.log("Success", stream);
 			document.getElementById('localVideo').src = window.URL.createObjectURL(stream);
 			peerRecorder = new BetaJS.Media.WebRTC.PeerRecorder(stream, {
-				wssUrl: "wss://localhost:4444/webrtc-session.json",
-				streamInfo: {
-					applicationName : "webrtc",
-					streamName : "myStream",
-					sessionId : "[empty]"
-				},
 				userData: {},
 				videoBitrate: 360,
 				audioBitrate: 64
@@ -43,8 +37,16 @@
 		function start() {
 			if (peerRecorder._started)
 				peerRecorder.stop();
-			else
-				peerRecorder.start();
+			else {
+				peerRecorder.start({
+					wssUrl: "wss://localhost:4444/webrtc-session.json",
+					streamInfo: {
+						applicationName : "webrtc",
+						streamName : "myStream",
+						sessionId : "[empty]"
+					}
+				});
+			}
 		}
 	</script>
 </body>

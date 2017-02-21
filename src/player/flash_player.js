@@ -9,9 +9,8 @@ Scoped.define("module:Player.FlashPlayer", [
     "base:Objs",
     "base:Functions",
     "base:Types",
-    "jquery:",
     "base:Promise"
-], function (Class, Dom, Info, FlashClassRegistry, FlashEmbedding, Strings, Async, Objs, Functions, Types, $, Promise, scoped) {
+], function (Class, Dom, Info, FlashClassRegistry, FlashEmbedding, Strings, Async, Objs, Functions, Types, Promise, scoped) {
 	var Cls = Class.extend({scoped: scoped}, function (inherited) {
 		return {
 			
@@ -48,14 +47,13 @@ Scoped.define("module:Player.FlashPlayer", [
 							sources.push(element.childNodes[i].src.toLowerCase());
 					}
 				} else {
-					var $current = $(this._element);
+					var current = this._element;
 					while (true) {
-						var $next = $current.next();
-						var next = $next.get(0);
-						if (!next || next.tagName.toLowerCase() != "source") 
+						var next = current.nextSibling;
+						if (!next || !next.tagName || next.tagName.toLowerCase() != "source") 
 							break;
-						sources.push($next.attr("src").toLowerCase());
-						$current = $next;
+						sources.push(next.src.toLowerCase());
+						current = next;
 					}
 				}
 				sources = Objs.map(sources, function (source) {
@@ -178,10 +176,14 @@ Scoped.define("module:Player.FlashPlayer", [
 			},
 			
 			setActualBB: function (actualBB) {
-				$(this._element).find("object").css("width", actualBB.width + "px");
-				$(this._element).find("embed").css("width", actualBB.width + "px");
-				$(this._element).find("object").css("height", actualBB.height + "px");
-				$(this._element).find("embed").css("height", actualBB.height + "px");
+				["object", "embed"].forEach(function (tag) {
+					var container = this._element.getElementsByTagName(tag.toUpperCase())[0];
+					if (container) {
+						["width", "height"].forEach(function (attr) {
+							container.style[attr] = actualBB[attr] + "px";
+						});
+					}
+				}, this);
 				if (this.__metaLoaded) {
 					this._flashObjs.video.set("width", actualBB.width);
 					this._flashObjs.video.set("height", actualBB.height);

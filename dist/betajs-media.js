@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.43 - 2017-02-03
+betajs-media - v0.0.45 - 2017-02-21
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -1004,7 +1004,7 @@ Public.exports();
 	return Public;
 }).call(this);
 /*!
-betajs-media - v0.0.43 - 2017-02-03
+betajs-media - v0.0.45 - 2017-02-21
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -1015,11 +1015,10 @@ Scoped.binding('module', 'global:BetaJS.Media');
 Scoped.binding('base', 'global:BetaJS');
 Scoped.binding('browser', 'global:BetaJS.Browser');
 Scoped.binding('flash', 'global:BetaJS.Flash');
-Scoped.binding('jquery', 'global:jQuery');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.43"
+    "version": "0.0.45"
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.96');
@@ -1505,9 +1504,8 @@ Scoped.define("module:Player.FlashPlayer", [
     "base:Objs",
     "base:Functions",
     "base:Types",
-    "jquery:",
     "base:Promise"
-], function (Class, Dom, Info, FlashClassRegistry, FlashEmbedding, Strings, Async, Objs, Functions, Types, $, Promise, scoped) {
+], function (Class, Dom, Info, FlashClassRegistry, FlashEmbedding, Strings, Async, Objs, Functions, Types, Promise, scoped) {
 	var Cls = Class.extend({scoped: scoped}, function (inherited) {
 		return {
 			
@@ -1544,14 +1542,13 @@ Scoped.define("module:Player.FlashPlayer", [
 							sources.push(element.childNodes[i].src.toLowerCase());
 					}
 				} else {
-					var $current = $(this._element);
+					var current = this._element;
 					while (true) {
-						var $next = $current.next();
-						var next = $next.get(0);
-						if (!next || next.tagName.toLowerCase() != "source") 
+						var next = current.nextSibling;
+						if (!next || !next.tagName || next.tagName.toLowerCase() != "source") 
 							break;
-						sources.push($next.attr("src").toLowerCase());
-						$current = $next;
+						sources.push(next.src.toLowerCase());
+						current = next;
 					}
 				}
 				sources = Objs.map(sources, function (source) {
@@ -1674,10 +1671,14 @@ Scoped.define("module:Player.FlashPlayer", [
 			},
 			
 			setActualBB: function (actualBB) {
-				$(this._element).find("object").css("width", actualBB.width + "px");
-				$(this._element).find("embed").css("width", actualBB.width + "px");
-				$(this._element).find("object").css("height", actualBB.height + "px");
-				$(this._element).find("embed").css("height", actualBB.height + "px");
+				["object", "embed"].forEach(function (tag) {
+					var container = this._element.getElementsByTagName(tag.toUpperCase())[0];
+					if (container) {
+						["width", "height"].forEach(function (attr) {
+							container.style[attr] = actualBB[attr] + "px";
+						});
+					}
+				}, this);
 				if (this.__metaLoaded) {
 					this._flashObjs.video.set("width", actualBB.width);
 					this._flashObjs.video.set("height", actualBB.height);
@@ -1808,8 +1809,8 @@ Scoped.define("module:Player.VideoPlayerWrapper", [
     "base:Types",
     "base:Objs",
     "base:Strings",
-    "jquery:"
-], function (OptimisticConditionalInstance, EventsMixin, Types, Objs, Strings, $, scoped) {
+    "browser:Events"
+], function (OptimisticConditionalInstance, EventsMixin, Types, Objs, Strings, DomEvents, scoped) {
 	return OptimisticConditionalInstance.extend({scoped: scoped}, [EventsMixin, function (inherited) {
 		return {
 			
@@ -1851,7 +1852,6 @@ Scoped.define("module:Player.VideoPlayerWrapper", [
 				}, this);
 				this._sources = sourcesMapped;
 				this._element = options.element;
-				this._$element = $(options.element);
 				this._preload = options.preload || false;
 				this._reloadonplay = options.reloadonplay || false;
 				this._options = options;
@@ -1859,10 +1859,11 @@ Scoped.define("module:Player.VideoPlayerWrapper", [
 				this._loaded = false;
 				this._postererror = false;
 				this._error = 0;
+				this._domEvents = new DomEvents();
 			},
 			
 			destroy: function () {
-				this._$element.off("." + this.cid());
+				this._domEvents.destroy();
 				inherited.destroy.call(this);
 			},
 			
@@ -1925,47 +1926,50 @@ Scoped.define("module:Player.VideoPlayerWrapper", [
 			
 			enterFullscreen: function () {},
 
-      enterParentFullscreen: function () {},
+			exitFullscreen: function () {},
 
-      exitFullscreen: function () {},
+			isFullscreen: function () {
+				return false;
+			},
 
 			error: function () {
 				return this._error;
 			},
 			
-      play: function () {
-        if (this._reloadonplay)
-          this._element.load();
-        this._element.play();
-      },
+			play: function () {
+				if (this._reloadonplay)
+					this._element.load();
+				this._reloadonplay = false;
+				this._element.play();
+			},
 
-      pause: function () {
-        this._element.pause();
-      },
+			pause: function () {
+				this._element.pause();
+			},
 
-      setPosition: function (position) {
-        this._element.currentTime = position;
-      },
+			setPosition: function (position) {
+				this._element.currentTime = position;
+			},
 
-      muted: function () {
-        return this._element.muted;
-      },
+			muted: function () {
+				return this._element.muted;
+			},
 
-      setMuted: function (muted) {
-        this._element.muted = muted;
-      },
+			setMuted: function (muted) {
+				this._element.muted = muted;
+			},
 
-      volume: function () {
-        return this._element.volume;
-      },
+			volume: function () {
+				return this._element.volume;
+			},
 
-      setVolume: function (volume) {
-        this._element.volume = volume;
-      },
+			setVolume: function (volume) {
+				this._element.volume = volume;
+			},
 
-      videoWidth: function () {},
+			videoWidth: function () {},
 
-      videoHeight: function () {}
+			videoHeight: function () {}
 			
 		};
 	}], {
@@ -1985,9 +1989,9 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
     "base:Timers.Timer",
     "base:Strings",
     "base:Async",
-    "jquery:",
-    "browser:Dom"
-], function (VideoPlayerWrapper, Info, Promise, Objs, Timer, Strings, Async, $, Dom, scoped) {
+    "browser:Dom",
+    "browser:Events"
+], function (VideoPlayerWrapper, Info, Promise, Objs, Timer, Strings, Async, Dom, DomEvents, scoped) {
 	return VideoPlayerWrapper.extend({scoped: scoped}, function (inherited) {
 		return {
 			
@@ -2002,12 +2006,11 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
 					return Promise.error(true);
 				var self = this;
 				var promise = Promise.create();
-				this._$element.html("");
+				this._element.innerHTML = "";
 				var sources = this.sources();
 				var ie9 = Info.isInternetExplorer() && Info.internetExplorerVersion() == 9;
 				if (this._element.tagName.toLowerCase() !== "video") {
 					this._element = Dom.changeTag(this._element, "video");
-					this._$element = $(this._element);
 					this._transitionals.element = this._element;
 				} else if (ie9) {
 					var str = Strings.splitLast(this._element.outerHTML, "</video>").head;
@@ -2015,10 +2018,10 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
 						str += "<source" + (source.type ? " type='" + source.type + "'" : "") + " src='" + source.src + "' />";
 					});
 					str += "</video>";
-					var $str = $(str);
-					this._$element.replaceWith($str);
-					this._$element = $str;
-					this._element = this._$element.get(0);
+					var replacement = Dom.elementByTemplate(str);
+					Dom.elementInsertAfter(replacement, this._element);
+					this._element.parentNode.removeChild(this._element);
+					this._element = replacement;
 					this._transitionals.element = this._element;
 				}
 				/*
@@ -2027,13 +2030,13 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
 					loadevent = "loadstart";
 					*/
 				var loadevent = "loadstart";
-				this._$element.on(loadevent + "." + this.cid(), function () {
-					if (/*loadevent === "loadstart" && */self._element.networkState === self._element.NETWORK_NO_SOURCE) {
+				this._domEvents.on(this._element, "loadevent", function () {
+					if (/*loadevent === "loadstart" && */this._element.networkState === this._element.NETWORK_NO_SOURCE) {
 						promise.asyncError(true);
 						return;
 					}
 					promise.asyncSuccess(true);
-				});
+				}, this);
 				var nosourceCounter = 10;
 				var timer = new Timer({
 					context: this,
@@ -2048,38 +2051,51 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
 					delay: 50
 				});				
 				if (!this._preload)
-					this._$element.attr("preload", "none");
+					this._element.preload = "none";
 				if (this._loop)
-					this._$element.attr("loop", "loop");
+					this._element.loop = "loop";
 				var errorCount = 0;
 				this._audioElement = null;
+				var errorEvents = new DomEvents();
 				if (!ie9) {
 					Objs.iter(sources, function (source) {
-						var $source = $("<source" + (source.type ? " type='" + source.type + "'" : "") + " />").appendTo(this._$element);
-						$source.on("error", function () {
+						var sourceEl = document.createElement("source");
+						if (source.type)
+							sourceEl.type = source.type;
+						this._element.appendChild(sourceEl);
+						errorEvents.on(sourceEl, "error", function () {
 							errorCount++;
 							if (errorCount === sources.length)
 								promise.asyncError(true);
 						});
-						$source.get(0).src = source.src;
+						sourceEl.src = source.src;
 						if (source.audiosrc) {
-							if (!this._audioElement)
-								this._audioElement = $("<audio></audio>").insertAfter(this._$element).get(0);
-							$source = $("<source" + (source.type ? " type='" + source.type + "'" : "") + " />").appendTo(this._audioElement);
-							$source.get(0).src = source.audiosrc;
+							if (!this._audioElement) {								
+								this._audioElement = document.createElement("audio");
+								Dom.elementInsertAfter(this._audioElement, this._element);
+							}
+							var audioSourceEl = document.createElement("source");
+							if (source.type)
+								audioSourceEl.type = source.type;
+							this._audioElement.appendChild(audioSourceEl);
+							audioSourceEl.src = source.audiosrc;
 						}
 					}, this);
 				} else {
-					this._$element.find("source").on("error", function () {
+					var sourceEls = this._element.getElementsByTagName("SOURCE");
+					var cb = function () {
 						errorCount++;
 						if (errorCount === sources.length)
 							promise.asyncError(true);
-					});
+					};
+					for (var i = 0; i < sourceEls.length; ++i) {
+						errorEvents.on(sourceEls[i], "error", cb);
+					}
 				}
 				if (this.poster())
 					this._element.poster = this.posterURL();
 				promise.callback(function () {
-					this._$element.find("source").off("error");
+					errorEvents.weakDestroy();
 					timer.destroy();
 				}, this);
 				promise.success(function () {
@@ -2087,7 +2103,7 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
 				}, this);
 				try {
 					if (!Info.isChrome())
-						this._$element.get(0).load();
+						this._element.load();
 				} catch (e) {}
 				return promise;
 			},
@@ -2104,30 +2120,29 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
 					this._audioElement.remove();
 				if (this.supportsFullscreen() && this.__fullscreenListener)
 					Dom.elementOffFullscreenChange(this._element, this.__fullscreenListener);
-				this._$element.html("");
+				this._element.innerHTML = "";
 				inherited.destroy.call(this);
 			},
 			
 			_setup: function () {
 				this._loaded = false;
+				this._domEvents.on(this._element, "canplay", this._eventLoaded, this);
+				this._domEvents.on(this._element, "playing", this._eventPlaying, this);
+				this._domEvents.on(this._element, "pause", this._eventPaused, this);
+				this._domEvents.on(this._element, "ended", this._eventEnded, this);
 				var self = this;
-				var videoOn = function (event, handler) {
-					self._$element.on(event + "." + self.cid(), function () {
-						handler.apply(self, arguments);
-					});
+				var sourceEls = this._element.getElementsByTagName("SOURCE");
+				var cb = function () {
+					this._eventError(this.cls.ERROR_NO_PLAYABLE_SOURCE);
 				};
-				videoOn("canplay", this._eventLoaded);
-				videoOn("playing", this._eventPlaying);
-				videoOn("pause", this._eventPaused);
-				videoOn("ended", this._eventEnded);
-				self._$element.find("source").on("error" + "." + self.cid(), function () {
-					self._eventError(self.cls.ERROR_NO_PLAYABLE_SOURCE);
-				});
+				for (var i = 0; i < sourceEls.length; ++i) {
+					this._domEvents.on(sourceEls[i], "error", cb, this);
+				}
 				if (this.poster()) {
 					var image = new Image();
 					image.onerror = function () {
-						self._$element.attr("poster", "");
-						self._$element.attr("preload", "");
+						delete self._element.poster;
+						delete self._element.preload;
 						self._eventPosterError();
 					};
 					image.src = this.posterURL();
@@ -2147,11 +2162,12 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
 				if (this.supportsFullscreen()) {
 					this.__videoClassBackup = "";
 					this.__fullscreenListener = Dom.elementOnFullscreenChange(this._element, function (element, inFullscreen) {
+						this.trigger("fullscreen-change", inFullscreen);
 						if (inFullscreen) {
-							this.__videoClassBackup = this._$element.attr("class");
-							this._$element.attr("class", "");
+							this.__videoClassBackup = this._element.className;
+							this._element.className = "";
 						} else {
-							this._$element.attr("class", this.__videoClassBackup);
+							this._element.className = this.__videoClassBackup;
 							this.__videoClassBackup = "";
 						}
 					}, this);
@@ -2161,67 +2177,71 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
 			buffered: function () {
 				return this._element.buffered.end(0);
 			},
-			
+
+			_fullscreenElement: function () {
+				return Info.isFirefox() ? this._element.parentElement : this._element;
+			},
+
 			supportsFullscreen: function () {
-				return Dom.elementSupportsFullscreen(this._element);
+				return Dom.elementSupportsFullscreen(this._fullscreenElement());
 			},
 			
-      enterFullscreen: function () {
-        Dom.elementEnterFullscreen(this._element);
-      },
+			enterFullscreen: function () {
+				Dom.elementEnterFullscreen(this._fullscreenElement());
+			},
 
-			enterParentFullscreen: function () {
-        Dom.elementEnterFullscreen(this._element.parentElement);
-      },
+			exitFullscreen: function() {
+				Dom.documentExitFullscreen();
+			},
 
-      exitFullscreen: function() {
-        Dom.documentExitFullscreen();
-      },
+            isFullscreen: function () {
+                return Dom.elementIsFullscreen(this._fullscreenElement());
+            },
 
-      videoWidth: function () {
-        return this._$element.get(0).width || this.__imageWidth || NaN;
-      },
+            videoWidth: function () {
+				return this._element.width || this.__imageWidth || NaN;
+			},
 
-      videoHeight: function () {
-        return this._$element.get(0).height || this.__imageHeight || NaN;
-      },
-
-      play: function () {
-        inherited.play.call(this);
-        if (this._audioElement) {
-          if (this._reloadonplay)
-            this._audioElement.load();
-          this._audioElement.play();
-        }
-      },
-
-      pause: function () {
-        this._element.pause();
-        if (this._audioElement)
-          this._audioElement.pause();
-      },
-
-      setPosition: function (position) {
-        this._element.currentTime = position;
-          if (this._audioElement)
-            this._audioElement.currentTime = position;
-      },
-
-      muted: function () {
-        return (this._audioElement ? this._audioElement : this._element).muted;
-      },
-
-      setMuted: function (muted) {
-        (this._audioElement ? this._audioElement : this._element).muted = muted;
-      },
-
-      volume: function () {
-        return (this._audioElement ? this._audioElement : this._element).volume;
-      },
-
-      setVolume: function (volume) {
-        (this._audioElement ? this._audioElement : this._element).volume = volume;
-      }
+			videoHeight: function () {
+				return this._element.height || this.__imageHeight || NaN;
+			},
+	
+			play: function () {
+				inherited.play.call(this);
+				if (this._audioElement) {
+					if (this._reloadonplay)
+						this._audioElement.load();
+					this._audioElement.play();
+				}
+			},
+	
+			pause: function () {
+				this._element.pause();
+				if (this._audioElement)
+					this._audioElement.pause();
+			},
+	
+			setPosition: function (position) {
+				this._element.currentTime = position;
+				if (this._audioElement)
+					this._audioElement.currentTime = position;
+			},
+	
+			muted: function () {
+				return (this._audioElement ? this._audioElement : this._element).muted;
+			},
+	
+			setMuted: function (muted) {
+				(this._audioElement ? this._audioElement : this._element).muted = muted;
+			},
+	
+			volume: function () {
+				return (this._audioElement ? this._audioElement : this._element).volume;
+			},
+	
+			setVolume: function (volume) {
+				(this._audioElement ? this._audioElement : this._element).volume = volume;
+			}
 
 		};		
 	});	
@@ -2233,12 +2253,11 @@ Scoped.define("module:Player.FlashPlayerWrapper", [
      "module:Player.FlashPlayer",
      "browser:Info",
      "base:Promise",
-     "browser:Dom",
-     "jquery:"
-], function (VideoPlayerWrapper, FlashPlayer, Info, Promise, Dom, $, scoped) {
+     "browser:Dom"
+], function (VideoPlayerWrapper, FlashPlayer, Info, Promise, Dom, scoped) {
 	return VideoPlayerWrapper.extend({scoped: scoped}, function (inherited) {
 		return {
-		
+			
 			_initialize: function () {
 				if (this._options.noflash)
 					return Promise.error(true);
@@ -2256,7 +2275,6 @@ Scoped.define("module:Player.FlashPlayerWrapper", [
 				var promise = Promise.create();
 				if (this._element.tagName.toLowerCase() !== "div") {
 					this._element = Dom.changeTag(this._element, "div");
-					this._$element = $(this._element);
 					this._transitionals.element = this._element;
 				}
 				var opts = {
@@ -2274,26 +2292,20 @@ Scoped.define("module:Player.FlashPlayerWrapper", [
 			destroy: function () {
 				if (this._flashPlayer)
 					this._flashPlayer.weakDestroy();
-				this._$element.html("");
+				this._element.innerHTML = "";
 				inherited.destroy.call(this);
 			},
 			
 			_setup: function () {
 				this._loaded = true;
 				this._eventLoaded();
-				var self = this;
-				var videoOn = function (event, handler) {
-					self._$element.on(event + "." + self.cid(), function () {
-						handler.apply(self, arguments);
-					});
-				};
-				videoOn("playing", this._eventPlaying);
-				videoOn("pause", this._eventPaused);
-				videoOn("ended", this._eventEnded);
-				videoOn("videoerror", function () {
+				this._domEvents.on(this._element, "playing", this._eventPlaying, this);
+				this._domEvents.on(this._element, "pause", this._eventPaused, this);
+				this._domEvents.on(this._element, "ended", this._eventEnded, this);
+				this._domEvents.on(this._element, "videoerror", function () {
 					this._eventError(this.cls.ERROR_NO_PLAYABLE_SOURCE);
-				});
-				videoOn("postererror", this._eventPosterError);
+				}, this);
+				this._domEvents.on(this._element, "postererror", this._eventPosterError, this);
 			},
 			
 			position: function () {
@@ -2304,21 +2316,21 @@ Scoped.define("module:Player.FlashPlayerWrapper", [
 				return this.position();
 			},
 			
-      setPosition: function (position) {
-        this._element.set("currentTime", position);
-      },
+			setPosition: function (position) {
+				this._element.set("currentTime", position);
+			},
 
-      setVolume: function (volume) {
-        this._element.set("volume", volume);
-      },
+			setVolume: function (volume) {
+				this._element.set("volume", volume);
+			},
 
-      videoWidth: function () {
-        return this._flashPlayer ? this._flashPlayer.videoWidth() : null;
-      },
+			videoWidth: function () {
+				return this._flashPlayer ? this._flashPlayer.videoWidth() : null;
+			},
 
-      videoHeight: function () {
-        return this._flashPlayer ? this._flashPlayer.videoHeight() : null;
-      }
+			videoHeight: function () {
+				return this._flashPlayer ? this._flashPlayer.videoHeight() : null;
+			}
 
 		};		
 	});	
@@ -2356,11 +2368,10 @@ Scoped.define("module:Flash.FlashRecorder", [
     "base:Types",
     "base:Timers.Timer",
     "base:Time",
-    "jquery:",
     "base:Promise",
     "base:Events.EventsMixin",
     "module:Recorder.PixelSampleMixin"
-], function (Class, Dom, Info, FlashClassRegistry, FlashEmbedding, Strings, Async, Objs, Functions, Types, Timer, Time, $, Promise, EventsMixin, PixelSampleMixin, scoped) {
+], function (Class, Dom, Info, FlashClassRegistry, FlashEmbedding, Strings, Async, Objs, Functions, Types, Timer, Time, Promise, EventsMixin, PixelSampleMixin, scoped) {
 	var Cls = Class.extend({scoped: scoped}, [EventsMixin, PixelSampleMixin, function (inherited) {
 		return {
 			
@@ -2720,10 +2731,14 @@ Scoped.define("module:Flash.FlashRecorder", [
 			},
 			
 			setActualBB: function (actualBB) {
-				$(this._element).find("object").css("width", actualBB.width + "px");
-				$(this._element).find("embed").css("width", actualBB.width + "px");
-				$(this._element).find("object").css("height", actualBB.height + "px");
-				$(this._element).find("embed").css("height", actualBB.height + "px");
+				["object", "embed"].forEach(function (tag) {
+					var container = this._element.getElementsByTagName(tag.toUpperCase())[0];
+					if (container) {
+						["width", "height"].forEach(function (attr) {
+							container.style[attr] = actualBB[attr] + "px";
+						});
+					}
+				}, this);
 				var video = this._flashObjs.video;
 				if (video) {
 					video.set("width", actualBB.width);
@@ -3125,9 +3140,8 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
     "base:Objs",
     "browser:Upload.FileUploader",
     "browser:Upload.MultiUploader",
-    "base:Promise",
-    "jquery:"
-], function (VideoRecorderWrapper, RecorderWrapper, Support, AudioAnalyser, Dom, Objs, FileUploader, MultiUploader, Promise, $, scoped) {
+    "base:Promise"
+], function (VideoRecorderWrapper, RecorderWrapper, Support, AudioAnalyser, Dom, Objs, FileUploader, MultiUploader, Promise, scoped) {
 	return VideoRecorderWrapper.extend({scoped: scoped}, function (inherited) {
 		return {
 			
@@ -3241,7 +3255,7 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
 				image.style.position = "absolute";
 				this.updateSnapshotDisplay(snapshot, image, x, y, w, h);
 				image.src = url;
-				$(parent).prepend(image);
+				Dom.elementPrependChild(parent, image);
 				return image;
 			},
 			
