@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.45 - 2017-02-21
+betajs-media - v0.0.46 - 2017-03-14
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -1004,7 +1004,7 @@ Public.exports();
 	return Public;
 }).call(this);
 /*!
-betajs-media - v0.0.45 - 2017-02-21
+betajs-media - v0.0.46 - 2017-03-14
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -1018,7 +1018,7 @@ Scoped.binding('flash', 'global:BetaJS.Flash');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.45"
+    "version": "0.0.46"
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.96');
@@ -1891,6 +1891,8 @@ Scoped.define("module:Player.VideoPlayerWrapper", [
 			},
 			
 			_eventPlaying: function () {
+				if (!this._loaded)
+					this._eventLoaded();
 				this.trigger("playing");
 			},
 			
@@ -2120,7 +2122,8 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
 					this._audioElement.remove();
 				if (this.supportsFullscreen() && this.__fullscreenListener)
 					Dom.elementOffFullscreenChange(this._element, this.__fullscreenListener);
-				this._element.innerHTML = "";
+				if (!Info.isInternetExplorer() || Info.internetExplorerVersion() > 8)
+					this._element.innerHTML = "";
 				inherited.destroy.call(this);
 			},
 			

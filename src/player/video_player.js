@@ -86,6 +86,8 @@ Scoped.define("module:Player.VideoPlayerWrapper", [
 			},
 			
 			_eventPlaying: function () {
+				if (!this._loaded)
+					this._eventLoaded();
 				this.trigger("playing");
 			},
 			
@@ -315,7 +317,8 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
 					this._audioElement.remove();
 				if (this.supportsFullscreen() && this.__fullscreenListener)
 					Dom.elementOffFullscreenChange(this._element, this.__fullscreenListener);
-				this._element.innerHTML = "";
+				if (!Info.isInternetExplorer() || Info.internetExplorerVersion() > 8)
+					this._element.innerHTML = "";
 				inherited.destroy.call(this);
 			},
 			
