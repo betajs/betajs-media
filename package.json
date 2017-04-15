@@ -15,7 +15,7 @@
         "url": "https://github.com/betajs/betajs-media/issues"
     },
     "name": "betajs-media",
-    "version": "0.0.47",
+    "version": "0.0.48",
     "description": "BetaJS-Media is a JavaScript media framework",
     "contributors": [
         "Ziggeo",
@@ -43,7 +43,8 @@
         "betajs-shims": "~0.0.12",
         "betajs": "~1.0.96",
         "betajs-browser": "~1.0.61",
-        "betajs-flash": "~0.0.18"
+        "betajs-flash": "~0.0.18",
+        "js-beautify": ""
     },
     "main": "dist/betajs-media.js",
     "repository": {

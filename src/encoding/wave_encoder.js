@@ -1,76 +1,75 @@
-
 Scoped.define("module:Encoding.WaveEncoder.Support", [
     "base:Promise",
     "base:Scheduling.Helper"
-], function (Promise, SchedulingHelper) {
-	return {
-		
-		dumpInputBuffer: function (inputBuffer, audioChannels, bufferSize, offset) {
-			return {
-				left: new Float32Array(inputBuffer.getChannelData(0)),
-				right: audioChannels > 1 ? new Float32Array(inputBuffer.getChannelData(1)) : null,
-				offset: offset || 0,
-				endOffset: bufferSize
-			};
-		},
-		
-		waveChannelTransform: function (dumpedInputBuffer, volume, schedulable, schedulableCtx) {
-			var promise = Promise.create();
-			var volumeFactor = 0x7FFF * (volume || 1);
-			var offset = dumpedInputBuffer.offset;
-			var endOffset = dumpedInputBuffer.endOffset;
-			var left = dumpedInputBuffer.left;
-			var right = dumpedInputBuffer.right;
-			var result = new Int16Array((endOffset - offset) * (right ? 2 : 1));
-			var resultOffset = 0;
-			SchedulingHelper.schedulable(function (steps) {
-				while (steps > 0) {
-					steps--;
-					if (offset >= endOffset) {
-						promise.asyncSuccess(result);
-						return true;
-					}
- 					result[resultOffset] = left[offset] * volumeFactor;
- 					resultOffset++;
- 					if (right) {
- 	 					result[resultOffset] = right[offset] * volumeFactor;
- 	 					resultOffset++;
- 					}
- 					offset++;
-				}
-				return false;
-			} , 100, schedulable, schedulableCtx);
-			return promise;
-		},
-		
-		generateHeader: function (totalSize, audioChannels, sampleRate, buffer) {
-			buffer = buffer || new ArrayBuffer(44);
-			var view = new DataView(buffer);
-			view.writeUTFBytes = function (offset, string) {
-				for (var i = 0; i < string.length; i++)
-					this.setUint8(offset + i, string.charCodeAt(i));
-			};
-			// RIFF chunk descriptor
-			view.writeUTFBytes(0, 'RIFF');
-			view.setUint32(4, 44 + totalSize, true);
-			view.writeUTFBytes(8, 'WAVE');
-			// FMT sub-chunk
-			view.writeUTFBytes(12, 'fmt ');
-			view.setUint32(16, 16, true);
-			view.setUint16(20, 1, true);
-			// stereo (2 channels)
-			view.setUint16(22, audioChannels, true);
-			view.setUint32(24, sampleRate, true);
-			view.setUint32(28, sampleRate * 4, true);
-			view.setUint16(32, audioChannels * 2, true);
-			view.setUint16(34, 16, true);
-			// data sub-chunk
-			view.writeUTFBytes(36, 'data');
-			view.setUint32(40, totalSize, true);
-			return buffer;
-		}
+], function(Promise, SchedulingHelper) {
+    return {
 
-	};
+        dumpInputBuffer: function(inputBuffer, audioChannels, bufferSize, offset) {
+            return {
+                left: new Float32Array(inputBuffer.getChannelData(0)),
+                right: audioChannels > 1 ? new Float32Array(inputBuffer.getChannelData(1)) : null,
+                offset: offset || 0,
+                endOffset: bufferSize
+            };
+        },
+
+        waveChannelTransform: function(dumpedInputBuffer, volume, schedulable, schedulableCtx) {
+            var promise = Promise.create();
+            var volumeFactor = 0x7FFF * (volume || 1);
+            var offset = dumpedInputBuffer.offset;
+            var endOffset = dumpedInputBuffer.endOffset;
+            var left = dumpedInputBuffer.left;
+            var right = dumpedInputBuffer.right;
+            var result = new Int16Array((endOffset - offset) * (right ? 2 : 1));
+            var resultOffset = 0;
+            SchedulingHelper.schedulable(function(steps) {
+                while (steps > 0) {
+                    steps--;
+                    if (offset >= endOffset) {
+                        promise.asyncSuccess(result);
+                        return true;
+                    }
+                    result[resultOffset] = left[offset] * volumeFactor;
+                    resultOffset++;
+                    if (right) {
+                        result[resultOffset] = right[offset] * volumeFactor;
+                        resultOffset++;
+                    }
+                    offset++;
+                }
+                return false;
+            }, 100, schedulable, schedulableCtx);
+            return promise;
+        },
+
+        generateHeader: function(totalSize, audioChannels, sampleRate, buffer) {
+            buffer = buffer || new ArrayBuffer(44);
+            var view = new DataView(buffer);
+            view.writeUTFBytes = function(offset, string) {
+                for (var i = 0; i < string.length; i++)
+                    this.setUint8(offset + i, string.charCodeAt(i));
+            };
+            // RIFF chunk descriptor
+            view.writeUTFBytes(0, 'RIFF');
+            view.setUint32(4, 44 + totalSize, true);
+            view.writeUTFBytes(8, 'WAVE');
+            // FMT sub-chunk
+            view.writeUTFBytes(12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, 1, true);
+            // stereo (2 channels)
+            view.setUint16(22, audioChannels, true);
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, sampleRate * 4, true);
+            view.setUint16(32, audioChannels * 2, true);
+            view.setUint16(34, 16, true);
+            // data sub-chunk
+            view.writeUTFBytes(36, 'data');
+            view.setUint32(40, totalSize, true);
+            return buffer;
+        }
+
+    };
 });
 
 /*
