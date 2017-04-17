@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.50 - 2017-04-15
+betajs-media - v0.0.49 - 2017-04-16
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -13,7 +13,7 @@ Scoped.binding('flash', 'global:BetaJS.Flash');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.50"
+    "version": "0.0.49"
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.96');
@@ -1452,8 +1452,12 @@ Scoped.define("module:Flash.FlashRecorder", [
             },
 
             isAccessGranted: function() {
-                return ((!this._flashObjs.camera || !this._flashObjs.camera.get('muted')) &&
-                    (!this._flashObjs.microphone || !this._flashObjs.microphone.get('muted')));
+                try {
+                    return ((!this._flashObjs.camera || !this._flashObjs.camera.get('muted')) &&
+                        (!this._flashObjs.microphone || !this._flashObjs.microphone.get('muted')));
+                } catch (e) {
+                    return false;
+                }
             },
 
             isSecurityDialogOpen: function() {
@@ -1516,11 +1520,13 @@ Scoped.define("module:Flash.FlashRecorder", [
             },
 
             _attachCamera: function() {
-                this._flashObjs.camera.setMode(this.__cameraWidth, this.__cameraHeight, this.__fps);
-                this._flashObjs.camera.setQuality(this.__videoRate, this.__videoQuality);
-                this._flashObjs.camera.setKeyFrameInterval(5);
-                this._flashObjs.video.attachCamera(this._flashObjs.camera);
-                this._flashObjs.cameraVideo.attachCamera(this._flashObjs.camera);
+                if (this._flashObjs.camera) {
+                    this._flashObjs.camera.setMode(this.__cameraWidth, this.__cameraHeight, this.__fps);
+                    this._flashObjs.camera.setQuality(this.__videoRate, this.__videoQuality);
+                    this._flashObjs.camera.setKeyFrameInterval(5);
+                    this._flashObjs.video.attachCamera(this._flashObjs.camera);
+                    this._flashObjs.cameraVideo.attachCamera(this._flashObjs.camera);
+                }
                 if (this._flip) {
                     if (this._flashObjs.video.get("scaleX") > 0)
                         this._flashObjs.video.set("scaleX", -this._flashObjs.video.get("scaleX"));
@@ -1583,6 +1589,8 @@ Scoped.define("module:Flash.FlashRecorder", [
             },
 
             cameraInfo: function() {
+                if (!this._flashObjs.camera)
+                    return {};
                 return {
                     muted: this._flashObjs.camera.get("muted"),
                     name: this._flashObjs.camera.get("name"),
@@ -2888,7 +2896,7 @@ Scoped.define("module:WebRTC.MediaRecorder", [
         supported: function() {
             if (!Support.globals().MediaRecorder)
                 return false;
-            if (Info.isOpera())
+            if (Info.isOpera() && Info.operaVersion() < 44)
                 return false;
             if (Info.isChrome() && Info.chromeVersion() < 57)
                 return false;

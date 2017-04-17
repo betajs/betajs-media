@@ -87,8 +87,12 @@ Scoped.define("module:Flash.FlashRecorder", [
             },
 
             isAccessGranted: function() {
-                return ((!this._flashObjs.camera || !this._flashObjs.camera.get('muted')) &&
-                    (!this._flashObjs.microphone || !this._flashObjs.microphone.get('muted')));
+                try {
+                    return ((!this._flashObjs.camera || !this._flashObjs.camera.get('muted')) &&
+                        (!this._flashObjs.microphone || !this._flashObjs.microphone.get('muted')));
+                } catch (e) {
+                    return false;
+                }
             },
 
             isSecurityDialogOpen: function() {
@@ -151,11 +155,13 @@ Scoped.define("module:Flash.FlashRecorder", [
             },
 
             _attachCamera: function() {
-                this._flashObjs.camera.setMode(this.__cameraWidth, this.__cameraHeight, this.__fps);
-                this._flashObjs.camera.setQuality(this.__videoRate, this.__videoQuality);
-                this._flashObjs.camera.setKeyFrameInterval(5);
-                this._flashObjs.video.attachCamera(this._flashObjs.camera);
-                this._flashObjs.cameraVideo.attachCamera(this._flashObjs.camera);
+                if (this._flashObjs.camera) {
+                    this._flashObjs.camera.setMode(this.__cameraWidth, this.__cameraHeight, this.__fps);
+                    this._flashObjs.camera.setQuality(this.__videoRate, this.__videoQuality);
+                    this._flashObjs.camera.setKeyFrameInterval(5);
+                    this._flashObjs.video.attachCamera(this._flashObjs.camera);
+                    this._flashObjs.cameraVideo.attachCamera(this._flashObjs.camera);
+                }
                 if (this._flip) {
                     if (this._flashObjs.video.get("scaleX") > 0)
                         this._flashObjs.video.set("scaleX", -this._flashObjs.video.get("scaleX"));
@@ -218,6 +224,8 @@ Scoped.define("module:Flash.FlashRecorder", [
             },
 
             cameraInfo: function() {
+                if (!this._flashObjs.camera)
+                    return {};
                 return {
                     muted: this._flashObjs.camera.get("muted"),
                     name: this._flashObjs.camera.get("name"),

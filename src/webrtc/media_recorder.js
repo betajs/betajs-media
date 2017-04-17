@@ -101,7 +101,7 @@ Scoped.define("module:WebRTC.MediaRecorder", [
         supported: function() {
             if (!Support.globals().MediaRecorder)
                 return false;
-            if (Info.isOpera())
+            if (Info.isOpera() && Info.operaVersion() < 44)
                 return false;
             if (Info.isChrome() && Info.chromeVersion() < 57)
                 return false;
