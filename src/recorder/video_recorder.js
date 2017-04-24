@@ -137,6 +137,7 @@ Scoped.define("module:Recorder.VideoRecorderWrapper", [
             return Objs.extend({
                 forceflash: false,
                 noflash: false,
+                onlyaudio: false,
                 recordingWidth: 640,
                 recordingHeight: 480,
                 recordVideo: true,
@@ -168,8 +169,30 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
                 inherited.constructor.call(this, options);
                 if (this._element.tagName.toLowerCase() !== "video")
                     this._element = Dom.changeTag(this._element, "video");
+
+                if (this._options.onlyaudio && this._element) {
+                    if (Support.canvasCaptureStream()) {
+                        this._canvasElement = Support.canvasCaptureStream();
+                        this._canvasElement.setAttribute('width', '100%');
+                        this._canvasElement.setAttribute('height', '100%');
+                        this._element.style.display = 'none';
+                        var ctx = this._canvasElement.getContext("2d");
+                        var imageObject = new Image();
+                        imageObject.src = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCABIAEgDASIAAhEBAxEB/8QAGgABAQEAAwEAAAAAAAAAAAAAAAIHAwQGCP/EADoQAAEDAQQJAgMECwEAAAAAAAEAAgMEBQYREgchM0FRUnGRsRMxFCJhMoGhwRYjNTc4QmJyc4Kis//EABoBAQADAQEBAAAAAAAAAAAAAAABAgMFBAb/xAAkEQACAgEDBAIDAAAAAAAAAAAAAQIDEQQSITFBUXEFE3KB0f/aAAwDAQACEQMRAD8AzuR7/Ud859zvPFTnfznuUk2j+p8qV2j4QrO/nPcpnfznuVKIQVnfznuUzv5z3KlEBWd/Oe5TO/nPcqUQHJG9/qN+c+43niimPaM6jyiEpiTaP6nypVSbR/U+VKEBc9HTT1lVFTUkMk9RK4MZGwEueeAXsbu6MbyXgsmntKzYaV1JPjkc+cNOpxacRhq1grfdG2jqz7m0wmdlqrXkbhLVOH2Rvawbh+J38FhZfGC46nQ03x9t7WViPk+TJGOjkcx4yuaS0jgcfZeq0e3NkvnWVlLBaFPSzwwmRjJTi6V24AcOJ14atSWDc61r1VtsvsmGOUUTnyPa9+BkOY4MbhvIB4D6rQrRp6K3rkUt8LoUzLJt2wMG1FPCMMAwDMCN+A14nWRiDipss7Irp9Nl7pLjx5XfHoxy1LPqrLtCeitCF0FVA8skjduP5jfjvC6i2XTHBT3lufYV+KGIMlmaKeqa3XgdeGJ/pc1zcfqFjSvXPcsmOpp+me1crqvRUe0Z1HlEj2jOo8ormCEm0f1PlSqk2j+p8qUIPrXQd+7Cxekv/q9e8XyRdvSjeO71j01l2c+k+Fp8cglgzHW4uOJx4krftG+kOzr50oY0tpbVjbjLSuOs8XMP8zfxG9c26mUW5dj6rQ62qyMak+UkYnoUNYNLLBR5/TJn+JAxw9LA/a/2yfeve3JEX6VaUg39lYu9TDDLmwkzYf8ASyO718rVunXWy2yXxM+Nc+Nz5GYmM5jg9v1GJ1ax9Fodpz0d27i0t07r1TLWt+8ODp54TjmDwMSTuBGoY68MScFvZF594/pztJZFQ/HL/b4SR07M/hptD1vYVf6rH/Mz88yxtbLpfmguxcywbk0crXzRtbUVZbvIxIx/ueXH7gsaW1PKb8s8mu4nGHeKSfsqPaM6jyiR7RnUeUWp4kJNo/qfKlVJtH9T5UoQFz0VXUUNXDVUc0kNRC4OZIwkOaVwIhKbTyipHukke95xe5xcTxJK9Xo7vibmV1ZVxWbTVk80JjifJiHRO3EHhxAwJ4rySKJRUlhl67JVy3x6ncta0au17RqK+0ZjPVTvL5HneeAG4YasNwXTRFKWCjbbyyo9ozqPKJHtGdR5RAipGP8AUd8h9zuPFTkfyHsURBgZH8h7FMj+Q9iiIMDI/kPYpkfyHsURBgZH8h7FMj+Q9iiIMFRsf6jfkPuNx4oiISkf/9k=";
+                        imageObject.onload = function() {
+                            ctx.drawImage(imageObject, 10, 10);
+                        };
+                        this._element.parentNode.insertBefore(this._canvasElement, this._element.nextSibling);
+                    } else {
+                        console.log('Not supported by browser');
+                        return;
+                    }
+                }
+
                 this._recorder = RecorderWrapper.create({
                     video: this._element,
+                    canvas: this._canvasElement || null,
+                    onlyaudio: this._options.onlyaudio,
                     flip: !!this._options.flip,
                     framerate: this._options.framerate,
                     recordVideo: this._options.recordVideo,

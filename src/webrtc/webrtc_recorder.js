@@ -50,6 +50,10 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                 if (this._bound)
                     return;
                 return Support.userMedia2(this._getConstraints()).success(function(stream) {
+                    // console.log('before', stream);
+                    // if(this._options.onlyaudio)
+                    //   stream = this._options.canvas.captureStream();
+                    // console.log('after', stream);
                     this._hasAudio = this._options.recordAudio && stream.getAudioTracks().length > 0;
                     this._hasVideo = this._options.recordVideo && stream.getVideoTracks().length > 0;
                     this._bound = true;

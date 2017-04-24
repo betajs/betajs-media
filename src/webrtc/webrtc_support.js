@@ -62,6 +62,18 @@ Scoped.define("module:WebRTC.Support", [
             return this.__globals;
         },
 
+        canvasCaptureStream: function() {
+            if ((Info.isChrome() && Info.chromeVersion() >= 51) || (Info.isFirefox() && Info.firefoxVersion() > 43) ||
+                (Info.isOpera() && Info.operaVersion() > 36)) {
+                var canvasElement = document.createElement('canvas');
+                if (canvasElement.captureStream !== 'undefined')
+                    return canvasElement;
+                else
+                    return false;
+            } else
+                return false;
+        },
+
         userMediaSupported: function() {
             return !!this.globals().getUserMedia;
         },
