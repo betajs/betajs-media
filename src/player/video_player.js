@@ -252,6 +252,8 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
                                 promise.asyncError(true);
                         } else if (this._element.networkState === this._element.NETWORK_IDLE)
                             promise.asyncSuccess(true);
+                        else if (this._element.networkState === this._element.NETWORK_LOADING && Info.isEdge())
+                            promise.asyncSuccess(true);
                     },
                     delay: 50
                 });
