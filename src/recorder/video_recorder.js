@@ -515,7 +515,7 @@ Scoped.define("module:Recorder.FlashVideoRecorderWrapper", [
                     promise.asyncError(s);
                     self._recorder.off(null, null, ctx);
                 }, ctx);
-                this._recorder.startRecord(options.rtmp.serverUrl, options.rtmp.streamName);
+                this._recorder.startRecord(options.rtmp);
                 return promise;
             },
 

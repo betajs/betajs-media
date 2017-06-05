@@ -101,6 +101,10 @@ Scoped.define("module:WebRTC.MediaRecorder", [
         supported: function() {
             if (!Support.globals().MediaRecorder)
                 return false;
+            if (document.location.href.indexOf("https://") !== 0 && document.location.hostname !== "localhost") {
+                if (Info.isOpera() || Info.isChrome())
+                    return false;
+            }
             if (Info.isOpera() && Info.operaVersion() < 44)
                 return false;
             if (Info.isChrome() && Info.chromeVersion() < 57)

@@ -122,6 +122,10 @@ Scoped.define("module:Flash.FlashRecorder", [
                 var promise = Promise.create();
                 var timer = new Timer({
                     fire: function() {
+                        if (this.destroyed()) {
+                            timer.destroy();
+                            return;
+                        }
                         if (this.isSecurityDialogOpen())
                             return;
                         if (this.isAccessGranted()) {
@@ -418,8 +422,17 @@ Scoped.define("module:Flash.FlashRecorder", [
                 return this.__status;
             },
 
-            startRecord: function(serverUrl, streamName) {
+            startRecord: function(endpoints) {
+                if (arguments.length > 1) {
+                    endpoints = {
+                        serverUrl: endpoints,
+                        streamName: arguments[1]
+                    };
+                }
+                if (!Types.is_array(endpoints))
+                    endpoints = [endpoints];
                 this._status("connecting");
+                var endpoint = endpoints.shift();
                 this._flashObjs.connection = this._embedding.newObject("flash.net.NetConnection");
                 this._flashObjs.connection.addEventListener("netStatus", this._embedding.newCallback(Functions.as_method(function(event) {
                     var code = event.get("info").code;
@@ -427,7 +440,13 @@ Scoped.define("module:Flash.FlashRecorder", [
                         this._error("Connection to server interrupted.");
                         return;
                     }
-                    if (code === "NetConnection.Connect.Success" && this._status() !== 'connecting') {
+                    if ((code === "NetConnection.Connect.Success" && this._status() !== 'connecting') ||
+                        (code === "NetConnection.Connect.Closed" && this._status() === 'connecting')) {
+                        if (endpoints.length > 0) {
+                            endpoint = endpoints.shift();
+                            this._flashObjs.connection.connectVoid(endpoint.serverUrl);
+                            return;
+                        }
                         this._error("Could not connect to server");
                         return;
                     }
@@ -474,10 +493,10 @@ Scoped.define("module:Flash.FlashRecorder", [
                         this._flashObjs.stream.attachCameraVoid(this._flashObjs.camera);
                         if (!this.__disableAudio)
                             this._flashObjs.stream.attachAudioVoid(this._flashObjs.microphone);
-                        this._flashObjs.stream.publish(streamName, "record");
+                        this._flashObjs.stream.publish(endpoint.streamName, "record");
                     }
                 }, this)));
-                this._flashObjs.connection.connectVoid(serverUrl);
+                this._flashObjs.connection.connectVoid(endpoint.serverUrl);
             },
 
             stopRecord: function() {

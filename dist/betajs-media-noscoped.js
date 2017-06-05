@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.50 - 2017-05-01
+betajs-media - v0.0.51 - 2017-06-05
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -13,7 +13,7 @@ Scoped.binding('flash', 'global:BetaJS.Flash');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.50"
+    "version": "0.0.51"
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.96');
@@ -1053,7 +1053,7 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
                                 promise.asyncError(true);
                         } else if (this._element.networkState === this._element.NETWORK_IDLE)
                             promise.asyncSuccess(true);
-                        else if (this._element.networkState === this._element.NETWORK_LOADING && Info.isEdge())
+                        else if (this._element.networkState === this._element.NETWORK_LOADING && (Info.isEdge() || Info.isInternetExplorer()))
                             promise.asyncSuccess(true);
                     },
                     delay: 50
@@ -1489,6 +1489,10 @@ Scoped.define("module:Flash.FlashRecorder", [
                 var promise = Promise.create();
                 var timer = new Timer({
                     fire: function() {
+                        if (this.destroyed()) {
+                            timer.destroy();
+                            return;
+                        }
                         if (this.isSecurityDialogOpen())
                             return;
                         if (this.isAccessGranted()) {
@@ -1785,8 +1789,17 @@ Scoped.define("module:Flash.FlashRecorder", [
                 return this.__status;
             },
 
-            startRecord: function(serverUrl, streamName) {
+            startRecord: function(endpoints) {
+                if (arguments.length > 1) {
+                    endpoints = {
+                        serverUrl: endpoints,
+                        streamName: arguments[1]
+                    };
+                }
+                if (!Types.is_array(endpoints))
+                    endpoints = [endpoints];
                 this._status("connecting");
+                var endpoint = endpoints.shift();
                 this._flashObjs.connection = this._embedding.newObject("flash.net.NetConnection");
                 this._flashObjs.connection.addEventListener("netStatus", this._embedding.newCallback(Functions.as_method(function(event) {
                     var code = event.get("info").code;
@@ -1794,7 +1807,13 @@ Scoped.define("module:Flash.FlashRecorder", [
                         this._error("Connection to server interrupted.");
                         return;
                     }
-                    if (code === "NetConnection.Connect.Success" && this._status() !== 'connecting') {
+                    if ((code === "NetConnection.Connect.Success" && this._status() !== 'connecting') ||
+                        (code === "NetConnection.Connect.Closed" && this._status() === 'connecting')) {
+                        if (endpoints.length > 0) {
+                            endpoint = endpoints.shift();
+                            this._flashObjs.connection.connectVoid(endpoint.serverUrl);
+                            return;
+                        }
                         this._error("Could not connect to server");
                         return;
                     }
@@ -1841,10 +1860,10 @@ Scoped.define("module:Flash.FlashRecorder", [
                         this._flashObjs.stream.attachCameraVoid(this._flashObjs.camera);
                         if (!this.__disableAudio)
                             this._flashObjs.stream.attachAudioVoid(this._flashObjs.microphone);
-                        this._flashObjs.stream.publish(streamName, "record");
+                        this._flashObjs.stream.publish(endpoint.streamName, "record");
                     }
                 }, this)));
-                this._flashObjs.connection.connectVoid(serverUrl);
+                this._flashObjs.connection.connectVoid(endpoint.serverUrl);
             },
 
             stopRecord: function() {
@@ -2512,7 +2531,7 @@ Scoped.define("module:Recorder.FlashVideoRecorderWrapper", [
                     promise.asyncError(s);
                     self._recorder.off(null, null, ctx);
                 }, ctx);
-                this._recorder.startRecord(options.rtmp.serverUrl, options.rtmp.streamName);
+                this._recorder.startRecord(options.rtmp);
                 return promise;
             },
 
@@ -2898,6 +2917,10 @@ Scoped.define("module:WebRTC.MediaRecorder", [
         supported: function() {
             if (!Support.globals().MediaRecorder)
                 return false;
+            if (document.location.href.indexOf("https://") !== 0 && document.location.hostname !== "localhost") {
+                if (Info.isOpera() || Info.isChrome())
+                    return false;
+            }
             if (Info.isOpera() && Info.operaVersion() < 44)
                 return false;
             if (Info.isChrome() && Info.chromeVersion() < 57)
@@ -3737,12 +3760,12 @@ Scoped.define("module:WebRTC.Support", [
 
         stopUserMediaStream: function(stream) {
             try {
-                if (stream.stop) {
-                    stream.stop();
-                } else if (stream.getTracks) {
+                if (stream.getTracks) {
                     stream.getTracks().forEach(function(track) {
                         track.stop();
                     });
+                } else if (stream.stop) {
+                    stream.stop();
                 }
             } catch (e) {}
         },

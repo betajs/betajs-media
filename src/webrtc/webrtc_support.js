@@ -223,12 +223,12 @@ Scoped.define("module:WebRTC.Support", [
 
         stopUserMediaStream: function(stream) {
             try {
-                if (stream.stop) {
-                    stream.stop();
-                } else if (stream.getTracks) {
+                if (stream.getTracks) {
                     stream.getTracks().forEach(function(track) {
                         track.stop();
                     });
+                } else if (stream.stop) {
+                    stream.stop();
                 }
             } catch (e) {}
         },

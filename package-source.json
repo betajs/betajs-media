@@ -1,6 +1,6 @@
 {
 	"name": "betajs-media",
-	"version": "0.0.50",
+	"version": "0.0.51",
 	"description": "BetaJS-Media is a JavaScript media framework",
 	"contributors": ["Ziggeo", "Oliver Friedmann"],
 	"devDependencies": {
@@ -8,7 +8,7 @@
 		"grunt": "",
 		"grunt-contrib-jshint": "",
 		"grunt-contrib-concat": "",
-		"grunt-contrib-uglify": "",
+		"grunt-contrib-uglify": "~2.3.0",
 		"grunt-contrib-clean": "",
 		"grunt-preprocess": "",
 		"grunt-closure-tools": "",
