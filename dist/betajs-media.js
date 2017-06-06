@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.51 - 2017-06-05
+betajs-media - v0.0.53 - 2017-06-06
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -1004,7 +1004,7 @@ Public.exports();
 	return Public;
 }).call(this);
 /*!
-betajs-media - v0.0.51 - 2017-06-05
+betajs-media - v0.0.53 - 2017-06-06
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -1018,7 +1018,7 @@ Scoped.binding('flash', 'global:BetaJS.Flash');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.51"
+    "version": "0.0.53"
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.96');
@@ -2794,32 +2794,36 @@ Scoped.define("module:Flash.FlashRecorder", [
                 return this.__status;
             },
 
-            startRecord: function(endpoints) {
-                if (arguments.length > 1) {
-                    endpoints = {
-                        serverUrl: endpoints,
-                        streamName: arguments[1]
-                    };
-                }
-                if (!Types.is_array(endpoints))
-                    endpoints = [endpoints];
-                this._status("connecting");
-                var endpoint = endpoints.shift();
-                this._flashObjs.connection = this._embedding.newObject("flash.net.NetConnection");
-                this._flashObjs.connection.addEventListener("netStatus", this._embedding.newCallback(Functions.as_method(function(event) {
+            __newCallback: function(endpoint, endpoints) {
+                var active = true;
+                return this._embedding.newCallback(Functions.as_method(function(event) {
+                    if (!active)
+                        return;
                     var code = event.get("info").code;
                     if (code === "NetConnection.Connect.Closed" && this._status() === 'recording') {
+                        active = false;
                         this._error("Connection to server interrupted.");
                         return;
                     }
                     if ((code === "NetConnection.Connect.Success" && this._status() !== 'connecting') ||
-                        (code === "NetConnection.Connect.Closed" && this._status() === 'connecting')) {
+                        (code === "NetConnection.Connect.Closed" && this._status() === 'connecting') ||
+                        (code === "NetConnection.Connect.Failed" && this._status() === 'connecting')) {
+                        active = false;
                         if (endpoints.length > 0) {
                             endpoint = endpoints.shift();
+                            this._flashObjs.connection.closeVoid();
+                            this._flashObjs.connection.destroy();
+                            this._flashObjs.connection = this._embedding.newObject("flash.net.NetConnection");
+                            this._flashObjs.connection.addEventListener("netStatus", this.__newCallback(endpoint, endpoints));
+                            this.__endpoint = endpoint;
                             this._flashObjs.connection.connectVoid(endpoint.serverUrl);
                             return;
                         }
                         this._error("Could not connect to server");
+                        return;
+                    }
+                    if (code === "NetConnection.Connect.Closed" && this._status() === 'uploading') {
+                        this._status('finished');
                         return;
                     }
                     if (code === "NetConnection.Connect.Success" && this._status() === 'connecting') {
@@ -2867,7 +2871,24 @@ Scoped.define("module:Flash.FlashRecorder", [
                             this._flashObjs.stream.attachAudioVoid(this._flashObjs.microphone);
                         this._flashObjs.stream.publish(endpoint.streamName, "record");
                     }
-                }, this)));
+                }, this));
+            },
+
+            startRecord: function(endpoints) {
+                if (arguments.length > 1) {
+                    endpoints = {
+                        serverUrl: endpoints,
+                        streamName: arguments[1]
+                    };
+                }
+                if (!Types.is_array(endpoints))
+                    endpoints = [endpoints];
+                this._status("connecting");
+                var endpoint = endpoints.shift();
+                var cb = this.__newCallback(endpoint, endpoints);
+                this._flashObjs.connection = this._embedding.newObject("flash.net.NetConnection");
+                this._flashObjs.connection.addEventListener("netStatus", cb);
+                this.__endpoint = endpoint;
                 this._flashObjs.connection.connectVoid(endpoint.serverUrl);
             },
 
@@ -2877,8 +2898,16 @@ Scoped.define("module:Flash.FlashRecorder", [
                 this.__initialBufferLength = 0;
                 this._status("uploading");
                 this.__initialBufferLength = this._flashObjs.stream.get("bufferLength");
-                //this._flashObjs.stream.attachAudioVoid(null);
+                try {
+                    this._flashObjs.stream.attachAudioVoid(null);
+                } catch (e) {}
                 this._flashObjs.stream.attachCameraVoid(null);
+                /*try {
+                    if (this.__endpoint.serverUrl.indexOf("rtmpt") === 0) {
+                        this._flashObjs.stream.publishVoid("null");
+                        this._flashObjs.stream.closeVoid();
+                    }
+                } catch (e) {}*/
             },
 
             uploadStatus: function() {
