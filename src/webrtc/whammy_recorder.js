@@ -7,10 +7,11 @@ Scoped.define("module:WebRTC.WhammyRecorder", [
     "base:Objs",
     "base:Time",
     "base:Functions",
+    "base:Promise",
     "base:Async",
     "module:WebRTC.Support",
     "module:Encoding.WebmEncoder.Support"
-], function(Class, EventsMixin, Objs, Time, Functions, Async, Support, WebmSupport, scoped) {
+], function(Class, EventsMixin, Objs, Time, Functions, Promise, Async, Support, WebmSupport, scoped) {
     return Class.extend({
         scoped: scoped
     }, [EventsMixin, function(inherited) {
@@ -40,7 +41,7 @@ Scoped.define("module:WebRTC.WhammyRecorder", [
 
             start: function() {
                 if (this._started)
-                    return;
+                    return Promise.value(true);
                 this._started = true;
                 if (this._options.video) {
                     this._options.recordWidth = this._options.video.videoWidth || this._options.video.clientWidth;
@@ -60,6 +61,7 @@ Scoped.define("module:WebRTC.WhammyRecorder", [
                 this._startTime = this._lastTime;
                 this.trigger("started");
                 Async.eventually(this._process, [], this);
+                return Promise.value(true);
             },
 
             stop: function() {

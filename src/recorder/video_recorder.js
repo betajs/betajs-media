@@ -186,6 +186,9 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
                     if (this._analyser)
                         this.testSoundLevel(true);
                 }, this);
+                this._recorder.on("error", function(errorName, errorData) {
+                    this.trigger("error", errorName, errorData);
+                }, this);
                 this.ready.asyncSuccess(true);
             },
 
@@ -297,8 +300,7 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
 
             startRecord: function(options) {
                 this.__localPlaybackSource = null;
-                this._recorder.startRecord(options);
-                return Promise.value(true);
+                return this._recorder.startRecord(options);
             },
 
             stopRecord: function(options) {

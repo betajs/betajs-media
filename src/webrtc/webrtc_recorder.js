@@ -78,10 +78,13 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
 
             startRecord: function(options) {
                 if (this._recording)
-                    return;
+                    return Promise.value(true);
                 this._recording = true;
-                this._startRecord(options);
-                this._startTime = Time.now();
+                var promise = this._startRecord(options);
+                promise.success(function() {
+                    this._startTime = Time.now();
+                }, this);
+                return promise;
             },
 
             stopRecord: function() {
@@ -210,6 +213,8 @@ Scoped.define("module:WebRTC.PeerRecorderWrapper", [
 
         _boundMedia: function() {
             this._recorder = new PeerRecorder(this._stream, {
+                recorderWidth: this._options.recordResolution.width,
+                recorderHeight: this._options.recordResolution.height,
                 videoBitrate: this._options.videoBitrate,
                 audioBitrate: this._options.audioBitrate
             });
@@ -221,7 +226,7 @@ Scoped.define("module:WebRTC.PeerRecorderWrapper", [
         },
 
         _startRecord: function(options) {
-            this._recorder.start(options.webrtcStreaming);
+            return this._recorder.start(options.webrtcStreaming);
         },
 
         _stopRecord: function() {
@@ -274,7 +279,7 @@ Scoped.define("module:WebRTC.MediaRecorderWrapper", [
         },
 
         _startRecord: function() {
-            this._recorder.start();
+            return this._recorder.start();
         },
 
         _stopRecord: function() {
@@ -307,8 +312,9 @@ Scoped.define("module:WebRTC.WhammyAudioRecorderWrapper", [
     "module:WebRTC.RecorderWrapper",
     "module:WebRTC.AudioRecorder",
     "module:WebRTC.WhammyRecorder",
-    "browser:Info"
-], function(RecorderWrapper, AudioRecorder, WhammyRecorder, Info, scoped) {
+    "browser:Info",
+    "base:Promise"
+], function(RecorderWrapper, AudioRecorder, WhammyRecorder, Info, Promise, scoped) {
     return RecorderWrapper.extend({
         scoped: scoped
     }, {
@@ -366,10 +372,12 @@ Scoped.define("module:WebRTC.WhammyAudioRecorderWrapper", [
         },
 
         _startRecord: function() {
+            var promises = [];
             if (this._hasVideo)
-                this._whammyRecorder.start();
+                promises.push(this._whammyRecorder.start());
             if (this._hasAudio)
-                this._audioRecorder.start();
+                promises.push(this._audioRecorder.start());
+            return Promise.and(promises);
         },
 
         _stopRecord: function() {

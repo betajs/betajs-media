@@ -3,9 +3,10 @@ Scoped.define("module:WebRTC.PeerRecorder", [
     "base:Events.EventsMixin",
     "base:Functions",
     "base:Objs",
+    "base:Promise",
     "browser:Info",
     "module:WebRTC.Support"
-], function(Class, EventsMixin, Functions, Objs, Info, Support, scoped) {
+], function(Class, EventsMixin, Functions, Objs, Promise, Info, Support, scoped) {
     return Class.extend({
         scoped: scoped
     }, [EventsMixin, function(inherited) {
@@ -14,8 +15,10 @@ Scoped.define("module:WebRTC.PeerRecorder", [
             constructor: function(stream, options) {
                 inherited.constructor.call(this);
                 this._stream = stream;
-                this._videoBitrate = options.videoBitrate || 700;
-                this._audioBitrate = options.audioBitrate || 128;
+                if (!options.videoBitrate && options.recorderWidth && options.recorderHeight)
+                    options.videoBitrate = Math.round(options.recorderWidth * options.recorderHeight / 250);
+                this._videoBitrate = options.videoBitrate || 1024;
+                this._audioBitrate = options.audioBitrate || 256;
                 this._started = false;
             },
 
@@ -26,7 +29,7 @@ Scoped.define("module:WebRTC.PeerRecorder", [
 
             start: function(options) {
                 if (this._started)
-                    return;
+                    return Promise.value(true);
                 this._wssUrl = options.wssUrl;
                 this._streamInfo = options.streamInfo;
                 this._userData = options.userData || {};
@@ -37,7 +40,17 @@ Scoped.define("module:WebRTC.PeerRecorder", [
                 this._wsConnection.onmessage = Functions.as_method(this._wsOnMessage, this);
                 this._wsConnection.onclose = Functions.as_method(this._wsOnClose, this);
                 this._wsConnection.onerror = this._errorCallback("WS_CONNECTION");
-                this.trigger("started");
+                var promise = Promise.create();
+                var ctx = {};
+                var self = this;
+                this.on("started", function() {
+                    self.off(null, null, ctx);
+                    promise.asyncSuccess(true);
+                }, ctx).on("error", function(error) {
+                    self.off(null, null, ctx);
+                    promise.asyncError(error);
+                }, ctx);
+                return promise;
             },
 
             stop: function() {
@@ -86,6 +99,7 @@ Scoped.define("module:WebRTC.PeerRecorder", [
                             this._peerConnection.addIceCandidate(new(Support.globals()).RTCIceCandidate(iceCandidate));
                         }, this);
                     }
+                    this.trigger("started");
                 }
                 if (this._wsConnection)
                     this._wsConnection.close();

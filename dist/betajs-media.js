@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.53 - 2017-06-06
+betajs-media - v0.0.54 - 2017-06-10
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -1004,7 +1004,7 @@ Public.exports();
 	return Public;
 }).call(this);
 /*!
-betajs-media - v0.0.53 - 2017-06-06
+betajs-media - v0.0.54 - 2017-06-10
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -1018,7 +1018,7 @@ Scoped.binding('flash', 'global:BetaJS.Flash');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.53"
+    "version": "0.0.54"
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.96');
@@ -3236,6 +3236,9 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
                     if (this._analyser)
                         this.testSoundLevel(true);
                 }, this);
+                this._recorder.on("error", function(errorName, errorData) {
+                    this.trigger("error", errorName, errorData);
+                }, this);
                 this.ready.asyncSuccess(true);
             },
 
@@ -3347,8 +3350,7 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
 
             startRecord: function(options) {
                 this.__localPlaybackSource = null;
-                this._recorder.startRecord(options);
-                return Promise.value(true);
+                return this._recorder.startRecord(options);
             },
 
             stopRecord: function(options) {
@@ -3688,10 +3690,11 @@ Scoped.define("module:WebRTC.AudioRecorder", [
     "base:Class",
     "base:Events.EventsMixin",
     "base:Objs",
+    "base:Promise",
     "base:Functions",
     "module:WebRTC.Support",
     "module:Encoding.WaveEncoder.Support"
-], function(Class, EventsMixin, Objs, Functions, Support, WaveEncoder, scoped) {
+], function(Class, EventsMixin, Objs, Promise, Functions, Support, WaveEncoder, scoped) {
     return Class.extend({
         scoped: scoped
     }, [EventsMixin, function(inherited) {
@@ -3796,7 +3799,7 @@ Scoped.define("module:WebRTC.AudioRecorder", [
 
             start: function() {
                 if (this._started)
-                    return;
+                    return Promise.value(true);
                 this.__initializeContext();
                 this._startContextTime = this._audioContext.currentTime;
                 this._started = true;
@@ -3804,6 +3807,7 @@ Scoped.define("module:WebRTC.AudioRecorder", [
                 this._recordingLength = 0;
                 this._channels = [];
                 this.trigger("started");
+                return Promise.value(true);
             },
 
             stop: function() {
@@ -3852,9 +3856,10 @@ Scoped.define("module:WebRTC.MediaRecorder", [
     "base:Class",
     "base:Events.EventsMixin",
     "base:Functions",
+    "base:Promise",
     "browser:Info",
     "module:WebRTC.Support"
-], function(Class, EventsMixin, Functions, Info, Support, scoped) {
+], function(Class, EventsMixin, Functions, Promise, Info, Support, scoped) {
     return Class.extend({
         scoped: scoped
     }, [EventsMixin, function(inherited) {
@@ -3906,11 +3911,12 @@ Scoped.define("module:WebRTC.MediaRecorder", [
 
             start: function() {
                 if (this._started)
-                    return;
+                    return Promise.value(true);
                 this._started = true;
                 this._chunks = [];
                 this._mediaRecorder.start(10);
                 this.trigger("started");
+                return Promise.value(true);
             },
 
             stop: function() {
@@ -3969,9 +3975,10 @@ Scoped.define("module:WebRTC.PeerRecorder", [
     "base:Events.EventsMixin",
     "base:Functions",
     "base:Objs",
+    "base:Promise",
     "browser:Info",
     "module:WebRTC.Support"
-], function(Class, EventsMixin, Functions, Objs, Info, Support, scoped) {
+], function(Class, EventsMixin, Functions, Objs, Promise, Info, Support, scoped) {
     return Class.extend({
         scoped: scoped
     }, [EventsMixin, function(inherited) {
@@ -3980,8 +3987,10 @@ Scoped.define("module:WebRTC.PeerRecorder", [
             constructor: function(stream, options) {
                 inherited.constructor.call(this);
                 this._stream = stream;
-                this._videoBitrate = options.videoBitrate || 700;
-                this._audioBitrate = options.audioBitrate || 128;
+                if (!options.videoBitrate && options.recorderWidth && options.recorderHeight)
+                    options.videoBitrate = Math.round(options.recorderWidth * options.recorderHeight / 250);
+                this._videoBitrate = options.videoBitrate || 1024;
+                this._audioBitrate = options.audioBitrate || 256;
                 this._started = false;
             },
 
@@ -3992,7 +4001,7 @@ Scoped.define("module:WebRTC.PeerRecorder", [
 
             start: function(options) {
                 if (this._started)
-                    return;
+                    return Promise.value(true);
                 this._wssUrl = options.wssUrl;
                 this._streamInfo = options.streamInfo;
                 this._userData = options.userData || {};
@@ -4003,7 +4012,17 @@ Scoped.define("module:WebRTC.PeerRecorder", [
                 this._wsConnection.onmessage = Functions.as_method(this._wsOnMessage, this);
                 this._wsConnection.onclose = Functions.as_method(this._wsOnClose, this);
                 this._wsConnection.onerror = this._errorCallback("WS_CONNECTION");
-                this.trigger("started");
+                var promise = Promise.create();
+                var ctx = {};
+                var self = this;
+                this.on("started", function() {
+                    self.off(null, null, ctx);
+                    promise.asyncSuccess(true);
+                }, ctx).on("error", function(error) {
+                    self.off(null, null, ctx);
+                    promise.asyncError(error);
+                }, ctx);
+                return promise;
             },
 
             stop: function() {
@@ -4052,6 +4071,7 @@ Scoped.define("module:WebRTC.PeerRecorder", [
                             this._peerConnection.addIceCandidate(new(Support.globals()).RTCIceCandidate(iceCandidate));
                         }, this);
                     }
+                    this.trigger("started");
                 }
                 if (this._wsConnection)
                     this._wsConnection.close();
@@ -4223,10 +4243,13 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
 
             startRecord: function(options) {
                 if (this._recording)
-                    return;
+                    return Promise.value(true);
                 this._recording = true;
-                this._startRecord(options);
-                this._startTime = Time.now();
+                var promise = this._startRecord(options);
+                promise.success(function() {
+                    this._startTime = Time.now();
+                }, this);
+                return promise;
             },
 
             stopRecord: function() {
@@ -4355,6 +4378,8 @@ Scoped.define("module:WebRTC.PeerRecorderWrapper", [
 
         _boundMedia: function() {
             this._recorder = new PeerRecorder(this._stream, {
+                recorderWidth: this._options.recordResolution.width,
+                recorderHeight: this._options.recordResolution.height,
                 videoBitrate: this._options.videoBitrate,
                 audioBitrate: this._options.audioBitrate
             });
@@ -4366,7 +4391,7 @@ Scoped.define("module:WebRTC.PeerRecorderWrapper", [
         },
 
         _startRecord: function(options) {
-            this._recorder.start(options.webrtcStreaming);
+            return this._recorder.start(options.webrtcStreaming);
         },
 
         _stopRecord: function() {
@@ -4419,7 +4444,7 @@ Scoped.define("module:WebRTC.MediaRecorderWrapper", [
         },
 
         _startRecord: function() {
-            this._recorder.start();
+            return this._recorder.start();
         },
 
         _stopRecord: function() {
@@ -4452,8 +4477,9 @@ Scoped.define("module:WebRTC.WhammyAudioRecorderWrapper", [
     "module:WebRTC.RecorderWrapper",
     "module:WebRTC.AudioRecorder",
     "module:WebRTC.WhammyRecorder",
-    "browser:Info"
-], function(RecorderWrapper, AudioRecorder, WhammyRecorder, Info, scoped) {
+    "browser:Info",
+    "base:Promise"
+], function(RecorderWrapper, AudioRecorder, WhammyRecorder, Info, Promise, scoped) {
     return RecorderWrapper.extend({
         scoped: scoped
     }, {
@@ -4511,10 +4537,12 @@ Scoped.define("module:WebRTC.WhammyAudioRecorderWrapper", [
         },
 
         _startRecord: function() {
+            var promises = [];
             if (this._hasVideo)
-                this._whammyRecorder.start();
+                promises.push(this._whammyRecorder.start());
             if (this._hasAudio)
-                this._audioRecorder.start();
+                promises.push(this._audioRecorder.start());
+            return Promise.and(promises);
         },
 
         _stopRecord: function() {
@@ -4861,10 +4889,11 @@ Scoped.define("module:WebRTC.WhammyRecorder", [
     "base:Objs",
     "base:Time",
     "base:Functions",
+    "base:Promise",
     "base:Async",
     "module:WebRTC.Support",
     "module:Encoding.WebmEncoder.Support"
-], function(Class, EventsMixin, Objs, Time, Functions, Async, Support, WebmSupport, scoped) {
+], function(Class, EventsMixin, Objs, Time, Functions, Promise, Async, Support, WebmSupport, scoped) {
     return Class.extend({
         scoped: scoped
     }, [EventsMixin, function(inherited) {
@@ -4894,7 +4923,7 @@ Scoped.define("module:WebRTC.WhammyRecorder", [
 
             start: function() {
                 if (this._started)
-                    return;
+                    return Promise.value(true);
                 this._started = true;
                 if (this._options.video) {
                     this._options.recordWidth = this._options.video.videoWidth || this._options.video.clientWidth;
@@ -4914,6 +4943,7 @@ Scoped.define("module:WebRTC.WhammyRecorder", [
                 this._startTime = this._lastTime;
                 this.trigger("started");
                 Async.eventually(this._process, [], this);
+                return Promise.value(true);
             },
 
             stop: function() {

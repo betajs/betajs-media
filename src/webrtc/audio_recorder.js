@@ -5,10 +5,11 @@ Scoped.define("module:WebRTC.AudioRecorder", [
     "base:Class",
     "base:Events.EventsMixin",
     "base:Objs",
+    "base:Promise",
     "base:Functions",
     "module:WebRTC.Support",
     "module:Encoding.WaveEncoder.Support"
-], function(Class, EventsMixin, Objs, Functions, Support, WaveEncoder, scoped) {
+], function(Class, EventsMixin, Objs, Promise, Functions, Support, WaveEncoder, scoped) {
     return Class.extend({
         scoped: scoped
     }, [EventsMixin, function(inherited) {
@@ -113,7 +114,7 @@ Scoped.define("module:WebRTC.AudioRecorder", [
 
             start: function() {
                 if (this._started)
-                    return;
+                    return Promise.value(true);
                 this.__initializeContext();
                 this._startContextTime = this._audioContext.currentTime;
                 this._started = true;
@@ -121,6 +122,7 @@ Scoped.define("module:WebRTC.AudioRecorder", [
                 this._recordingLength = 0;
                 this._channels = [];
                 this.trigger("started");
+                return Promise.value(true);
             },
 
             stop: function() {
