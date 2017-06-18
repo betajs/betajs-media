@@ -380,6 +380,7 @@ Scoped.define("module:Recorder.FlashVideoRecorderWrapper", [
                 this._recorder = new FlashRecorder(this._element, {
                     flip: !!this._options.flip,
                     disableaudio: !this._options.recordAudio,
+                    disablevideo: !this._options.recordVideo,
                     streamtype: this._options.rtmpStreamType,
                     camerawidth: this._options.recordingWidth,
                     cameraheight: this._options.recordingHeight,

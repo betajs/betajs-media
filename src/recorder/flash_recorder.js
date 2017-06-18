@@ -33,6 +33,7 @@ Scoped.define("module:Flash.FlashRecorder", [
                 this._flashObjs = {};
                 this.ready = Promise.create();
                 this.__status = "idle";
+                this.__disableVideo = this.readAttr('disablevideo') || false;
                 this.__disableAudio = this.readAttr('disableaudio') || false;
                 this.__cameraWidth = this.readAttr('camerawidth') || 640;
                 this.__cameraHeight = this.readAttr('cameraheight') || 480;
@@ -165,6 +166,10 @@ Scoped.define("module:Flash.FlashRecorder", [
                     this._flashObjs.camera.setKeyFrameInterval(5);
                     this._flashObjs.video.attachCamera(this._flashObjs.camera);
                     this._flashObjs.cameraVideo.attachCamera(this._flashObjs.camera);
+                }
+                if (this.__disableVideo) {
+                    this._flashObjs.video.attachCamera(null);
+                    this._flashObjs.cameraVideo.attachCamera(null);
                 }
                 if (this._flip) {
                     if (this._flashObjs.video.get("scaleX") > 0)
@@ -494,7 +499,8 @@ Scoped.define("module:Flash.FlashRecorder", [
                             this._flashObjs.h264Settings.setProfileLevel("baseline", "3.1");
                             this._flashObjs.stream.set("videoStreamSettings", this._flashObjs.h264Settings);
                         }
-                        this._flashObjs.stream.attachCameraVoid(this._flashObjs.camera);
+                        if (!this.__disableVideo)
+                            this._flashObjs.stream.attachCameraVoid(this._flashObjs.camera);
                         if (!this.__disableAudio)
                             this._flashObjs.stream.attachAudioVoid(this._flashObjs.microphone);
                         this._flashObjs.stream.publish(endpoint.streamName, "record");

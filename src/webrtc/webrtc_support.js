@@ -18,14 +18,15 @@ Scoped.define("module:WebRTC.Support", [
         getGlobals: function() {
             var getUserMedia = null;
             var getUserMediaCtx = null;
-            /*
-            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-            	getUserMedia = navigator.mediaDevices.getUserMedia;
-            	getUserMediaCtx = navigator.mediaDevices;
-            } else { */
+
+            /*if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia && Info.isFirefox()) {
+                getUserMedia = navigator.mediaDevices.getUserMedia;
+                getUserMediaCtx = navigator.mediaDevices;
+            } else {*/
             getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
             getUserMediaCtx = navigator;
             //}
+
             var URL = window.URL || window.webkitURL;
             var MediaRecorder = window.MediaRecorder;
             var AudioContext = window.AudioContext || window.webkitAudioContext;

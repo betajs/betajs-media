@@ -17,6 +17,9 @@ Scoped.define("module:WebRTC.WhammyRecorder", [
     }, [EventsMixin, function(inherited) {
 
         var CLUSTER_MAX_DURATION = 30000;
+        var NO_STREAM_WIDTH = 40;
+        var NO_STREAM_HEIGHT = 30;
+        var NO_STREAM_WEBP = "data:image/webp;base64,UklGRjQAAABXRUJQVlA4ICgAAADwAgCdASooAB4APpFGnkslo6KhpWgAsBIJaQAAKUNt8AD++E0AAAAA";
 
         return {
 
@@ -48,12 +51,13 @@ Scoped.define("module:WebRTC.WhammyRecorder", [
                     this._options.recordHeight = this._options.video.videoHeight || this._options.video.clientHeight;
                 }
                 this._video = document.createElement('video');
-                this._video.width = this._options.recordWidth;
-                this._video.height = this._options.recordHeight;
-                Support.bindStreamToVideo(this._stream, this._video);
+                this._video.width = this._options.recordWidth || NO_STREAM_WIDTH;
+                this._video.height = this._options.recordHeight || NO_STREAM_HEIGHT;
+                if (this._stream)
+                    Support.bindStreamToVideo(this._stream, this._video);
                 this._canvas = document.createElement('canvas');
-                this._canvas.width = this._options.recordWidth;
-                this._canvas.height = this._options.recordHeight;
+                this._canvas.width = this._options.recordWidth || NO_STREAM_WIDTH;
+                this._canvas.height = this._options.recordHeight || NO_STREAM_HEIGHT;
                 this._context = this._canvas.getContext('2d');
                 this._frames = [];
                 //this._isOnStartedDrawingNonBlankFramesInvoked = false;
@@ -81,7 +85,7 @@ Scoped.define("module:WebRTC.WhammyRecorder", [
                 this._context.drawImage(this._video, 0, 0, this._canvas.width, this._canvas.height);
                 this._frames.push({
                     duration: duration,
-                    image: this._canvas.toDataURL('image/webp', this._options.quality)
+                    image: this._stream ? this._canvas.toDataURL('image/webp', this._options.quality) : NO_STREAM_WEBP
                 });
                 /*
 		        if (!this._isOnStartedDrawingNonBlankFramesInvoked && !WebmSupport.isBlankFrame(this._canvas, this._frames[this._frames.length - 1])) {
@@ -100,7 +104,7 @@ Scoped.define("module:WebRTC.WhammyRecorder", [
             _generateData: function() {
                 if (!this._frames.length)
                     return;
-                this._data = this.__compile(this.__dropBlackFrames(this._canvas, this._frames));
+                this._data = this.__compile(this._stream ? this.__dropBlackFrames(this._canvas, this._frames) : this._frames);
                 this.trigger("data", this._data);
             },
 
@@ -164,8 +168,8 @@ Scoped.define("module:WebRTC.WhammyRecorder", [
         };
     }], {
 
-        supported: function() {
-            return Support.globals().webpSupport;
+        supported: function(nostream) {
+            return nostream || Support.globals().webpSupport;
         }
 
     });
