@@ -61,6 +61,10 @@ Scoped.define("module:Player.VideoPlayerWrapper", [
                 this._postererror = false;
                 this._error = 0;
                 this._domEvents = new DomEvents();
+                this._broadcastingState = {
+                    googleCastConnected: false,
+                    airplayConnected: false
+                };
             },
 
             destroy: function() {
