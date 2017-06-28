@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.55 - 2017-06-18
+betajs-media - v0.0.56 - 2017-06-27
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -1004,7 +1004,7 @@ Public.exports();
 	return Public;
 }).call(this);
 /*!
-betajs-media - v0.0.55 - 2017-06-18
+betajs-media - v0.0.56 - 2017-06-27
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -1018,7 +1018,7 @@ Scoped.binding('flash', 'global:BetaJS.Flash');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.55"
+    "version": "0.0.56"
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.96');
@@ -4051,7 +4051,7 @@ Scoped.define("module:WebRTC.PeerRecorder", [
                 });
                 if (this._stream.getTracks && this._peerConnection.addTrack) {
                     Objs.iter(this._stream.getTracks(), function(localTrack) {
-                        this._peerConnection.addTrack(localTrack, localStream);
+                        this._peerConnection.addTrack(localTrack, this._stream);
                     }, this);
                 } else
                     this._peerConnection.addStream(this._stream);
@@ -4156,6 +4156,8 @@ Scoped.define("module:WebRTC.PeerRecorder", [
     }], {
 
         supported: function() {
+            if (Info.isFirefox())
+                return false;
             if (document.location.href.indexOf("https://") !== 0 && document.location.hostname !== "localhost") {
                 if (Info.isChrome() && Info.chromeVersion() >= 47)
                     return false;

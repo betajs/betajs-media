@@ -72,7 +72,7 @@ Scoped.define("module:WebRTC.PeerRecorder", [
                 });
                 if (this._stream.getTracks && this._peerConnection.addTrack) {
                     Objs.iter(this._stream.getTracks(), function(localTrack) {
-                        this._peerConnection.addTrack(localTrack, localStream);
+                        this._peerConnection.addTrack(localTrack, this._stream);
                     }, this);
                 } else
                     this._peerConnection.addStream(this._stream);
@@ -177,6 +177,8 @@ Scoped.define("module:WebRTC.PeerRecorder", [
     }], {
 
         supported: function() {
+            if (Info.isFirefox())
+                return false;
             if (document.location.href.indexOf("https://") !== 0 && document.location.hostname !== "localhost") {
                 if (Info.isChrome() && Info.chromeVersion() >= 47)
                     return false;
