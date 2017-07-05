@@ -393,6 +393,9 @@ Scoped.define("module:Recorder.FlashVideoRecorderWrapper", [
                 this._recorder.on("require_display", function() {
                     this.trigger("require_display");
                 }, this);
+                this._recorder.on("endpoint_connectivity", function(endpoint, connectivity) {
+                    this.trigger("endpoint_connectivity", endpoint, connectivity);
+                }, this);
             },
 
             destroy: function() {

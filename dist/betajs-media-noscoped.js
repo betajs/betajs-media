@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.56 - 2017-06-27
+betajs-media - v0.0.57 - 2017-07-04
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -13,7 +13,7 @@ Scoped.binding('flash', 'global:BetaJS.Flash');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.56"
+    "version": "0.0.57"
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.96');
@@ -1796,6 +1796,28 @@ Scoped.define("module:Flash.FlashRecorder", [
 
             __newCallback: function(endpoint, endpoints) {
                 var active = true;
+                var timer = null;
+                var badEndpoint = function() {
+                    clearTimeout(timer);
+                    if (!active)
+                        return;
+                    active = false;
+                    this.trigger("endpoint_connectivity", this.__endpoint, -1);
+                    if (endpoints.length > 0) {
+                        endpoint = endpoints.shift();
+                        this._flashObjs.connection.closeVoid();
+                        this._flashObjs.connection.destroy();
+                        this._flashObjs.connection = this._embedding.newObject("flash.net.NetConnection");
+                        this._flashObjs.connection.addEventListener("netStatus", this.__newCallback(endpoint, endpoints));
+                        this.__endpoint = endpoint;
+                        this._flashObjs.connection.connectVoid(endpoint.serverUrl);
+                    } else
+                        this._error("Could not connect to server");
+                };
+                var self = this;
+                timer = setTimeout(function() {
+                    badEndpoint.call(self);
+                }, 10000);
                 return this._embedding.newCallback(Functions.as_method(function(event) {
                     if (!active)
                         return;
@@ -1808,18 +1830,7 @@ Scoped.define("module:Flash.FlashRecorder", [
                     if ((code === "NetConnection.Connect.Success" && this._status() !== 'connecting') ||
                         (code === "NetConnection.Connect.Closed" && this._status() === 'connecting') ||
                         (code === "NetConnection.Connect.Failed" && this._status() === 'connecting')) {
-                        active = false;
-                        if (endpoints.length > 0) {
-                            endpoint = endpoints.shift();
-                            this._flashObjs.connection.closeVoid();
-                            this._flashObjs.connection.destroy();
-                            this._flashObjs.connection = this._embedding.newObject("flash.net.NetConnection");
-                            this._flashObjs.connection.addEventListener("netStatus", this.__newCallback(endpoint, endpoints));
-                            this.__endpoint = endpoint;
-                            this._flashObjs.connection.connectVoid(endpoint.serverUrl);
-                            return;
-                        }
-                        this._error("Could not connect to server");
+                        badEndpoint.call(this);
                         return;
                     }
                     if (code === "NetConnection.Connect.Closed" && this._status() === 'uploading') {
@@ -1827,6 +1838,8 @@ Scoped.define("module:Flash.FlashRecorder", [
                         return;
                     }
                     if (code === "NetConnection.Connect.Success" && this._status() === 'connecting') {
+                        this.trigger("endpoint_connectivity", this.__endpoint, 1);
+                        clearTimeout(timer);
                         if (this.__streamType === 'mp4')
                             this._flashObjs.connection.callVoid("setStreamType", null, "live");
                         this._flashObjs.stream = this._embedding.newObject("flash.net.NetStream", this._flashObjs.connection);
@@ -2443,6 +2456,9 @@ Scoped.define("module:Recorder.FlashVideoRecorderWrapper", [
                 this._recorder.ready.forwardCallback(this.ready);
                 this._recorder.on("require_display", function() {
                     this.trigger("require_display");
+                }, this);
+                this._recorder.on("endpoint_connectivity", function(endpoint, connectivity) {
+                    this.trigger("endpoint_connectivity", endpoint, connectivity);
                 }, this);
             },
 
