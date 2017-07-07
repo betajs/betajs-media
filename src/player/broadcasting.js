@@ -5,9 +5,10 @@ Scoped.define("module:Player.Broadcasting", [
 ], function(Class, Loader, DomEvents, scoped) {
     return Class.extend({
         scoped: scoped
-    }, function() {
+    }, function(inherited) {
         return {
             constructor: function(instance) {
+                inherited.constructor.apply(this);
                 this.player = instance.player;
                 this.googleCast = {};
                 this.airplay = {};
@@ -54,8 +55,9 @@ Scoped.define("module:Player.Broadcasting", [
                     }
                 };
 
-                Loader.loadScript('https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1', function() {});
+                Loader.loadScript('https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1', function() {
 
+                });
             },
 
             _initializeCastApi: function() {
@@ -266,10 +268,10 @@ Scoped.define("module:Player.Broadcasting", [
             },
 
             _changeGoogleCastVolume: function(volumePosition) {
-                var castRemoteConroller = this._getGoogleCastRemotePlayerController();
+                var castRemoteController = this._getGoogleCastRemotePlayerController();
                 var castRemotePlayer = this._getGoogleCastRemotePlayer();
                 castRemotePlayer.volumeLevel = volumePosition;
-                castRemoteConroller.setVolumeLevel();
+                castRemoteController.setVolumeLevel();
             },
 
             _googleCastPlayerErrorMessages: function(error) {
@@ -299,11 +301,12 @@ Scoped.define("module:Player.Broadcasting", [
                         return 'The operation timed out.' +
                             (error.description ? ' :' + error.description : '');
                 }
+            },
+
+            lookForAirplayDevices: function(videoElement) {
+                return videoElement.webkitShowPlaybackTargetPicker();
             }
+
         };
-    }, {
-        lookForAirplayDevices: function(videoElement) {
-            return videoElement.webkitShowPlaybackTargetPicker();
-        }
     });
 });
