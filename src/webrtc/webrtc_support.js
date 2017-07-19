@@ -228,9 +228,11 @@ Scoped.define("module:WebRTC.Support", [
                     stream.getTracks().forEach(function(track) {
                         track.stop();
                     });
-                } else if (stream.stop) {
-                    stream.stop();
                 }
+            } catch (e) {}
+            try {
+                if (stream.stop)
+                    stream.stop();
             } catch (e) {}
         },
 

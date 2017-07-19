@@ -261,8 +261,7 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
                     },
                     delay: 50
                 });
-                if (!this._preload)
-                    this._element.preload = "none";
+                this._element.preload = this._preload ? "auto" : "none";
                 if (this._loop)
                     this._element.loop = "loop";
                 var errorCount = 0;
