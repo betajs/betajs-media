@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.59 - 2017-07-18
+betajs-media - v0.0.59 - 2017-07-25
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -2910,10 +2910,15 @@ Scoped.define("module:Recorder.FlashVideoRecorderWrapper", [
                 var self = this;
                 var ctx = {};
                 var uploader = new CustomUploader();
-                var timer = new Timer({
+                var timer = null;
+                timer = new Timer({
                     delay: 100,
                     context: this,
                     fire: function() {
+                        if (!this._recorder || this._recorder.destroyed()) {
+                            timer.destroy();
+                            return;
+                        }
                         var status = this._recorder.uploadStatus();
                         uploader.progressCallback(status.total - status.remaining, status.total);
                     }
