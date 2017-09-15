@@ -5,10 +5,9 @@
 		<title>BetaJS-Media Tests</title>
 		<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
 		<link rel="stylesheet" href="http://code.jquery.com/qunit/qunit-1.12.0.css">
-		<script src="http://cdnjs.cloudflare.com/ajax/libs/es5-shim/4.1.1/es5-shim.js"></script>
 		<script src="http://cdnjs.cloudflare.com/ajax/libs/json2/20140204/json2.js"></script>
-		<script src="../node_modules/betajs-shims/dist/betajs-shims.js"></script>		
-        <script src="../node_modules/betajs-scoped/dist/scoped.js"></script>
+		<script src="../node_modules/betajs-shims/dist/betajs-shims.js"></script>
+		<script src="../node_modules/betajs-scoped/dist/scoped.js"></script>
         <script src="../node_modules/betajs/dist/beta-noscoped.js"></script>
         <script src="../node_modules/betajs-browser/dist/betajs-browser-noscoped.js"></script>
         <script src="../node_modules/betajs-flash/dist/betajs-flash-noscoped.js"></script>
@@ -30,12 +29,12 @@
 				QUnit.launcher = function (method, ctx) {
 					_method = method;
 					_ctx = ctx;
-					$("#clickme").show();
+					document.getElementById("clickme").style.display = '';
 				};
-				$("#clickme").on("click", function () {
-					$("#clickme").hide();
+                document.getElementById("clickme").onclick = function () {
+                    document.getElementById("clickme").style.display = 'none';
 					_method.apply(_ctx);
-				});
+				};
 			}
     	    BetaJS.Flash.options = {
 	            flashFile: window.BrowserStack ? "http://files.betajs.com/betajs-flash.swf" : "../node_modules/betajs-flash/dist/betajs-flash.swf",
@@ -68,7 +67,7 @@
     	    	test(name, function () {
     	    		stop();
     	    		setTimeout(function () {
-    	    			$("#visible-fixture").html("");
+                        document.getElementById("visible-fixture").innerHTML = "";
     	    			setTimeout(function () {
     	    				callback();
     	    			}, BetaJS.Browser.Info.isInternetExplorer() && BetaJS.Browser.Info.internetExplorerVersion() <= 8 ? 1000 : 0);
@@ -79,5 +78,7 @@
 		<script src="tests/scoped.js"></script>
 		<script src="tests/player.js"></script>
 		<script src="tests/recorder.js"></script>
+		<script src="../node_modules/betajs-shims/dist/qunit-shams.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/es5-shim/4.5.7/es5-sham.min.js"></script>
 	</body>
 </html>
