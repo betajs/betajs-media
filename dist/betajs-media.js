@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.59 - 2017-07-25
+betajs-media - v0.0.61 - 2017-10-12
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -1007,7 +1007,7 @@ Public.exports();
 	return Public;
 }).call(this);
 /*!
-betajs-media - v0.0.59 - 2017-07-25
+betajs-media - v0.0.61 - 2017-10-12
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -1021,7 +1021,7 @@ Scoped.binding('flash', 'global:BetaJS.Flash');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.59"
+    "version": "0.0.61"
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.96');
@@ -2715,7 +2715,9 @@ Scoped.define("module:Flash.FlashRecorder", [
                 this._embedding = this.auto_destroy(new FlashEmbedding(element, {
                     registry: this.cls.flashRegistry(),
                     wrap: true,
-                    debug: false
+                    debug: false,
+                    hasEmbedding: this.readAttr("hasembedding") || false,
+                    namespace: this.readAttr("embednamespace") || null
                 }, {
                     parentBgcolor: true,
                     fixHalfPixels: true

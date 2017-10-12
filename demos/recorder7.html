@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.js"></script>
+		<script src="../node_modules/betajs-shims/dist/betajs-shims.js"></script>		
+        <script src="../node_modules/betajs-scoped/dist/scoped.js"></script>
+        <script src="../node_modules/betajs/dist/beta-noscoped.js"></script>
+        <script src="../node_modules/betajs-browser/dist/betajs-browser-noscoped.js"></script>
+        <script src="../node_modules/betajs-flash/dist/betajs-flash-noscoped.js"></script>
+        <script src="../dist/betajs-media-noscoped.js"></script>
+	</head>
+	<body>
+		<script>
+			window.flash_name_space = {};
+		</script>
+		<div id="recorder">
+			<object classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000" codebase="http://fpdownload.macromedia.com/get/flashplayer/current/swflash.cab" id="flash0" style="width: 640px; height: 480px;">
+				<param name="quality" value="high">
+				<param name="allowScriptAccess" value="always">
+				<param name="wmode" value="opaque">
+				<param name="movie" value="../node_modules/betajs-flash/dist/betajs-flash.swf">
+				<param name="FlashVars" value="ready=flash_name_space.ready">
+				<embed align="middle" play="true" loop="false" type="application/x-shockwave-flash" pluginspage="http://www.adobe.com/go/getflashplayer" quality="high" allowscriptaccess="always" wmode="opaque"
+					   src="../node_modules/betajs-flash/dist/betajs-flash.swf" flashvars="ready=flash_name_space.ready" style="width: 640px; height: 480px;">
+			</object>
+		</div>
+		<script>
+	        BetaJS.Flash.options = {
+                flashFile : "../node_modules/betajs-flash/dist/betajs-flash.swf",
+                forceReload : true
+            };
+		    var instance = new BetaJS.Media.Flash.FlashRecorder(document.getElementById("recorder"), {
+                hasembedding: true,
+				embednamespace: "flash_name_space"
+			});
+		    
+		    console.log(instance);
+
+		    instance.ready.success(function () {
+                instance.bindMedia();
+			});
+
+		</script>
+	</body>
+</html>
+

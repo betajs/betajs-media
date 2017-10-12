@@ -25,7 +25,9 @@ Scoped.define("module:Flash.FlashRecorder", [
                 this._embedding = this.auto_destroy(new FlashEmbedding(element, {
                     registry: this.cls.flashRegistry(),
                     wrap: true,
-                    debug: false
+                    debug: false,
+                    hasEmbedding: this.readAttr("hasembedding") || false,
+                    namespace: this.readAttr("embednamespace") || null
                 }, {
                     parentBgcolor: true,
                     fixHalfPixels: true
