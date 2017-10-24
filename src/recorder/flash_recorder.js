@@ -74,7 +74,7 @@ Scoped.define("module:Flash.FlashRecorder", [
                 this._flashObjs.main.addChildVoid(this._flashObjs.video);
                 this._flashObjs.Microphone = this._embedding.getClass("flash.media.Microphone");
                 this._flashObjs.Camera = this._embedding.getClass("flash.media.Camera");
-                this._flashObjs.microphone = this._flashObjs.Microphone.getMicrophone(0);
+                this._flashObjs.microphone = this._flashObjs.Microphone.get('names').length > 0 ? this._flashObjs.Microphone.getMicrophone(0) : null;
                 this.setMicrophoneProfile();
                 this._flashObjs.camera = this._flashObjs.Camera.getCamera(0);
                 this._currentCamera = 0;
@@ -221,7 +221,7 @@ Scoped.define("module:Flash.FlashRecorder", [
             },
 
             microphoneInfo: function() {
-                return {
+                return this._flashObjs.microphone ? {
                     muted: this._flashObjs.microphone.get("muted"),
                     name: this._flashObjs.microphone.get("name"),
                     activityLevel: this._flashObjs.microphone.get("activityLevel"),
@@ -231,7 +231,7 @@ Scoped.define("module:Flash.FlashRecorder", [
                     codec: this._flashObjs.microphone.get("codec"),
                     hadActivity: this.__hadMicrophoneActivity,
                     inactivityTime: this.__microphoneActivityTime ? Time.now() - this.__microphoneActivityTime : null
-                };
+                } : {};
             },
 
             cameraInfo: function() {
@@ -249,6 +249,8 @@ Scoped.define("module:Flash.FlashRecorder", [
             },
 
             setMicrophoneProfile: function(profile) {
+                if (!this._flashObjs.microphone)
+                    return;
                 profile = profile || {};
                 this._flashObjs.microphone.setLoopBack(profile.loopback || false);
                 this._flashObjs.microphone.set("gain", profile.gain || this.__defaultGain);
@@ -267,7 +269,7 @@ Scoped.define("module:Flash.FlashRecorder", [
 
             setVolumeGain: function(volumeGain) {
                 this.__defaultGain = Math.min(Math.max(0, Math.round(volumeGain * 55)), 100);
-                if (this._mediaBound)
+                if (this._mediaBound && this._flashObjs.microphone)
                     this._flashObjs.microphone.set("gain", this.__defaultGain);
             },
 
@@ -305,7 +307,7 @@ Scoped.define("module:Flash.FlashRecorder", [
             },
 
             soundLevel: function() {
-                return this._flashObjs.microphone.get("activityLevel");
+                return this._flashObjs.microphone ? this._flashObjs.microphone.get("activityLevel") : 0;
             },
 
             _fire: function() {

@@ -177,7 +177,7 @@ Scoped.define("module:WebRTC.PeerRecorder", [
     }], {
 
         supported: function() {
-            if (Info.isFirefox())
+            if (Info.isFirefox() || Info.isSafari() || Info.isEdge())
                 return false;
             if (document.location.href.indexOf("https://") !== 0 && document.location.hostname !== "localhost") {
                 if (Info.isChrome() && Info.chromeVersion() >= 47)
