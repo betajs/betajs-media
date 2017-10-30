@@ -217,7 +217,7 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
                 var promise = Promise.create();
                 this._element.innerHTML = "";
                 var sources = this.sources();
-                var ie9 = Info.isInternetExplorer() && Info.internetExplorerVersion() == 9;
+                var ie9 = (Info.isInternetExplorer() && Info.internetExplorerVersion() == 9) || Info.isWindowsPhone();
                 if (this._element.tagName.toLowerCase() !== "video") {
                     this._element = Dom.changeTag(this._element, "video");
                     this._transitionals.element = this._element;
