@@ -233,6 +233,10 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
                     this._element = replacement;
                     this._transitionals.element = this._element;
                 }
+                if (Info.isSafari() && Info.safariVersion() < 6) {
+                    this._element.src = sources[0].src;
+                    this._preload = true;
+                }
                 /*
                 var loadevent = "loadedmetadata";
                 if (Info.isSafari() && Info.safariVersion() < 9)
