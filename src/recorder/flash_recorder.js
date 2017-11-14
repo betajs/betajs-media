@@ -74,7 +74,7 @@ Scoped.define("module:Flash.FlashRecorder", [
                 this._flashObjs.main.addChildVoid(this._flashObjs.video);
                 this._flashObjs.Microphone = this._embedding.getClass("flash.media.Microphone");
                 this._flashObjs.Camera = this._embedding.getClass("flash.media.Camera");
-                this._flashObjs.microphone = this._flashObjs.Microphone.get('names').length > 0 ? this._flashObjs.Microphone.getMicrophone(0) : null;
+                this._flashObjs.microphone = !Types.is_empty(this._flashObjs.Microphone.get('names').length > 0) ? this._flashObjs.Microphone.getMicrophone(0) : null;
                 this.setMicrophoneProfile();
                 this._flashObjs.camera = this._flashObjs.Camera.getCamera(0);
                 this._currentCamera = 0;

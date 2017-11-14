@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.65 - 2017-10-31
+betajs-media - v0.0.66 - 2017-11-14
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -13,7 +13,7 @@ Scoped.binding('flash', 'global:BetaJS.Flash');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.65"
+    "version": "0.0.66"
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.96');
@@ -1760,7 +1760,7 @@ Scoped.define("module:Flash.FlashRecorder", [
                 this._flashObjs.main.addChildVoid(this._flashObjs.video);
                 this._flashObjs.Microphone = this._embedding.getClass("flash.media.Microphone");
                 this._flashObjs.Camera = this._embedding.getClass("flash.media.Camera");
-                this._flashObjs.microphone = this._flashObjs.Microphone.get('names').length > 0 ? this._flashObjs.Microphone.getMicrophone(0) : null;
+                this._flashObjs.microphone = !Types.is_empty(this._flashObjs.Microphone.get('names').length > 0) ? this._flashObjs.Microphone.getMicrophone(0) : null;
                 this.setMicrophoneProfile();
                 this._flashObjs.camera = this._flashObjs.Camera.getCamera(0);
                 this._currentCamera = 0;
@@ -3975,13 +3975,13 @@ Scoped.define("module:WebRTC.Support", [
             var getUserMedia = null;
             var getUserMediaCtx = null;
 
-            /*if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia && Info.isFirefox()) {
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia && Info.isFirefox()) {
                 getUserMedia = navigator.mediaDevices.getUserMedia;
                 getUserMediaCtx = navigator.mediaDevices;
-            } else {*/
-            getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
-            getUserMediaCtx = navigator;
-            //}
+            } else {
+                getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
+                getUserMediaCtx = navigator;
+            }
 
             var URL = window.URL || window.webkitURL;
             var MediaRecorder = window.MediaRecorder;
@@ -4081,11 +4081,23 @@ Scoped.define("module:WebRTC.Support", [
 
         userMedia: function(options) {
             var promise = Promise.create();
-            this.globals().getUserMedia.call(this.globals().getUserMediaCtx, options, function(stream) {
+            var result = this.globals().getUserMedia.call(this.globals().getUserMediaCtx, options, function(stream) {
                 promise.asyncSuccess(stream);
             }, function(e) {
                 promise.asyncError(e);
             });
+            try {
+                if (result.then) {
+                    result.then(function(stream) {
+                        promise.asyncSuccess(stream);
+                    });
+                }
+                if (result["catch"]) {
+                    result["catch"](function(e) {
+                        promise.asyncError(e);
+                    });
+                }
+            } catch (e) {}
             return promise;
         },
 

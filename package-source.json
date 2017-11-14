@@ -1,6 +1,6 @@
 {
 	"name": "betajs-media",
-	"version": "0.0.65",
+	"version": "0.0.66",
 	"description": "BetaJS-Media is a JavaScript media framework",
 	"contributors": ["Ziggeo", "Oliver Friedmann"],
 	"devDependencies": {

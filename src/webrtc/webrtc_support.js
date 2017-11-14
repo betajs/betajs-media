@@ -19,13 +19,13 @@ Scoped.define("module:WebRTC.Support", [
             var getUserMedia = null;
             var getUserMediaCtx = null;
 
-            /*if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia && Info.isFirefox()) {
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia && Info.isFirefox()) {
                 getUserMedia = navigator.mediaDevices.getUserMedia;
                 getUserMediaCtx = navigator.mediaDevices;
-            } else {*/
-            getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
-            getUserMediaCtx = navigator;
-            //}
+            } else {
+                getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
+                getUserMediaCtx = navigator;
+            }
 
             var URL = window.URL || window.webkitURL;
             var MediaRecorder = window.MediaRecorder;
@@ -125,11 +125,23 @@ Scoped.define("module:WebRTC.Support", [
 
         userMedia: function(options) {
             var promise = Promise.create();
-            this.globals().getUserMedia.call(this.globals().getUserMediaCtx, options, function(stream) {
+            var result = this.globals().getUserMedia.call(this.globals().getUserMediaCtx, options, function(stream) {
                 promise.asyncSuccess(stream);
             }, function(e) {
                 promise.asyncError(e);
             });
+            try {
+                if (result.then) {
+                    result.then(function(stream) {
+                        promise.asyncSuccess(stream);
+                    });
+                }
+                if (result["catch"]) {
+                    result["catch"](function(e) {
+                        promise.asyncError(e);
+                    });
+                }
+            } catch (e) {}
             return promise;
         },
 
