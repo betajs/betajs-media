@@ -255,6 +255,8 @@ Scoped.define("module:WebRTC.Support", [
             video.muted = true;
             if (video.mozSrcObject !== undefined)
                 video.mozSrcObject = stream;
+            else if (Info.isSafari())
+                video.srcObject = stream;
             else
                 video.src = this.globals().URL.createObjectURL(stream);
             if (flip) {

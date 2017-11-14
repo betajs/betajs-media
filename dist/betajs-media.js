@@ -4505,7 +4505,9 @@ Scoped.define("module:WebRTC.PeerRecorder", [
     }], {
 
         supported: function() {
-            if (Info.isFirefox() || Info.isSafari() || Info.isEdge())
+            if (Info.isEdge() && Info.isFirefox())
+                return false;
+            if (Info.isSafari() && Info.safariVersion() < 11)
                 return false;
             if (document.location.href.indexOf("https://") !== 0 && document.location.hostname !== "localhost") {
                 if (Info.isChrome() && Info.chromeVersion() >= 47)
@@ -5221,6 +5223,8 @@ Scoped.define("module:WebRTC.Support", [
             video.muted = true;
             if (video.mozSrcObject !== undefined)
                 video.mozSrcObject = stream;
+            else if (Info.isSafari())
+                video.srcObject = stream;
             else
                 video.src = this.globals().URL.createObjectURL(stream);
             if (flip) {

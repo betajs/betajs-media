@@ -25,7 +25,8 @@
 		
 		<script>
 	        var view = BetaJS.Media.WebRTC.RecorderWrapper.create({
-	            video: $("video").get(0)
+	            video: $("video").get(0),
+                webrtcStreaming: true
 	        });
 	        var audio;
 	        view.on("bound", function (stream) {
