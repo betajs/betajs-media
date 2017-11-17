@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.67 - 2017-11-14
+betajs-media - v0.0.68 - 2017-11-17
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -13,7 +13,7 @@ Scoped.binding('flash', 'global:BetaJS.Flash');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.67"
+    "version": "0.0.68"
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.96');
@@ -3495,7 +3495,7 @@ Scoped.define("module:WebRTC.PeerRecorder", [
     }], {
 
         supported: function() {
-            if (Info.isEdge() && Info.isFirefox())
+            if (Info.isEdge() || Info.isFirefox())
                 return false;
             if (Info.isSafari() && Info.safariVersion() < 11)
                 return false;
