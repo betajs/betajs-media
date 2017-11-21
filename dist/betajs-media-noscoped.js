@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.68 - 2017-11-17
+betajs-media - v0.0.69 - 2017-11-21
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -13,7 +13,7 @@ Scoped.binding('flash', 'global:BetaJS.Flash');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.68"
+    "version": "0.0.69"
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.96');
@@ -1963,23 +1963,19 @@ Scoped.define("module:Flash.FlashRecorder", [
                 samples = samples || 100;
                 var w = this._flashObjs.cameraVideo.get("width");
                 var h = this._flashObjs.cameraVideo.get("height");
-                var lightLevelBmp = this._embedding.newObject("flash.display.BitmapData", w, h);
-                lightLevelBmp.draw(this._flashObjs.cameraVideo);
-                var multiple = 2;
-                while (samples > 0) {
-                    for (var i = 1; i < multiple; ++i) {
-                        for (var j = 1; j < multiple; ++j) {
-                            var rgb = lightLevelBmp.getPixel(Math.floor(i * w / multiple), Math.floor(j * h / multiple));
-                            callback.call(context || this, rgb % 256, (rgb / 256) % 256, (rgb / 256 / 256) % 256);
-                            --samples;
-                            if (samples <= 0)
-                                break;
-                        }
-                        if (samples <= 0)
-                            break;
-                    }
-                    ++multiple;
+                var wc = Math.ceil(Math.sqrt(w / h * samples));
+                var hc = Math.ceil(Math.sqrt(h / w * samples));
+                var lightLevelBmp = this._embedding.newObject("flash.display.BitmapData", wc, hc);
+                var scaleMatrix = this._embedding.newObject("flash.geom.Matrix");
+                scaleMatrix.scale(wc / w, hc / h);
+                lightLevelBmp.draw(this._flashObjs.cameraVideo, scaleMatrix);
+                for (var i = 0; i < samples; ++i) {
+                    var x = i % wc;
+                    var y = Math.floor(i / wc);
+                    var rgb = lightLevelBmp.getPixel(x, y);
+                    callback.call(context || this, rgb % 256, (rgb / 256) % 256, (rgb / 256 / 256) % 256);
                 }
+                scaleMatrix.destroy();
                 lightLevelBmp.destroy();
             },
 
@@ -2276,6 +2272,7 @@ Scoped.define("module:Flash.FlashRecorder", [
                 this.__flashRegistry.register("flash.display.LoaderInfo", ["addEventListener"]);
                 this.__flashRegistry.register("flash.display.BitmapData", ["draw", "getPixel", "dispose"]);
                 this.__flashRegistry.register("flash.display.Bitmap", []);
+                this.__flashRegistry.register("flash.geom.Matrix", ["scale"]);
                 this.__flashRegistry.register("flash.system.Security", [], ["allowDomain", "showSettings"]);
                 this.__flashRegistry.register("com.adobe.images.PNGEncoder", [], ["encode"]);
                 this.__flashRegistry.register("com.adobe.images.JPGEncoder", ["encode"]);
@@ -3639,27 +3636,20 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
 
             _pixelSample: function(samples, callback, context) {
                 samples = samples || 100;
-                var canvas = document.createElement('canvas');
                 var w = this._video.videoWidth || this._video.clientWidth;
                 var h = this._video.videoHeight || this._video.clientHeight;
-                canvas.width = w;
-                canvas.height = h;
+                var wc = Math.ceil(Math.sqrt(w / h * samples));
+                var hc = Math.ceil(Math.sqrt(h / w * samples));
+                var canvas = document.createElement('canvas');
+                canvas.width = wc;
+                canvas.height = hc;
                 var ctx = canvas.getContext('2d');
-                ctx.drawImage(this._video, 0, 0, w, h);
-                var multiple = 2;
-                while (samples > 0) {
-                    for (var i = 1; i < multiple; ++i) {
-                        for (var j = 1; j < multiple; ++j) {
-                            var data = ctx.getImageData(Math.floor(i * w / multiple), Math.floor(j * h / multiple), 1, 1).data;
-                            callback.call(context || this, data[0], data[1], data[2]);
-                            --samples;
-                            if (samples <= 0)
-                                break;
-                        }
-                        if (samples <= 0)
-                            break;
-                    }
-                    ++multiple;
+                ctx.drawImage(this._video, 0, 0, wc, hc);
+                for (var i = 0; i < samples; ++i) {
+                    var x = i % wc;
+                    var y = Math.floor(i / wc);
+                    var data = ctx.getImageData(x, y, 1, 1).data;
+                    callback.call(context || this, data[0], data[1], data[2]);
                 }
             },
 
@@ -4193,15 +4183,17 @@ Scoped.define("module:WebRTC.Support", [
         },
 
         stopUserMediaStream: function(stream) {
+            var stopped = false;
             try {
                 if (stream.getTracks) {
                     stream.getTracks().forEach(function(track) {
                         track.stop();
+                        stopped = true;
                     });
                 }
             } catch (e) {}
             try {
-                if (stream.stop)
+                if (!stopped && stream.stop)
                     stream.stop();
             } catch (e) {}
         },

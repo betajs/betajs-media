@@ -277,23 +277,19 @@ Scoped.define("module:Flash.FlashRecorder", [
                 samples = samples || 100;
                 var w = this._flashObjs.cameraVideo.get("width");
                 var h = this._flashObjs.cameraVideo.get("height");
-                var lightLevelBmp = this._embedding.newObject("flash.display.BitmapData", w, h);
-                lightLevelBmp.draw(this._flashObjs.cameraVideo);
-                var multiple = 2;
-                while (samples > 0) {
-                    for (var i = 1; i < multiple; ++i) {
-                        for (var j = 1; j < multiple; ++j) {
-                            var rgb = lightLevelBmp.getPixel(Math.floor(i * w / multiple), Math.floor(j * h / multiple));
-                            callback.call(context || this, rgb % 256, (rgb / 256) % 256, (rgb / 256 / 256) % 256);
-                            --samples;
-                            if (samples <= 0)
-                                break;
-                        }
-                        if (samples <= 0)
-                            break;
-                    }
-                    ++multiple;
+                var wc = Math.ceil(Math.sqrt(w / h * samples));
+                var hc = Math.ceil(Math.sqrt(h / w * samples));
+                var lightLevelBmp = this._embedding.newObject("flash.display.BitmapData", wc, hc);
+                var scaleMatrix = this._embedding.newObject("flash.geom.Matrix");
+                scaleMatrix.scale(wc / w, hc / h);
+                lightLevelBmp.draw(this._flashObjs.cameraVideo, scaleMatrix);
+                for (var i = 0; i < samples; ++i) {
+                    var x = i % wc;
+                    var y = Math.floor(i / wc);
+                    var rgb = lightLevelBmp.getPixel(x, y);
+                    callback.call(context || this, rgb % 256, (rgb / 256) % 256, (rgb / 256 / 256) % 256);
                 }
+                scaleMatrix.destroy();
                 lightLevelBmp.destroy();
             },
 
@@ -590,6 +586,7 @@ Scoped.define("module:Flash.FlashRecorder", [
                 this.__flashRegistry.register("flash.display.LoaderInfo", ["addEventListener"]);
                 this.__flashRegistry.register("flash.display.BitmapData", ["draw", "getPixel", "dispose"]);
                 this.__flashRegistry.register("flash.display.Bitmap", []);
+                this.__flashRegistry.register("flash.geom.Matrix", ["scale"]);
                 this.__flashRegistry.register("flash.system.Security", [], ["allowDomain", "showSettings"]);
                 this.__flashRegistry.register("com.adobe.images.PNGEncoder", [], ["encode"]);
                 this.__flashRegistry.register("com.adobe.images.JPGEncoder", ["encode"]);
