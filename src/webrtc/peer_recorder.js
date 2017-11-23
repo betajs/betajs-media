@@ -4,9 +4,10 @@ Scoped.define("module:WebRTC.PeerRecorder", [
     "base:Functions",
     "base:Objs",
     "base:Promise",
+    "base:Async",
     "browser:Info",
     "module:WebRTC.Support"
-], function(Class, EventsMixin, Functions, Objs, Promise, Info, Support, scoped) {
+], function(Class, EventsMixin, Functions, Objs, Promise, Async, Info, Support, scoped) {
     return Class.extend({
         scoped: scoped
     }, [EventsMixin, function(inherited) {
@@ -33,6 +34,7 @@ Scoped.define("module:WebRTC.PeerRecorder", [
                 this._wssUrl = options.wssUrl;
                 this._streamInfo = options.streamInfo;
                 this._userData = options.userData || {};
+                this._delay = options.delay || 0;
                 this._started = true;
                 this._wsConnection = new(Support.globals()).WebSocket(this._wssUrl);
                 this._wsConnection.binaryType = 'arraybuffer';
@@ -99,7 +101,9 @@ Scoped.define("module:WebRTC.PeerRecorder", [
                             this._peerConnection.addIceCandidate(new(Support.globals()).RTCIceCandidate(iceCandidate));
                         }, this);
                     }
-                    this.trigger("started");
+                    Async.eventually(function() {
+                        this.trigger("started");
+                    }, this, this._delay);
                 }
                 if (this._wsConnection)
                     this._wsConnection.close();
@@ -177,7 +181,7 @@ Scoped.define("module:WebRTC.PeerRecorder", [
     }], {
 
         supported: function() {
-            if (Info.isEdge() || Info.isFirefox())
+            if (Info.isEdge())
                 return false;
             if (Info.isSafari() && Info.safariVersion() < 11)
                 return false;
