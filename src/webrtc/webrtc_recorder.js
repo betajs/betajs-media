@@ -18,6 +18,7 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                 this._bound = false;
                 this._hasAudio = false;
                 this._hasVideo = false;
+                this._screen = options.screen;
                 this._flip = !!options.flip;
             },
 
@@ -38,7 +39,8 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                         sourceId: this._options.videoId,
                         width: this._options.recordResolution.width,
                         height: this._options.recordResolution.height
-                    } : false
+                    } : false,
+                    screen: this._screen
                 };
             },
 

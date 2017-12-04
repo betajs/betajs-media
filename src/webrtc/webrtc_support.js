@@ -1,8 +1,9 @@
 Scoped.define("module:WebRTC.Support", [
     "base:Promise",
     "base:Objs",
-    "browser:Info"
-], function(Promise, Objs, Info) {
+    "browser:Info",
+    "base:Time"
+], function(Promise, Objs, Info, Time) {
     return {
 
         canvasSupportsImageFormat: function(imageFormat) {
@@ -53,7 +54,8 @@ Scoped.define("module:WebRTC.Support", [
                 RTCPeerConnection: RTCPeerConnection,
                 RTCIceCandidate: RTCIceCandidate,
                 RTCSessionDescription: RTCSessionDescription,
-                WebSocket: WebSocket
+                WebSocket: WebSocket,
+                supportedConstraints: navigator.mediaDevices && navigator.mediaDevices.getSupportedConstraints ? navigator.mediaDevices.getSupportedConstraints() : {}
             };
         },
 
@@ -123,6 +125,24 @@ Scoped.define("module:WebRTC.Support", [
             return promise;
         },
 
+        chromeExtensionMessage: function(extensionId, data) {
+            var promise = Promise.create();
+            chrome.runtime.sendMessage(extensionId, data, promise.asyncSuccessFunc());
+            return promise;
+        },
+
+        chromeExtensionExtract: function(meta) {
+            var result = {};
+            if (Info.isChrome()) {
+                result.extensionId = meta.chromeExtensionId;
+                result.extensionInstallLink = meta.chromeExtensionInstallLink;
+            } else if (Info.isOpera()) {
+                result.extensionId = meta.operaExtensionId;
+                result.extensionInstallLink = meta.operaExtensionInstallLink;
+            }
+            return result;
+        },
+
         userMedia: function(options) {
             var promise = Promise.create();
             var result = this.globals().getUserMedia.call(this.globals().getUserMediaCtx, options, function(stream) {
@@ -149,15 +169,23 @@ Scoped.define("module:WebRTC.Support", [
          * audio: {} | undefined
          * video: {} | undefined
          * 	  width, height, aspectRatio
+         * screen: true | {chromeExtensionId, operaExtensionId} | false
          */
         userMedia2: function(options) {
             var opts = {};
             if (options.audio)
                 opts.audio = options.audio;
+            if (options.screen && !options.video)
+                options.video = {};
             if (!options.video)
                 return this.userMedia(opts);
             if (Info.isFirefox()) {
                 opts.video = {};
+                if (options.screen) {
+                    opts.video.mediaSource = "screen";
+                    if (!navigator.mediaDevices || !navigator.mediaDevices.getSupportedConstraints || !navigator.mediaDevices.getSupportedConstraints().mediaSource)
+                        return Promise.error("This browser does not support screen recording.");
+                }
                 if (options.video.aspectRatio && !(options.video.width && options.video.height)) {
                     if (options.video.width)
                         options.video.height = Math.round(options.video.width / options.video.aspectRatio);
@@ -230,6 +258,35 @@ Scoped.define("module:WebRTC.Support", [
                         return probe.call(this, count);
                     }, this);
                 };
+                if (options.screen) {
+                    var extensionId = this.chromeExtensionExtract(options.screen).extensionId;
+                    if (!extensionId)
+                        return Promise.error("This browser does not support screen recording.");
+                    var pingTest = Time.now();
+                    return this.chromeExtensionMessage(extensionId, {
+                        type: "ping",
+                        data: pingTest
+                    }).mapSuccess(function(pingResponse) {
+                        var promise = Promise.create();
+                        if (!pingResponse || pingResponse.type !== "success" || pingResponse.data !== pingTest)
+                            return Promise.error("This browser does not support screen recording.");
+                        else
+                            promise.asyncSuccess(true);
+                        return promise.mapSuccess(function() {
+                            return this.chromeExtensionMessage(extensionId, {
+                                type: "acquire",
+                                sources: ['window', 'screen', 'tab']
+                            }).mapSuccess(function(acquireResponse) {
+                                if (!acquireResponse || acquireResponse.type !== 'success')
+                                    return Promise.error("Could not acquire permission to access screen.");
+                                opts.video.mandatory.chromeMediaSource = 'desktop';
+                                opts.video.mandatory.chromeMediaSourceId = acquireResponse.streamId;
+                                delete opts.audio;
+                                return probe.call(this, 100);
+                            }, this);
+                        }, this);
+                    }, this);
+                }
                 return probe.call(this, 100);
             }
         },

@@ -79,6 +79,12 @@ Scoped.define("module:Recorder.VideoRecorderWrapper", [
 
             _unbindMedia: function() {},
 
+            softwareDependencies: function() {
+                return this._softwareDependencies();
+            },
+
+            _softwareDependencies: function() {},
+
             cameraWidth: function() {
                 return this._options.recordingWidth;
             },
@@ -154,11 +160,13 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
     "module:WebRTC.Support",
     "module:WebRTC.AudioAnalyser",
     "browser:Dom",
+    "browser:Info",
+    "base:Time",
     "base:Objs",
     "browser:Upload.FileUploader",
     "browser:Upload.MultiUploader",
     "base:Promise"
-], function(VideoRecorderWrapper, RecorderWrapper, Support, AudioAnalyser, Dom, Objs, FileUploader, MultiUploader, Promise, scoped) {
+], function(VideoRecorderWrapper, RecorderWrapper, Support, AudioAnalyser, Dom, Info, Time, Objs, FileUploader, MultiUploader, Promise, scoped) {
     return VideoRecorderWrapper.extend({
         scoped: scoped
     }, function(inherited) {
@@ -180,7 +188,8 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
                     },
                     videoBitrate: this._options.videoBitrate,
                     audioBitrate: this._options.audioBitrate,
-                    webrtcStreaming: this._options.webrtcStreaming
+                    webrtcStreaming: this._options.webrtcStreaming,
+                    screen: this._options.screen
                 });
                 this._recorder.on("bound", function() {
                     if (this._analyser)
@@ -343,13 +352,49 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
 
             averageFrameRate: function() {
                 return this._recorder.averageFrameRate();
+            },
+
+            _softwareDependencies: function() {
+                if (!this._options.screen || Support.globals().supportedConstraints.mediaSource)
+                    return Promise.value(true);
+                var ext = Support.chromeExtensionExtract(this._options.screen);
+                var err = [{
+                    title: "Screen Recorder Extension",
+                    execute: function() {
+                        window.open(ext.extensionInstallLink);
+                    }
+                }];
+                var pingTest = Time.now();
+                return Support.chromeExtensionMessage(ext.extensionId, {
+                    type: "ping",
+                    data: pingTest
+                }).mapError(function() {
+                    return err;
+                }).mapSuccess(function(pingResponse) {
+                    if (pingResponse && pingResponse.type === "success" && pingResponse.data === pingTest)
+                        return true;
+                    return Promise.error(err);
+                });
             }
 
         };
     }, {
 
         supported: function(options) {
-            return RecorderWrapper.anySupport(options) && !options.forceflash;
+            if (options.forceflash)
+                return false;
+            if (!RecorderWrapper.anySupport(options))
+                return false;
+            if (options.screen) {
+                if (Support.globals().supportedConstraints.mediaSource)
+                    return true;
+                if (Info.isChrome() && options.screen.chromeExtensionId)
+                    return true;
+                if (Info.isOpera() && options.screen.operaExtensionId)
+                    return true;
+                return false;
+            }
+            return true;
         }
 
     });
@@ -563,13 +608,22 @@ Scoped.define("module:Recorder.FlashVideoRecorderWrapper", [
 
             averageFrameRate: function() {
                 return this._recorder.averageFrameRate();
+            },
+
+            _softwareDependencies: function() {
+                return Info.flash().installed() ? Promise.value(true) : Promise.error([{
+                    "title": "Adobe Flash",
+                    "execute": function() {
+                        window.open("https://get.adobe.com/flashplayer");
+                    }
+                }]);
             }
 
         };
     }, {
 
         supported: function(options) {
-            return !Info.isMobile() && !options.noflash && Info.flash().installed();
+            return !Info.isMobile() && !options.noflash && Info.flash().supported() && !options.screen;
         }
 
     });
