@@ -134,6 +134,10 @@ Scoped.define("module:Recorder.VideoRecorderWrapper", [
 
             averageFrameRate: function() {
                 return null;
+            },
+
+            recordDelay: function(opts) {
+                return 0;
             }
 
         };
@@ -206,6 +210,10 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
                     this._analyser.weakDestroy();
                 this._recorder.destroy();
                 inherited.destroy.call(this);
+            },
+
+            recordDelay: function(opts) {
+                return this._recorder.recordDelay(opts);
             },
 
             _bindMedia: function() {
@@ -386,7 +394,7 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
             if (!RecorderWrapper.anySupport(options))
                 return false;
             if (options.screen) {
-                if (Support.globals().supportedConstraints.mediaSource)
+                if (Support.globals().supportedConstraints.mediaSource && Info.isFirefox() && Info.firefoxVersion() > 54)
                     return true;
                 if (Info.isChrome() && options.screen.chromeExtensionId)
                     return true;

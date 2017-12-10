@@ -44,6 +44,10 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                 };
             },
 
+            recordDelay: function(opts) {
+                return 0;
+            },
+
             stream: function() {
                 return this._stream;
             },
@@ -200,8 +204,9 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
 
 Scoped.define("module:WebRTC.PeerRecorderWrapper", [
     "module:WebRTC.RecorderWrapper",
-    "module:WebRTC.PeerRecorder"
-], function(RecorderWrapper, PeerRecorder, scoped) {
+    "module:WebRTC.PeerRecorder",
+    "browser:Info"
+], function(RecorderWrapper, PeerRecorder, Info, scoped) {
     return RecorderWrapper.extend({
         scoped: scoped
     }, {
@@ -229,6 +234,10 @@ Scoped.define("module:WebRTC.PeerRecorderWrapper", [
             this._dataAvailable();
         },
 
+        recordDelay: function(opts) {
+            return opts.webrtcStreaming.delay || 0;
+        },
+
         getVolumeGain: function() {},
 
         setVolumeGain: function(volumeGain) {},
@@ -244,6 +253,8 @@ Scoped.define("module:WebRTC.PeerRecorderWrapper", [
                 if (!inherited.supported.call(this, options))
                     return false;
                 if (!options.recordVideo)
+                    return false;
+                if (options.screen && Info.isFirefox())
                     return false;
                 return options.webrtcStreaming && PeerRecorder.supported();
             }

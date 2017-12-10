@@ -179,6 +179,10 @@ Scoped.define("module:WebRTC.Support", [
                 options.video = {};
             if (!options.video)
                 return this.userMedia(opts);
+            if (options.screen) {
+                options.video.width = options.video.width || window.innerWidth || document.body.clientWidth;
+                options.video.height = options.video.height || window.innerHeight || document.body.clientHeight;
+            }
             if (Info.isFirefox()) {
                 opts.video = {};
                 if (options.screen) {
@@ -282,7 +286,19 @@ Scoped.define("module:WebRTC.Support", [
                                 opts.video.mandatory.chromeMediaSource = 'desktop';
                                 opts.video.mandatory.chromeMediaSourceId = acquireResponse.streamId;
                                 delete opts.audio;
-                                return probe.call(this, 100);
+                                return probe.call(this, 100).mapSuccess(function(videoStream) {
+                                    return !options.audio ? videoStream : this.userMedia({
+                                        audio: true
+                                    }).mapError(function() {
+                                        return Promise.value(videoStream);
+                                    }).mapSuccess(function(audioStream) {
+                                        try {
+                                            return new MediaStream([videoStream.getVideoTracks()[0], audioStream.getAudioTracks()[0]]);
+                                        } catch (e) {
+                                            return videoStream;
+                                        }
+                                    });
+                                }, this);
                             }, this);
                         }, this);
                     }, this);

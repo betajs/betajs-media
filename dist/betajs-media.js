@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.72 - 2017-12-03
+betajs-media - v0.0.73 - 2017-12-09
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -1009,7 +1009,7 @@ Public.exports();
 	return Public;
 }).call(this);
 /*!
-betajs-media - v0.0.72 - 2017-12-03
+betajs-media - v0.0.73 - 2017-12-09
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -1023,7 +1023,7 @@ Scoped.binding('flash', 'global:BetaJS.Flash');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.72"
+    "version": "0.0.73"
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.136');
@@ -3528,6 +3528,10 @@ Scoped.define("module:Recorder.VideoRecorderWrapper", [
 
             averageFrameRate: function() {
                 return null;
+            },
+
+            recordDelay: function(opts) {
+                return 0;
             }
 
         };
@@ -3600,6 +3604,10 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
                     this._analyser.weakDestroy();
                 this._recorder.destroy();
                 inherited.destroy.call(this);
+            },
+
+            recordDelay: function(opts) {
+                return this._recorder.recordDelay(opts);
             },
 
             _bindMedia: function() {
@@ -3780,7 +3788,7 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
             if (!RecorderWrapper.anySupport(options))
                 return false;
             if (options.screen) {
-                if (Support.globals().supportedConstraints.mediaSource)
+                if (Support.globals().supportedConstraints.mediaSource && Info.isFirefox() && Info.firefoxVersion() > 54)
                     return true;
                 if (Info.isChrome() && options.screen.chromeExtensionId)
                     return true;
@@ -4624,6 +4632,10 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                 };
             },
 
+            recordDelay: function(opts) {
+                return 0;
+            },
+
             stream: function() {
                 return this._stream;
             },
@@ -4780,8 +4792,9 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
 
 Scoped.define("module:WebRTC.PeerRecorderWrapper", [
     "module:WebRTC.RecorderWrapper",
-    "module:WebRTC.PeerRecorder"
-], function(RecorderWrapper, PeerRecorder, scoped) {
+    "module:WebRTC.PeerRecorder",
+    "browser:Info"
+], function(RecorderWrapper, PeerRecorder, Info, scoped) {
     return RecorderWrapper.extend({
         scoped: scoped
     }, {
@@ -4809,6 +4822,10 @@ Scoped.define("module:WebRTC.PeerRecorderWrapper", [
             this._dataAvailable();
         },
 
+        recordDelay: function(opts) {
+            return opts.webrtcStreaming.delay || 0;
+        },
+
         getVolumeGain: function() {},
 
         setVolumeGain: function(volumeGain) {},
@@ -4824,6 +4841,8 @@ Scoped.define("module:WebRTC.PeerRecorderWrapper", [
                 if (!inherited.supported.call(this, options))
                     return false;
                 if (!options.recordVideo)
+                    return false;
+                if (options.screen && Info.isFirefox())
                     return false;
                 return options.webrtcStreaming && PeerRecorder.supported();
             }
@@ -5197,6 +5216,10 @@ Scoped.define("module:WebRTC.Support", [
                 options.video = {};
             if (!options.video)
                 return this.userMedia(opts);
+            if (options.screen) {
+                options.video.width = options.video.width || window.innerWidth || document.body.clientWidth;
+                options.video.height = options.video.height || window.innerHeight || document.body.clientHeight;
+            }
             if (Info.isFirefox()) {
                 opts.video = {};
                 if (options.screen) {
@@ -5300,7 +5323,19 @@ Scoped.define("module:WebRTC.Support", [
                                 opts.video.mandatory.chromeMediaSource = 'desktop';
                                 opts.video.mandatory.chromeMediaSourceId = acquireResponse.streamId;
                                 delete opts.audio;
-                                return probe.call(this, 100);
+                                return probe.call(this, 100).mapSuccess(function(videoStream) {
+                                    return !options.audio ? videoStream : this.userMedia({
+                                        audio: true
+                                    }).mapError(function() {
+                                        return Promise.value(videoStream);
+                                    }).mapSuccess(function(audioStream) {
+                                        try {
+                                            return new MediaStream([videoStream.getVideoTracks()[0], audioStream.getAudioTracks()[0]]);
+                                        } catch (e) {
+                                            return videoStream;
+                                        }
+                                    });
+                                }, this);
                             }, this);
                         }, this);
                     }, this);
