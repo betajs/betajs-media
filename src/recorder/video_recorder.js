@@ -394,7 +394,7 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
             if (!RecorderWrapper.anySupport(options))
                 return false;
             if (options.screen) {
-                if (Support.globals().supportedConstraints.mediaSource && Info.isFirefox() && Info.firefoxVersion() > 54)
+                if (Support.globals().supportedConstraints.mediaSource && Info.isFirefox() && Info.firefoxVersion() > 55)
                     return true;
                 if (Info.isChrome() && options.screen.chromeExtensionId)
                     return true;
