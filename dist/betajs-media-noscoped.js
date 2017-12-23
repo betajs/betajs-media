@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.74 - 2017-12-12
+betajs-media - v0.0.75 - 2017-12-23
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -13,7 +13,7 @@ Scoped.binding('flash', 'global:BetaJS.Flash');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.74"
+    "version": "0.0.75"
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.136');
@@ -3783,8 +3783,9 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
 Scoped.define("module:WebRTC.PeerRecorderWrapper", [
     "module:WebRTC.RecorderWrapper",
     "module:WebRTC.PeerRecorder",
-    "browser:Info"
-], function(RecorderWrapper, PeerRecorder, Info, scoped) {
+    "browser:Info",
+    "base:Async"
+], function(RecorderWrapper, PeerRecorder, Info, Async, scoped) {
     return RecorderWrapper.extend({
         scoped: scoped
     }, {
@@ -3809,10 +3810,11 @@ Scoped.define("module:WebRTC.PeerRecorderWrapper", [
 
         _stopRecord: function() {
             this._recorder.stop();
-            this._dataAvailable();
+            Async.eventually(this._dataAvailable, this, this.__stopDelay || this._options.webrtcStreaming.stopDelay || 0);
         },
 
         recordDelay: function(opts) {
+            this.__stopDelay = opts.webrtcStreaming.stopDelay;
             return opts.webrtcStreaming.delay || 0;
         },
 

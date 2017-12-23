@@ -205,8 +205,9 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
 Scoped.define("module:WebRTC.PeerRecorderWrapper", [
     "module:WebRTC.RecorderWrapper",
     "module:WebRTC.PeerRecorder",
-    "browser:Info"
-], function(RecorderWrapper, PeerRecorder, Info, scoped) {
+    "browser:Info",
+    "base:Async"
+], function(RecorderWrapper, PeerRecorder, Info, Async, scoped) {
     return RecorderWrapper.extend({
         scoped: scoped
     }, {
@@ -231,10 +232,11 @@ Scoped.define("module:WebRTC.PeerRecorderWrapper", [
 
         _stopRecord: function() {
             this._recorder.stop();
-            this._dataAvailable();
+            Async.eventually(this._dataAvailable, this, this.__stopDelay || this._options.webrtcStreaming.stopDelay || 0);
         },
 
         recordDelay: function(opts) {
+            this.__stopDelay = opts.webrtcStreaming.stopDelay;
             return opts.webrtcStreaming.delay || 0;
         },
 

@@ -1,81 +1,87 @@
 {
-	"name": "betajs-media",
-	"version": "0.0.74",
-	"description": "BetaJS-Media is a JavaScript media framework",
-	"contributors": ["Ziggeo", "Oliver Friedmann"],
-	"devDependencies": {
-    	"lodash": "",
-		"grunt": "",
-		"grunt-contrib-jshint": "",
-		"grunt-contrib-concat": "",
-		"grunt-contrib-uglify": "~2.3.0",
-		"grunt-contrib-clean": "",
-		"grunt-preprocess": "",
-		"grunt-closure-tools": "",
-		"grunt-node-qunit": "",
-		"qunit": "",
-		"grunt-contrib-connect": "",
-		"grunt-jsdoc": "",
-		"grunt-shell": "",
-		"grunt-template": "",
-		"grunt-githooks": "",
-	    "grunt-betajs-docs-compile":"~0.0.19",
-	    "betajs-scoped": "~0.0.13",
-	    "betajs-compile": "~0.0.28",
-		"betajs-shims": "~0.0.12",
-	    "betajs": "~1.0.136",
-	    "betajs-browser": "~1.0.61",
-	    "betajs-flash": "~0.0.18",
-		"js-beautify": ""
-	},
-	"main": "dist/betajs-media.js",
-	"repository": {
-		"type": "git",
-		"url": "git://github.com/betajs/betajs-media.git"
-	},
-	"meta": {
-		"sponsors": ["Ziggeo", "Browserstack"],
-		"guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-		"installdoc": "docsrc/common/install.md",
-		"summarydoc": "docsrc/common/summary.md",
-		"badges": {
-			"codeclimate": true,
-			"travis": false,
-			"npm": true,
-			"gitter": true
-		},
-		"credits": [
-			"TypedArray, From microphone to .WAV with: getUserMedia and Web Audio, (c) Thibault Imbert",
-			"Media Stream Recorder, https://github.com/streamproc/MediaStreamRecorder",
-			"Whammy Recorder, https://github.com/antimatter15/whammy"
-		],
-		"weakDependencies": {
-			"betajs-scoped": "https://github.com/betajs/betajs-scoped",
-			"betajs-shims": "https://github.com/betajs/betajs-shims"
-		},
-		"dependencies": {
-			"betajs": "https://github.com/betajs/betajs",
-			"betajs-browser": "https://github.com/betajs/betajs-browser",
-			"betajs-flash": "https://github.com/betajs/betajs-flash"
-		},
-		"compatability": {
-		      "Firefox": "32 - Latest",
-		      "Chrome": "18 - Latest",
-		      "Safari": "4 - Latest",
-		      "Opera": "25 - Latest",
-		      "Internet Explorer": "8 - Latest",
-			  "Edge": "12 - Latest",
-			  "iOS": "4.0 - Latest",
-			  "Android": "2.3 - Latest"
-		},
-		"tests": {
-			"Test Suite": "http://rawgit.com/betajs/betajs-media/master/tests/tests.html"
-		},
-		"cdn": {
-			"betajs-media.js": "http://cdn.rawgit.com/betajs/betajs-media/master/dist/betajs-media.js",
-			"betajs-media.min.js": "http://cdn.rawgit.com/betajs/betajs-media/master/dist/betajs-media.min.js",
-			"betajs-media-noscoped.js": "http://cdn.rawgit.com/betajs/betajs-media/master/dist/betajs-media-noscoped.js",
-			"betajs-media-noscoped.min.js": "http://cdn.rawgit.com/betajs/betajs-media/master/dist/betajs-media-noscoped.min.js"
-		}
-	}
+    "name": "betajs-media",
+    "version": "0.0.75",
+    "description": "BetaJS-Media is a JavaScript media framework",
+    "contributors": [
+        "Ziggeo",
+        "Oliver Friedmann"
+    ],
+    "devDependencies": {
+        "lodash": "",
+        "grunt": "",
+        "grunt-contrib-jshint": "",
+        "grunt-contrib-concat": "",
+        "grunt-contrib-uglify": "~2.3.0",
+        "grunt-contrib-clean": "",
+        "grunt-preprocess": "",
+        "grunt-closure-tools": "",
+        "grunt-node-qunit": "",
+        "qunit": "",
+        "grunt-contrib-connect": "",
+        "grunt-jsdoc": "",
+        "grunt-shell": "",
+        "grunt-template": "",
+        "grunt-githooks": "",
+        "grunt-betajs-docs-compile": "~0.0.19",
+        "betajs-scoped": "~0.0.13",
+        "betajs-compile": "~0.0.28",
+        "betajs-shims": "~0.0.12",
+        "betajs": "~1.0.136",
+        "betajs-browser": "~1.0.61",
+        "betajs-flash": "~0.0.18",
+        "js-beautify": ""
+    },
+    "main": "dist/betajs-media.js",
+    "repository": {
+        "type": "git",
+        "url": "git://github.com/betajs/betajs-media.git"
+    },
+    "meta": {
+        "sponsors": [
+            "Ziggeo",
+            "Browserstack"
+        ],
+        "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
+        "installdoc": "docsrc/common/install.md",
+        "summarydoc": "docsrc/common/summary.md",
+        "badges": {
+            "codeclimate": true,
+            "travis": false,
+            "npm": true,
+            "gitter": true
+        },
+        "credits": [
+            "TypedArray, From microphone to .WAV with: getUserMedia and Web Audio, (c) Thibault Imbert",
+            "Media Stream Recorder, https://github.com/streamproc/MediaStreamRecorder",
+            "Whammy Recorder, https://github.com/antimatter15/whammy"
+        ],
+        "weakDependencies": {
+            "betajs-scoped": "https://github.com/betajs/betajs-scoped",
+            "betajs-shims": "https://github.com/betajs/betajs-shims"
+        },
+        "dependencies": {
+            "betajs": "https://github.com/betajs/betajs",
+            "betajs-browser": "https://github.com/betajs/betajs-browser",
+            "betajs-flash": "https://github.com/betajs/betajs-flash"
+        },
+        "compatability": {
+            "Firefox": "32 - Latest",
+            "Chrome": "18 - Latest",
+            "Safari": "4 - Latest",
+            "Opera": "25 - Latest",
+            "Internet Explorer": "8 - Latest",
+            "Edge": "12 - Latest",
+            "iOS": "4.0 - Latest",
+            "Android": "2.3 - Latest"
+        },
+        "tests": {
+            "Test Suite": "http://rawgit.com/betajs/betajs-media/master/tests/tests.html"
+        },
+        "cdn": {
+            "betajs-media.js": "http://cdn.rawgit.com/betajs/betajs-media/master/dist/betajs-media.js",
+            "betajs-media.min.js": "http://cdn.rawgit.com/betajs/betajs-media/master/dist/betajs-media.min.js",
+            "betajs-media-noscoped.js": "http://cdn.rawgit.com/betajs/betajs-media/master/dist/betajs-media-noscoped.js",
+            "betajs-media-noscoped.min.js": "http://cdn.rawgit.com/betajs/betajs-media/master/dist/betajs-media-noscoped.min.js"
+        }
+    }
 }
