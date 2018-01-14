@@ -260,8 +260,12 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
                                 promise.asyncError(true);
                         } else if (this._element.networkState === this._element.NETWORK_IDLE)
                             promise.asyncSuccess(true);
-                        else if (this._element.networkState === this._element.NETWORK_LOADING && (Info.isEdge() || Info.isInternetExplorer()))
-                            promise.asyncSuccess(true);
+                        else if (this._element.networkState === this._element.NETWORK_LOADING) {
+                            if (Info.isEdge() || Info.isInternetExplorer())
+                                promise.asyncSuccess(true);
+                            else if (Info.isFirefox() && sources[0].src.indexOf("blob:") === 0)
+                                promise.asyncSuccess(true);
+                        }
                     },
                     delay: 50
                 });
