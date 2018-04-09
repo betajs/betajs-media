@@ -211,9 +211,9 @@ Scoped.define("module:WebRTC.Support", [
                  */
                 /*
                 if (options.video.frameRate) {
-                	opts.video.frameRate = {
-                		ideal: options.video.frameRate
-                	};
+                    opts.video.frameRate = {
+                        ideal: options.video.frameRate
+                    };
                 }
                 */
                 if (options.video.sourceId)
@@ -243,9 +243,9 @@ Scoped.define("module:WebRTC.Support", [
                     var mandatory = opts.video.mandatory;
                     return this.userMedia(opts).mapError(function(e) {
                         count--;
-                        if (e.name !== "ConstraintNotSatisfiedError")
+                        if (e.name !== "ConstraintNotSatisfiedError" && e.name !== "OverconstrainedError")
                             return e;
-                        var c = e.constraintName.toLowerCase();
+                        var c = (e.constraintName || e.constraint).toLowerCase();
                         Objs.iter(mandatory, function(value, key) {
                             var lkey = key.toLowerCase();
                             if (lkey.indexOf(c) >= 0) {
@@ -330,7 +330,7 @@ Scoped.define("module:WebRTC.Support", [
             video.muted = true;
             if (video.mozSrcObject !== undefined)
                 video.mozSrcObject = stream;
-            else if (Info.isSafari())
+            else if (Info.isSafari() || (Info.isChrome() && Info.chromeVersion() >= 65))
                 video.srcObject = stream;
             else
                 video.src = this.globals().URL.createObjectURL(stream);

@@ -14,6 +14,7 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
             constructor: function(options) {
                 inherited.constructor.call(this, options);
                 this._video = options.video;
+                this._localPlaybackRequested = options.localPlaybackRequested;
                 this._recording = false;
                 this._bound = false;
                 this._hasAudio = false;
@@ -163,10 +164,10 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
 
             setVolumeGain: function(volumeGain) {},
 
-            _dataAvailable: function(videoBlob, audioBlob) {
+            _dataAvailable: function(videoBlob, audioBlob, noUploading) {
                 if (this.destroyed())
                     return;
-                this.trigger("data", videoBlob, audioBlob);
+                this.trigger("data", videoBlob, audioBlob, noUploading);
             },
 
             destroy: function() {
@@ -205,9 +206,10 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
 Scoped.define("module:WebRTC.PeerRecorderWrapper", [
     "module:WebRTC.RecorderWrapper",
     "module:WebRTC.PeerRecorder",
+    "module:WebRTC.MediaRecorder",
     "browser:Info",
     "base:Async"
-], function(RecorderWrapper, PeerRecorder, Info, Async, scoped) {
+], function(RecorderWrapper, PeerRecorder, MediaRecorder, Info, Async, scoped) {
     return RecorderWrapper.extend({
         scoped: scoped
     }, {
@@ -219,20 +221,35 @@ Scoped.define("module:WebRTC.PeerRecorderWrapper", [
                 videoBitrate: this._options.videoBitrate,
                 audioBitrate: this._options.audioBitrate
             });
+            if (this._localPlaybackRequested && MediaRecorder.supported())
+                this.__localMediaRecorder = new MediaRecorder(this._stream);
             this._recorder.on("error", this._error, this);
         },
 
         _unboundMedia: function() {
             this._recorder.destroy();
+            if (this.__localMediaRecorder)
+                this.__localMediaRecorder.weakDestroy();
         },
 
         _startRecord: function(options) {
+            if (this.__localMediaRecorder)
+                this.__localMediaRecorder.start();
             return this._recorder.start(options.webrtcStreaming);
         },
 
         _stopRecord: function() {
             this._recorder.stop();
-            Async.eventually(this._dataAvailable, this, this.__stopDelay || this._options.webrtcStreaming.stopDelay || 0);
+            var localBlob = null;
+            if (this.__localMediaRecorder) {
+                this.__localMediaRecorder.once("data", function(blob) {
+                    localBlob = blob;
+                });
+                this.__localMediaRecorder.stop();
+            }
+            Async.eventually(function() {
+                this._dataAvailable(localBlob, null, true);
+            }, this, this.__stopDelay || this._options.webrtcStreaming.stopDelay || 0);
         },
 
         recordDelay: function(opts) {

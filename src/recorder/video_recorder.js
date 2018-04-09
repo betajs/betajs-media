@@ -193,6 +193,7 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
                     videoBitrate: this._options.videoBitrate,
                     audioBitrate: this._options.audioBitrate,
                     webrtcStreaming: this._options.webrtcStreaming,
+                    localPlaybackRequested: this._options.localPlaybackRequested,
                     screen: this._options.screen
                 });
                 this._recorder.on("bound", function() {
@@ -322,13 +323,13 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
 
             stopRecord: function(options) {
                 var promise = Promise.create();
-                this._recorder.once("data", function(videoBlob, audioBlob) {
+                this._recorder.once("data", function(videoBlob, audioBlob, noUploading) {
                     this.__localPlaybackSource = {
                         src: videoBlob,
                         audiosrc: audioBlob
                     };
                     var multiUploader = new MultiUploader();
-                    if (!this._options.simulate) {
+                    if (!this._options.simulate && !noUploading) {
                         if (videoBlob) {
                             multiUploader.addUploader(FileUploader.create(Objs.extend({
                                 source: videoBlob

@@ -1,10 +1,10 @@
 /*!
-betajs-media - v0.0.76 - 2018-01-13
+betajs-media - v0.0.77 - 2018-04-08
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
 /** @flow **//*!
-betajs-scoped - v0.0.17 - 2017-10-22
+betajs-scoped - v0.0.19 - 2018-04-07
 Copyright (c) Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -476,7 +476,7 @@ function newNamespace (opts/* : {tree ?: boolean, global ?: boolean, root ?: Obj
 	function nodeUnresolvedWatchers(node/* : Node */, base, result) {
 		node = node || nsRoot;
 		result = result || [];
-		if (!node.ready)
+		if (!node.ready && node.lazy.length === 0 && node.watchers.length > 0)
 			result.push(base);
 		for (var k in node.children) {
 			var c = node.children[k];
@@ -759,10 +759,7 @@ function newScope (parent, parentNS, rootNS, globalNS) {
 		resolve: function (namespaceLocator) {
 			var parts = namespaceLocator.split(":");
 			if (parts.length == 1) {
-				return {
-					namespace: privateNamespace,
-					path: parts[0]
-				};
+                throw ("The locator '" + parts[0] + "' requires a namespace.");
 			} else {
 				var binding = bindings[parts[0]];
 				if (!binding)
@@ -967,7 +964,7 @@ var Public = Helper.extend(rootScope, (function () {
 return {
 		
 	guid: "4b6878ee-cb6a-46b3-94ac-27d91f58d666",
-	version: '0.0.17',
+	version: '0.0.19',
 		
 	upgrade: Attach.upgrade,
 	attach: Attach.attach,
@@ -1009,7 +1006,7 @@ Public.exports();
 	return Public;
 }).call(this);
 /*!
-betajs-media - v0.0.76 - 2018-01-13
+betajs-media - v0.0.77 - 2018-04-08
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -1023,7 +1020,7 @@ Scoped.binding('flash', 'global:BetaJS.Flash');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.76"
+    "version": "0.0.77"
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.136');
@@ -2106,7 +2103,9 @@ Scoped.define("module:Player.FlashPlayer", [
     });
     return Cls;
 });
-Scoped.define("module:Player.Support", function() {
+Scoped.define("module:Player.Support", [
+    "base:Promise"
+], function(Promise) {
     return {
 
         resolutionToLabel: function(width, height) {
@@ -2117,6 +2116,35 @@ Scoped.define("module:Player.Support", function() {
             if (height < 500)
                 return "480p";
             return "HD";
+        },
+
+        videoFileInfo: function(file) {
+            try {
+                var video = document.createElement("video");
+                video.volume = 0;
+                video.muted = true;
+                video.preload = true;
+                var promise = Promise.create();
+                var failed = false;
+                var timer = setTimeout(function() {
+                    failed = true;
+                    promise.asyncError("Timeout");
+                }, 1000);
+                video.onloadeddata = function() {
+                    if (failed)
+                        return;
+                    clearTimeout(timer);
+                    promise.asyncSuccess({
+                        width: video.videoWidth,
+                        height: video.videoHeight,
+                        duration: video.duration
+                    });
+                };
+                video.src = (window.URL || window.webkitURL).createObjectURL(file);
+                return promise;
+            } catch (e) {
+                return Promise.error(e);
+            }
         }
 
     };
@@ -2521,6 +2549,11 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
             },
 
             _fullscreenElement: function() {
+                //fullscreen issue was present on Chromium based browsers. Could recreate on Iron and Chrome.
+                if (Info.isChromiumBased()) {
+                    return this._element.parentNode.parentNode.parentNode;
+                }
+
                 return Info.isFirefox() ? this._element.parentElement : this._element;
             },
 
@@ -3591,6 +3624,7 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
                     videoBitrate: this._options.videoBitrate,
                     audioBitrate: this._options.audioBitrate,
                     webrtcStreaming: this._options.webrtcStreaming,
+                    localPlaybackRequested: this._options.localPlaybackRequested,
                     screen: this._options.screen
                 });
                 this._recorder.on("bound", function() {
@@ -3720,13 +3754,13 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
 
             stopRecord: function(options) {
                 var promise = Promise.create();
-                this._recorder.once("data", function(videoBlob, audioBlob) {
+                this._recorder.once("data", function(videoBlob, audioBlob, noUploading) {
                     this.__localPlaybackSource = {
                         src: videoBlob,
                         audiosrc: audioBlob
                     };
                     var multiUploader = new MultiUploader();
-                    if (!this._options.simulate) {
+                    if (!this._options.simulate && !noUploading) {
                         if (videoBlob) {
                             multiUploader.addUploader(FileUploader.create(Objs.extend({
                                 source: videoBlob
@@ -4606,6 +4640,7 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
             constructor: function(options) {
                 inherited.constructor.call(this, options);
                 this._video = options.video;
+                this._localPlaybackRequested = options.localPlaybackRequested;
                 this._recording = false;
                 this._bound = false;
                 this._hasAudio = false;
@@ -4755,10 +4790,10 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
 
             setVolumeGain: function(volumeGain) {},
 
-            _dataAvailable: function(videoBlob, audioBlob) {
+            _dataAvailable: function(videoBlob, audioBlob, noUploading) {
                 if (this.destroyed())
                     return;
-                this.trigger("data", videoBlob, audioBlob);
+                this.trigger("data", videoBlob, audioBlob, noUploading);
             },
 
             destroy: function() {
@@ -4797,9 +4832,10 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
 Scoped.define("module:WebRTC.PeerRecorderWrapper", [
     "module:WebRTC.RecorderWrapper",
     "module:WebRTC.PeerRecorder",
+    "module:WebRTC.MediaRecorder",
     "browser:Info",
     "base:Async"
-], function(RecorderWrapper, PeerRecorder, Info, Async, scoped) {
+], function(RecorderWrapper, PeerRecorder, MediaRecorder, Info, Async, scoped) {
     return RecorderWrapper.extend({
         scoped: scoped
     }, {
@@ -4811,20 +4847,35 @@ Scoped.define("module:WebRTC.PeerRecorderWrapper", [
                 videoBitrate: this._options.videoBitrate,
                 audioBitrate: this._options.audioBitrate
             });
+            if (this._localPlaybackRequested && MediaRecorder.supported())
+                this.__localMediaRecorder = new MediaRecorder(this._stream);
             this._recorder.on("error", this._error, this);
         },
 
         _unboundMedia: function() {
             this._recorder.destroy();
+            if (this.__localMediaRecorder)
+                this.__localMediaRecorder.weakDestroy();
         },
 
         _startRecord: function(options) {
+            if (this.__localMediaRecorder)
+                this.__localMediaRecorder.start();
             return this._recorder.start(options.webrtcStreaming);
         },
 
         _stopRecord: function() {
             this._recorder.stop();
-            Async.eventually(this._dataAvailable, this, this.__stopDelay || this._options.webrtcStreaming.stopDelay || 0);
+            var localBlob = null;
+            if (this.__localMediaRecorder) {
+                this.__localMediaRecorder.once("data", function(blob) {
+                    localBlob = blob;
+                });
+                this.__localMediaRecorder.stop();
+            }
+            Async.eventually(function() {
+                this._dataAvailable(localBlob, null, true);
+            }, this, this.__stopDelay || this._options.webrtcStreaming.stopDelay || 0);
         },
 
         recordDelay: function(opts) {
@@ -5254,9 +5305,9 @@ Scoped.define("module:WebRTC.Support", [
                  */
                 /*
                 if (options.video.frameRate) {
-                	opts.video.frameRate = {
-                		ideal: options.video.frameRate
-                	};
+                    opts.video.frameRate = {
+                        ideal: options.video.frameRate
+                    };
                 }
                 */
                 if (options.video.sourceId)
@@ -5286,9 +5337,9 @@ Scoped.define("module:WebRTC.Support", [
                     var mandatory = opts.video.mandatory;
                     return this.userMedia(opts).mapError(function(e) {
                         count--;
-                        if (e.name !== "ConstraintNotSatisfiedError")
+                        if (e.name !== "ConstraintNotSatisfiedError" && e.name !== "OverconstrainedError")
                             return e;
-                        var c = e.constraintName.toLowerCase();
+                        var c = (e.constraintName || e.constraint).toLowerCase();
                         Objs.iter(mandatory, function(value, key) {
                             var lkey = key.toLowerCase();
                             if (lkey.indexOf(c) >= 0) {
@@ -5373,7 +5424,7 @@ Scoped.define("module:WebRTC.Support", [
             video.muted = true;
             if (video.mozSrcObject !== undefined)
                 video.mozSrcObject = stream;
-            else if (Info.isSafari())
+            else if (Info.isSafari() || (Info.isChrome() && Info.chromeVersion() >= 65))
                 video.srcObject = stream;
             else
                 video.src = this.globals().URL.createObjectURL(stream);

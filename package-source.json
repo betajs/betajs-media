@@ -1,6 +1,6 @@
 {
     "name": "betajs-media",
-    "version": "0.0.76",
+    "version": "0.0.77",
     "description": "BetaJS-Media is a JavaScript media framework",
     "contributors": [
         "Ziggeo",
@@ -32,6 +32,9 @@
         "js-beautify": ""
     },
     "main": "dist/betajs-media.js",
+    "scripts": {
+        "relink": "npm link betajs && npm link betajs-compile && npm link betajs-scoped && npm link betajs-shims && npm link betajs-browser && npm link betajs-flash"
+    },
     "repository": {
         "type": "git",
         "url": "git://github.com/betajs/betajs-media.git"

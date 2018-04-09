@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+		<script src="../node_modules/betajs-shims/dist/betajs-shims.js"></script>		
+        <script src="../node_modules/betajs-scoped/dist/scoped.js"></script>
+        <script src="../node_modules/betajs/dist/beta-noscoped.js"></script>
+        <script src="../node_modules/betajs-browser/dist/betajs-browser-noscoped.js"></script>
+        <script src="../node_modules/betajs-flash/dist/betajs-flash-noscoped.js"></script>
+		<script src="../dist/betajs-media-noscoped.js"></script>
+	</head>
+	<body>
+		<input type="file" id="file" />
+
+		<script>
+			document.getElementById("file").onchange = function () {
+			    var file = document.getElementById("file").files[0];
+			    BetaJS.Media.Player.Support.videoFileInfo(file).success(function (data) {
+			        console.log(data);
+				});
+            };
+		</script>
+	</body>
+</html>
