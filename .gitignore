@@ -11,3 +11,4 @@ BrowserStackLocal
 jsdoc.conf.json
 tests/server/temp
 test-delete.html
+package-lock.json

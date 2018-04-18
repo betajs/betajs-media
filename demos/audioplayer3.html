@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.js"></script>
+		<script src="../node_modules/betajs-shims/dist/betajs-shims.js"></script>		
+        <script src="../node_modules/betajs-scoped/dist/scoped.js"></script>
+        <script src="../node_modules/betajs/dist/beta-noscoped.js"></script>
+        <script src="../node_modules/betajs-browser/dist/betajs-browser-noscoped.js"></script>
+        <script src="../node_modules/betajs-flash/dist/betajs-flash-noscoped.js"></script>
+        <script src="../dist/betajs-media-noscoped.js"></script>
+	</head>
+	<body>
+		<audio style="width:50%">
+		</audio>
+        <button id="play">Play</button>
+        <button id="pause">Pause</button>
+		<script>
+	        BetaJS.Flash.options = {
+                flashFile : "../node_modules/betajs-flash/dist/betajs-flash.swf",
+                forceReload : true
+            };
+		    BetaJS.Media.AudioPlayer.AudioPlayerWrapper.create({
+		    	element: $("audio").get(0),
+		    	source: "audio.mp3"
+		    	//forceflash: true
+		    }).success(function (instance) {
+		    	document.title = "Success";
+		    	$("#play").on("click", function () {
+		    		instance.play();
+		    	});
+                $("#pause").on("click", function () {
+                    instance.pause();
+                });
+                if (instance.error())
+                	alert(instance.error());
+                instance.on("error", function (error) {
+                	alert(error);
+                });
+		    }).error(function () {
+		    	document.title = "Error";
+		    });
+		</script>
+	</body>
+</html>
+
