@@ -1,4 +1,4 @@
-Scoped.define("module:AudioPlayer.VideoPlayerWrapper", [
+Scoped.define("module:Player.VideoPlayerWrapper", [
     "base:Classes.OptimisticConditionalInstance",
     "base:Events.EventsMixin",
     "base:Types",
