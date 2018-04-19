@@ -219,7 +219,8 @@ Scoped.define("module:WebRTC.PeerRecorderWrapper", [
                 recorderWidth: this._options.recordResolution.width,
                 recorderHeight: this._options.recordResolution.height,
                 videoBitrate: this._options.videoBitrate,
-                audioBitrate: this._options.audioBitrate
+                audioBitrate: this._options.audioBitrate,
+                audioonly: !this._options.recordVideo
             });
             if (this._localPlaybackRequested && MediaRecorder.supported())
                 this.__localMediaRecorder = new MediaRecorder(this._stream);
@@ -271,8 +272,10 @@ Scoped.define("module:WebRTC.PeerRecorderWrapper", [
             supported: function(options) {
                 if (!inherited.supported.call(this, options))
                     return false;
+                /*
                 if (!options.recordVideo)
                     return false;
+                    */
                 if (options.screen && Info.isFirefox())
                     return false;
                 return options.webrtcStreaming && PeerRecorder.supported();
@@ -294,7 +297,8 @@ Scoped.define("module:WebRTC.MediaRecorderWrapper", [
         _boundMedia: function() {
             this._recorder = new MediaRecorder(this._stream, {
                 videoBitrate: this._options.videoBitrate,
-                audioBitrate: this._options.audioBitrate
+                audioBitrate: this._options.audioBitrate,
+                audioonly: !this._options.recordVideo
             });
             this._recorder.on("data", function(blob) {
                 this._dataAvailable(blob);
@@ -327,8 +331,10 @@ Scoped.define("module:WebRTC.MediaRecorderWrapper", [
             supported: function(options) {
                 if (!inherited.supported.call(this, options))
                     return false;
+                /*
                 if (!options.recordVideo)
                     return false;
+                    */
                 return MediaRecorder.supported();
             }
 

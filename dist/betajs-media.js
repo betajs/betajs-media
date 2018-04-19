@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.81 - 2018-04-18
+betajs-media - v0.0.82 - 2018-04-19
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -1006,7 +1006,7 @@ Public.exports();
 	return Public;
 }).call(this);
 /*!
-betajs-media - v0.0.81 - 2018-04-18
+betajs-media - v0.0.82 - 2018-04-19
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -1020,7 +1020,7 @@ Scoped.binding('flash', 'global:BetaJS.Flash');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.81"
+    "version": "0.0.82"
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.136');
@@ -1680,6 +1680,785 @@ Scoped.define("module:AudioPlayer.FlashPlayer", [
 
 
 // https://help.adobe.com/en_US/ActionScript/3.0_ProgrammingAS3/WS5b3ccc516d4fbf351e63e3d118a9b90204-7d12.html
+Scoped.define("module:AudioRecorder.AudioRecorderWrapper", [
+    "base:Classes.ConditionalInstance",
+    "base:Events.EventsMixin",
+    "base:Objs",
+    "base:Promise"
+], function(ConditionalInstance, EventsMixin, Objs, Promise, scoped) {
+    return ConditionalInstance.extend({
+        scoped: scoped
+    }, [EventsMixin, function(inherited) {
+        return {
+
+            constructor: function(options) {
+                inherited.constructor.call(this, options);
+                this._element = this._options.element;
+                this.ready = Promise.create();
+            },
+
+            destroy: function() {
+                inherited.destroy.call(this);
+            },
+
+            bindMedia: function() {
+                return this._bindMedia();
+            },
+
+            _bindMedia: function() {},
+
+            unbindMedia: function() {
+                return this._unbindMedia();
+            },
+
+            _unbindMedia: function() {},
+
+            softwareDependencies: function() {
+                return this._softwareDependencies();
+            },
+
+            _softwareDependencies: function() {},
+
+            soundLevel: function() {},
+            testSoundLevel: function(activate) {},
+
+            getVolumeGain: function() {},
+            setVolumeGain: function(volumeGain) {},
+
+            enumerateDevices: function() {},
+            currentDevices: function() {},
+            setCurrentDevices: function(devices) {},
+
+            startRecord: function(options) {},
+            stopRecord: function(options) {},
+
+            isFlash: function() {
+                return false;
+            },
+
+            supportsLocalPlayback: function() {
+                return false;
+            },
+
+            localPlaybackSource: function() {
+                return null;
+            },
+
+            recordDelay: function(opts) {
+                return 0;
+            }
+
+        };
+    }], {
+
+        _initializeOptions: function(options) {
+            return Objs.extend({
+                forceflash: false,
+                noflash: false,
+                recordVideo: false,
+                recordAudio: true
+            }, options);
+        }
+
+    });
+});
+
+
+Scoped.define("module:AudioRecorder.WebRTCAudioRecorderWrapper", [
+    "module:AudioRecorder.AudioRecorderWrapper",
+    "module:WebRTC.RecorderWrapper",
+    "module:WebRTC.Support",
+    "module:WebRTC.AudioAnalyser",
+    "browser:Dom",
+    "browser:Info",
+    "base:Time",
+    "base:Objs",
+    "browser:Upload.FileUploader",
+    "browser:Upload.MultiUploader",
+    "base:Promise"
+], function(AudioRecorderWrapper, RecorderWrapper, Support, AudioAnalyser, Dom, Info, Time, Objs, FileUploader, MultiUploader, Promise, scoped) {
+    return AudioRecorderWrapper.extend({
+        scoped: scoped
+    }, function(inherited) {
+        return {
+
+            constructor: function(options) {
+                inherited.constructor.call(this, options);
+                if (this._element.tagName.toLowerCase() !== "audio")
+                    this._element = Dom.changeTag(this._element, "audio");
+                this._recorder = RecorderWrapper.create({
+                    video: this._element,
+                    recordVideo: false,
+                    recordAudio: this._options.recordAudio,
+                    audioBitrate: this._options.audioBitrate,
+                    webrtcStreaming: this._options.webrtcStreaming,
+                    localPlaybackRequested: this._options.localPlaybackRequested
+                });
+                this._recorder.on("bound", function() {
+                    if (this._analyser)
+                        this.testSoundLevel(true);
+                }, this);
+                this._recorder.on("error", function(errorName, errorData) {
+                    this.trigger("error", errorName, errorData);
+                }, this);
+                this.ready.asyncSuccess(true);
+            },
+
+            destroy: function() {
+                if (this._analyser)
+                    this._analyser.weakDestroy();
+                this._recorder.destroy();
+                inherited.destroy.call(this);
+            },
+
+            recordDelay: function(opts) {
+                return this._recorder.recordDelay(opts);
+            },
+
+            _bindMedia: function() {
+                return this._recorder.bindMedia();
+            },
+
+            _unbindMedia: function() {
+                return this._recorder.unbindMedia();
+            },
+
+            getVolumeGain: function() {
+                return this._recorder.getVolumeGain();
+            },
+
+            setVolumeGain: function(volumeGain) {
+                this._recorder.setVolumeGain(volumeGain);
+            },
+
+            soundLevel: function() {
+                if (!this._analyser && this._recorder && this._recorder.stream())
+                    this._analyser = new AudioAnalyser(this._recorder.stream());
+                return this._analyser ? this._analyser.soundLevel() : 0.0;
+            },
+
+            testSoundLevel: function(activate) {
+                if (this._analyser) {
+                    this._analyser.weakDestroy();
+                    delete this._analyser;
+                }
+                if (activate)
+                    this._analyser = new AudioAnalyser(this._recorder.stream());
+            },
+
+            currentDevices: function() {
+                return {
+                    audio: this._currentAudio
+                };
+            },
+
+            enumerateDevices: function() {
+                return Support.enumerateMediaSources().success(function(result) {
+                    if (!this._currentAudio)
+                        this._currentAudio = Objs.ithKey(result.audio);
+                }, this);
+            },
+
+            setCurrentDevices: function(devices) {
+                if (devices && devices.audio)
+                    this._recorder.selectMicrophone(devices.audio);
+            },
+
+            startRecord: function(options) {
+                this.__localPlaybackSource = null;
+                return this._recorder.startRecord(options);
+            },
+
+            stopRecord: function(options) {
+                var promise = Promise.create();
+                this._recorder.once("data", function(videoBlob, audioBlob, noUploading) {
+                    this.__localPlaybackSource = {
+                        src: audioBlob || videoBlob
+                    };
+                    var multiUploader = new MultiUploader();
+                    if (!this._options.simulate && !noUploading) {
+                        if (videoBlob) {
+                            multiUploader.addUploader(FileUploader.create(Objs.extend({
+                                source: audioBlob || videoBlob
+                            }, options.audio)));
+                        }
+                    }
+                    promise.asyncSuccess(multiUploader);
+                }, this);
+                this._recorder.stopRecord();
+                return promise;
+            },
+
+            supportsLocalPlayback: function() {
+                return !!this.__localPlaybackSource.src;
+            },
+
+            localPlaybackSource: function() {
+                return this.__localPlaybackSource;
+            },
+
+            _softwareDependencies: function() {
+                return Promise.value(true);
+            }
+
+        };
+    }, {
+
+        supported: function(options) {
+            if (options.forceflash)
+                return false;
+            if (!RecorderWrapper.anySupport(options))
+                return false;
+            return true;
+        }
+
+    });
+});
+
+
+
+Scoped.define("module:AudioRecorder.FlashAudioRecorderWrapper", [
+    "module:AudioRecorder.AudioRecorderWrapper",
+    "module:Flash.FlashAudioRecorder",
+    "browser:Dom",
+    "browser:Info",
+    "base:Promise",
+    "base:Objs",
+    "base:Timers.Timer",
+    "browser:Upload.CustomUploader",
+    "browser:Upload.MultiUploader"
+], function(AudioRecorderWrapper, FlashAudioRecorder, Dom, Info, Promise, Objs, Timer, CustomUploader, MultiUploader, scoped) {
+    return AudioRecorderWrapper.extend({
+        scoped: scoped
+    }, function(inherited) {
+        return {
+
+            constructor: function(options) {
+                inherited.constructor.call(this, options);
+                if (this._element.tagName.toLowerCase() !== "div")
+                    this._element = Dom.changeTag(this._element, "div");
+                this._recorder = new FlashAudioRecorder(this._element, {
+                    microphonecodec: this._options.rtmpMicrophoneCodec,
+                    audioRate: this._options.audioBitrate ? Math.floor(this._options.audioBitrate / 1000) : undefined
+                });
+                this._recorder.ready.forwardCallback(this.ready);
+                this._recorder.on("require_display", function() {
+                    this.trigger("require_display");
+                }, this);
+                this._recorder.on("endpoint_connectivity", function(endpoint, connectivity) {
+                    this.trigger("endpoint_connectivity", endpoint, connectivity);
+                }, this);
+            },
+
+            destroy: function() {
+                this._recorder.destroy();
+                inherited.destroy.call(this);
+            },
+
+            _bindMedia: function() {
+                return this._recorder.bindMedia(this._options.flashFullSecurityDialog);
+            },
+
+            _unbindMedia: function() {
+                return this._recorder.unbindMedia();
+            },
+
+            soundLevel: function() {
+                var sl = this._recorder.soundLevel();
+                return sl <= 1 ? 1.0 : (1.0 + (sl - 1) / 100);
+            },
+
+            getVolumeGain: function() {
+                return this._recorder.getVolumeGain();
+            },
+
+            setVolumeGain: function(volumeGain) {
+                this._recorder.setVolumeGain(volumeGain);
+            },
+
+            testSoundLevel: function(activate) {
+                this._recorder.testSoundLevel(activate);
+            },
+
+            enumerateDevices: function() {
+                var result = this._recorder.enumerateDevices();
+                return Promise.value({
+                    audioCount: Objs.count(result.audios),
+                    audio: Objs.map(result.audios, function(value, key) {
+                        return {
+                            id: key,
+                            label: value
+                        };
+                    })
+                });
+            },
+
+            currentDevices: function() {
+                return {
+                    audio: this._recorder.currentMicrophone()
+                };
+            },
+
+            setCurrentDevices: function(devices) {
+                if (devices && devices.audio)
+                    this._recorder.selectMicrophone(devices.audio);
+            },
+
+            startRecord: function(options) {
+                if (this._options.simulate)
+                    return Promise.value(true);
+                var self = this;
+                var ctx = {};
+                var promise = Promise.create();
+                this._recorder.on("recording", function() {
+                    promise.asyncSuccess();
+                    self._recorder.off(null, null, ctx);
+                }, ctx).on("error", function(s) {
+                    promise.asyncError(s);
+                    self._recorder.off(null, null, ctx);
+                }, ctx);
+                this._recorder.startRecord(options.rtmp);
+                return promise;
+            },
+
+            stopRecord: function(options) {
+                if (this._options.simulate)
+                    return Promise.value(new MultiUploader());
+                var self = this;
+                var ctx = {};
+                var uploader = new CustomUploader();
+                var timer = null;
+                timer = new Timer({
+                    delay: 100,
+                    context: this,
+                    fire: function() {
+                        if (!this._recorder || this._recorder.destroyed()) {
+                            timer.destroy();
+                            return;
+                        }
+                        var status = this._recorder.uploadStatus();
+                        uploader.progressCallback(status.total - status.remaining, status.total);
+                    }
+                });
+                this._recorder.on("finished", function() {
+                    uploader.successCallback(true);
+                    self._recorder.off(null, null, ctx);
+                    timer.weakDestroy();
+                }, ctx).on("error", function(s) {
+                    uploader.errorCallback(s);
+                    self._recorder.off(null, null, ctx);
+                    timer.weakDestroy();
+                }, ctx);
+                this._recorder.stopRecord();
+                return Promise.create(uploader);
+            },
+
+            isFlash: function() {
+                return true;
+            },
+
+            _softwareDependencies: function() {
+                return Info.flash().installed() ? Promise.value(true) : Promise.error([{
+                    "title": "Adobe Flash",
+                    "execute": function() {
+                        window.open("https://get.adobe.com/flashplayer");
+                    }
+                }]);
+            }
+
+        };
+    }, {
+
+        supported: function(options) {
+            return !Info.isMobile() && !options.noflash && Info.flash().supported() && !options.screen;
+        }
+
+    });
+});
+
+
+Scoped.extend("module:AudioRecorder.AudioRecorderWrapper", [
+    "module:AudioRecorder.AudioRecorderWrapper",
+    "module:AudioRecorder.WebRTCAudioRecorderWrapper"
+], function(AudioRecorderWrapper, WebRTCAudioRecorderWrapper) {
+    AudioRecorderWrapper.register(WebRTCAudioRecorderWrapper, 2);
+    return {};
+});
+
+
+Scoped.extend("module:AudioRecorder.AudioRecorderWrapper", [
+    "module:AudioRecorder.AudioRecorderWrapper",
+    "module:AudioRecorder.FlashAudioRecorderWrapper"
+], function(AudioRecorderWrapper, FlashAudioRecorderWrapper) {
+    AudioRecorderWrapper.register(FlashAudioRecorderWrapper, 1);
+    return {};
+});
+Scoped.define("module:Flash.FlashAudioRecorder", [
+    "browser:DomExtend.DomExtension",
+    "browser:Dom",
+    "browser:Info",
+    "flash:FlashClassRegistry",
+    "flash:FlashEmbedding",
+    "base:Strings",
+    "base:Async",
+    "base:Objs",
+    "base:Functions",
+    "base:Types",
+    "base:Timers.Timer",
+    "base:Time",
+    "base:Promise",
+    "base:Events.EventsMixin",
+    "module:Recorder.PixelSampleMixin"
+], function(Class, Dom, Info, FlashClassRegistry, FlashEmbedding, Strings, Async, Objs, Functions, Types, Timer, Time, Promise, EventsMixin, PixelSampleMixin, scoped) {
+    var Cls = Class.extend({
+        scoped: scoped
+    }, [EventsMixin, PixelSampleMixin, function(inherited) {
+        return {
+
+            constructor: function(element, attrs) {
+                inherited.constructor.call(this, element, attrs);
+                this._embedding = this.auto_destroy(new FlashEmbedding(element, {
+                    registry: this.cls.flashRegistry(),
+                    wrap: true,
+                    debug: false,
+                    hasEmbedding: this.readAttr("hasembedding") || false,
+                    namespace: this.readAttr("embednamespace") || null
+                }, {
+                    parentBgcolor: true,
+                    fixHalfPixels: true
+                }));
+                this._flashObjs = {};
+                this.ready = Promise.create();
+                this.__status = "idle";
+                this.__audioRate = this.readAttr('audiorate') || 44;
+                this.__audioQuality = this.readAttr('audioquality') || 10;
+                this.__microphoneCodec = this.readAttr("microphonecodec") || 'speex';
+                this.__defaultGain = 55;
+                this._embedding.ready(this.__initializeEmbedding, this);
+            },
+
+            __initializeEmbedding: function() {
+                this.__hasMicrophoneActivity = false;
+                this._flashObjs.main = this._embedding.flashMain();
+                this._flashObjs.stage = this._flashObjs.main.get("stage");
+                this._flashObjs.stage.set("scaleMode", "noScale");
+                this._flashObjs.stage.set("align", "TL");
+                this._flashObjs.Microphone = this._embedding.getClass("flash.media.Microphone");
+                this._flashObjs.microphone = !Types.is_empty(this._flashObjs.Microphone.get('names').length > 0) ? this._flashObjs.Microphone.getMicrophone(0) : null;
+                this.setMicrophoneProfile();
+                this._currentMicrophone = 0;
+                this._flashObjs.Security = this._embedding.getClass("flash.system.Security");
+                this.ready.asyncSuccess(this);
+                this.auto_destroy(new Timer({
+                    delay: 100,
+                    fire: this._fire,
+                    context: this
+                }));
+            },
+
+            isAccessGranted: function() {
+                try {
+                    return (!this._flashObjs.microphone || !this._flashObjs.microphone.get('muted'));
+                } catch (e) {
+                    return false;
+                }
+            },
+
+            isSecurityDialogOpen: function() {
+                var dummy = this._embedding.newObject("flash.display.BitmapData", 1, 1);
+                var open = false;
+                try {
+                    dummy.draw(this._flashObjs.stage);
+                } catch (e) {
+                    open = true;
+                }
+                dummy.dispose();
+                dummy.destroy();
+                return open;
+            },
+
+            openSecurityDialog: function(fullSecurityDialog) {
+                this.trigger("require_display");
+                this._flashObjs.Security.showSettings("privacy");
+            },
+
+            grantAccess: function(fullSecurityDialog, allowDeny) {
+                var promise = Promise.create();
+                var timer = new Timer({
+                    fire: function() {
+                        if (this.destroyed()) {
+                            timer.destroy();
+                            return;
+                        }
+                        if (this.isSecurityDialogOpen())
+                            return;
+                        if (this.isAccessGranted()) {
+                            timer.destroy();
+                            promise.asyncSuccess(true);
+                        } else {
+                            if (allowDeny) {
+                                timer.destroy();
+                                promise.asyncError(true);
+                            } else
+                                this.openSecurityDialog(fullSecurityDialog);
+                        }
+                    },
+                    context: this,
+                    delay: 10,
+                    start: true
+                });
+                return promise;
+            },
+
+            bindMedia: function(fullSecurityDialog, allowDeny) {
+                return this.grantAccess(fullSecurityDialog, allowDeny).mapSuccess(function() {
+                    this._mediaBound = true;
+                }, this);
+            },
+
+            unbindMedia: function() {
+                this._mediaBound = false;
+            },
+
+            enumerateDevices: function() {
+                return {
+                    audios: this._flashObjs.Microphone.get('names')
+                };
+            },
+
+            selectMicrophone: function(index) {
+                if (this._flashObjs.microphone)
+                    this._flashObjs.microphone.weakDestroy();
+                this.__hasMicrophoneActivity = false;
+                this.__microphoneActivityTime = null;
+                this._flashObjs.microphone = this._flashObjs.Microphone.getMicrophone(index);
+                this._currentMicrophone = index;
+                this.setMicrophoneProfile(this._currentMicrophoneProfile);
+            },
+
+            currentMicrophone: function() {
+                return this._currentMicrophone;
+            },
+
+            microphoneInfo: function() {
+                return this._flashObjs.microphone ? {
+                    muted: this._flashObjs.microphone.get("muted"),
+                    name: this._flashObjs.microphone.get("name"),
+                    activityLevel: this._flashObjs.microphone.get("activityLevel"),
+                    gain: this._flashObjs.microphone.get("gain"),
+                    rate: this._flashObjs.microphone.get("rate"),
+                    encodeQuality: this._flashObjs.microphone.get("encodeQuality"),
+                    codec: this._flashObjs.microphone.get("codec"),
+                    hadActivity: this.__hadMicrophoneActivity,
+                    inactivityTime: this.__microphoneActivityTime ? Time.now() - this.__microphoneActivityTime : null
+                } : {};
+            },
+
+            setMicrophoneProfile: function(profile) {
+                if (!this._flashObjs.microphone)
+                    return;
+                profile = profile || {};
+                this._flashObjs.microphone.setLoopBack(profile.loopback || false);
+                this._flashObjs.microphone.set("gain", profile.gain || this.__defaultGain);
+                this._flashObjs.microphone.setSilenceLevel(profile.silenceLevel || 0);
+                this._flashObjs.microphone.setUseEchoSuppression(profile.echoSuppression || false);
+                this._flashObjs.microphone.set("rate", profile.rate || this.__audioRate);
+                this._flashObjs.microphone.set("encodeQuality", profile.encodeQuality || this.__audioQuality);
+                this._flashObjs.microphone.set("codec", profile.codec || this.__microphoneCodec);
+                this._currentMicrophoneProfile = profile;
+            },
+
+            getVolumeGain: function() {
+                var gain = this._mediaBound ? this._flashObjs.micropone.get("gain") : 55;
+                return gain / 55.0;
+            },
+
+            setVolumeGain: function(volumeGain) {
+                this.__defaultGain = Math.min(Math.max(0, Math.round(volumeGain * 55)), 100);
+                if (this._mediaBound && this._flashObjs.microphone)
+                    this._flashObjs.microphone.set("gain", this.__defaultGain);
+            },
+
+            testSoundLevel: function(activate) {
+                this.setMicrophoneProfile(activate ? {
+                    loopback: true,
+                    gain: 55,
+                    silenceLevel: 100,
+                    echoSuppression: true
+                } : {});
+            },
+
+            soundLevel: function() {
+                return this._flashObjs.microphone ? this._flashObjs.microphone.get("activityLevel") : 0;
+            },
+
+            _fire: function() {
+                if (!this._mediaBound)
+                    return;
+                this.__hadMicrophoneActivity = this.__hadMicrophoneActivity || (this._flashObjs.microphone && this._flashObjs.microphone.get("activityLevel") > 0);
+                if (this._flashObjs.microphone && this._flashObjs.microphone.get("activityLevel") > 0)
+                    this.__microphoneActivityTime = Time.now();
+            },
+
+            _error: function(s) {
+                this.__status = "error";
+                this.trigger("error", s);
+            },
+
+            _status: function(s) {
+                if (s && s !== this.__status) {
+                    this.__status = s;
+                    this.trigger("status", s);
+                    this.trigger(s);
+                }
+                return this.__status;
+            },
+
+            __newCallback: function(endpoint, endpoints) {
+                var active = true;
+                var timer = null;
+                var badEndpoint = function() {
+                    clearTimeout(timer);
+                    if (!active)
+                        return;
+                    active = false;
+                    this.trigger("endpoint_connectivity", this.__endpoint, -1);
+                    if (endpoints.length > 0) {
+                        endpoint = endpoints.shift();
+                        this._flashObjs.connection.closeVoid();
+                        this._flashObjs.connection.destroy();
+                        this._flashObjs.connection = this._embedding.newObject("flash.net.NetConnection");
+                        this._flashObjs.connection.addEventListener("netStatus", this.__newCallback(endpoint, endpoints));
+                        this.__endpoint = endpoint;
+                        this._flashObjs.connection.connectVoid(endpoint.serverUrl);
+                    } else
+                        this._error("Could not connect to server");
+                };
+                var self = this;
+                timer = setTimeout(function() {
+                    badEndpoint.call(self);
+                }, 10000);
+                return this._embedding.newCallback(Functions.as_method(function(event) {
+                    if (!active)
+                        return;
+                    var code = event.get("info").code;
+                    if (code === "NetConnection.Connect.Closed" && this._status() === 'recording') {
+                        active = false;
+                        this._error("Connection to server interrupted.");
+                        return;
+                    }
+                    if ((code === "NetConnection.Connect.Success" && this._status() !== 'connecting') ||
+                        (code === "NetConnection.Connect.Closed" && this._status() === 'connecting') ||
+                        (code === "NetConnection.Connect.Failed" && this._status() === 'connecting')) {
+                        badEndpoint.call(this);
+                        return;
+                    }
+                    if (code === "NetConnection.Connect.Closed" && this._status() === 'uploading') {
+                        this._status('finished');
+                        return;
+                    }
+                    if (code === "NetConnection.Connect.Success" && this._status() === 'connecting') {
+                        this.trigger("endpoint_connectivity", this.__endpoint, 1);
+                        clearTimeout(timer);
+                        this._flashObjs.stream = this._embedding.newObject("flash.net.NetStream", this._flashObjs.connection);
+                        this._flashObjs.stream.addEventListener("netStatus", this._embedding.newCallback(Functions.as_method(function(event) {
+                            var code = event.get("info").code;
+                            if (code === "NetStream.Record.Start") {
+                                this._status('recording');
+                                return;
+                            }
+                            if (code === "NetStream.Play.StreamNotFound") {
+                                this._flashObjs.stream.closeVoid();
+                                if (this._status() !== "none")
+                                    this._error("Stream not found");
+                                return;
+                            }
+                            if (code === "NetStream.Unpublish.Success" ||
+                                (this._status() === "uploading" && code === "NetStream.Buffer.Empty" &&
+                                    this.__streamType === "flv" && this._flashObjs.stream.get('bufferLength') === 0)) {
+                                this._flashObjs.stream.closeVoid();
+                                this._flashObjs.stream.destroy();
+                                this._flashObjs.stream = null;
+                                this._flashObjs.connection.closeVoid();
+                                this._flashObjs.connection.destroy();
+                                this._flashObjs.connection = null;
+                                this._status('finished');
+                            }
+                        }, this)));
+                        this._flashObjs.stream.set("bufferTime", 120);
+                        this._flashObjs.stream.attachAudioVoid(this._flashObjs.microphone);
+                        this._flashObjs.stream.publish(endpoint.streamName, "record");
+                    }
+                }, this));
+            },
+
+            startRecord: function(endpoints) {
+                if (arguments.length > 1) {
+                    endpoints = {
+                        serverUrl: endpoints,
+                        streamName: arguments[1]
+                    };
+                }
+                if (!Types.is_array(endpoints))
+                    endpoints = [endpoints];
+                this._status("connecting");
+                var endpoint = endpoints.shift();
+                var cb = this.__newCallback(endpoint, endpoints);
+                this._flashObjs.connection = this._embedding.newObject("flash.net.NetConnection");
+                this._flashObjs.connection.addEventListener("netStatus", cb);
+                this.__endpoint = endpoint;
+                this._flashObjs.connection.connectVoid(endpoint.serverUrl);
+            },
+
+            stopRecord: function() {
+                if (this._status() !== "recording")
+                    return;
+                this.__initialBufferLength = 0;
+                this._status("uploading");
+                this.__initialBufferLength = this._flashObjs.stream.get("bufferLength");
+                try {
+                    this._flashObjs.stream.attachAudioVoid(null);
+                } catch (e) {}
+                /*try {
+                    if (this.__endpoint.serverUrl.indexOf("rtmpt") === 0) {
+                        this._flashObjs.stream.publishVoid("null");
+                        this._flashObjs.stream.closeVoid();
+                    }
+                } catch (e) {}*/
+            },
+
+            uploadStatus: function() {
+                return {
+                    total: this.__initialBufferLength,
+                    remaining: this._flashObjs.stream.get("bufferLength")
+                };
+            }
+
+        };
+    }], {
+
+        flashRegistry: function() {
+            if (!this.__flashRegistry) {
+                this.__flashRegistry = new FlashClassRegistry();
+                this.__flashRegistry.register("flash.media.Microphone", ["setLoopBack", "setSilenceLevel", "setUseEchoSuppression"], ["getMicrophone"]);
+                this.__flashRegistry.register("flash.media.SoundTransform", []);
+                this.__flashRegistry.register("flash.net.NetStream", ["play", "pause", "resume", "addEventListener", "seek", "attachAudio", "publish", "close"]);
+                this.__flashRegistry.register("flash.net.NetConnection", ["connect", "addEventListener", "call", "close"]);
+                this.__flashRegistry.register("flash.display.Stage", []);
+                this.__flashRegistry.register("flash.system.Security", [], ["allowDomain", "showSettings"]);
+            }
+            return this.__flashRegistry;
+        },
+
+        attach: function(element, attrs) {
+            var cls = new Cls(element, attrs);
+            return element;
+        }
+
+
+    });
+    return Cls;
+});
 Scoped.define("module:Encoding.WaveEncoder.Support", [
     "base:Promise",
     "base:Scheduling.Helper"
@@ -2147,6 +2926,779 @@ Scoped.define("module:Encoding.WebmEncoder.Support", [
         }
 
     };
+});
+Scoped.define("module:Flash.FlashImageRecorder", [
+    "browser:DomExtend.DomExtension",
+    "browser:Dom",
+    "browser:Info",
+    "flash:FlashClassRegistry",
+    "flash:FlashEmbedding",
+    "base:Strings",
+    "base:Async",
+    "base:Objs",
+    "base:Functions",
+    "base:Types",
+    "base:Timers.Timer",
+    "base:Time",
+    "base:Promise",
+    "base:Events.EventsMixin",
+    "module:Recorder.PixelSampleMixin"
+], function(Class, Dom, Info, FlashClassRegistry, FlashEmbedding, Strings, Async, Objs, Functions, Types, Timer, Time, Promise, EventsMixin, PixelSampleMixin, scoped) {
+    var Cls = Class.extend({
+        scoped: scoped
+    }, [EventsMixin, PixelSampleMixin, function(inherited) {
+        return {
+
+            constructor: function(element, attrs) {
+                inherited.constructor.call(this, element, attrs);
+                this._embedding = this.auto_destroy(new FlashEmbedding(element, {
+                    registry: this.cls.flashRegistry(),
+                    wrap: true,
+                    debug: false,
+                    hasEmbedding: this.readAttr("hasembedding") || false,
+                    namespace: this.readAttr("embednamespace") || null
+                }, {
+                    parentBgcolor: true,
+                    fixHalfPixels: true
+                }));
+                this._flashObjs = {};
+                this.ready = Promise.create();
+                this.__videoRate = this.readAttr('videorate') || 0;
+                this.__videoQuality = this.readAttr('videoquality') || 90;
+                this.__cameraWidth = this.readAttr('camerawidth') || 640;
+                this.__cameraHeight = this.readAttr('cameraheight') || 480;
+                this._flip = Types.parseBool(this.readAttr("flip") || false);
+                this._embedding.ready(this.__initializeEmbedding, this);
+            },
+
+            __initializeEmbedding: function() {
+                this._flashObjs.main = this._embedding.flashMain();
+                this._flashObjs.stage = this._flashObjs.main.get("stage");
+                this._flashObjs.stage.set("scaleMode", "noScale");
+                this._flashObjs.stage.set("align", "TL");
+                this._flashObjs.video = this._embedding.newObject(
+                    "flash.media.Video",
+                    this._flashObjs.stage.get("stageWidth"),
+                    this._flashObjs.stage.get("stageHeight")
+                );
+                this._flashObjs.cameraVideo = this._embedding.newObject(
+                    "flash.media.Video",
+                    this.__cameraWidth,
+                    this.__cameraHeight
+                );
+                this._flashObjs.main.addChildVoid(this._flashObjs.video);
+                this._flashObjs.Camera = this._embedding.getClass("flash.media.Camera");
+                this._flashObjs.camera = this._flashObjs.Camera.getCamera(0);
+                this._currentCamera = 0;
+                this._flashObjs.Security = this._embedding.getClass("flash.system.Security");
+                this.recomputeBB();
+                this.ready.asyncSuccess(this);
+                this.auto_destroy(new Timer({
+                    delay: 100,
+                    fire: this._fire,
+                    context: this
+                }));
+            },
+
+            isAccessGranted: function() {
+                try {
+                    return (!this._flashObjs.camera || !this._flashObjs.camera.get('muted'));
+                } catch (e) {
+                    return false;
+                }
+            },
+
+            isSecurityDialogOpen: function() {
+                var dummy = this._embedding.newObject("flash.display.BitmapData", 1, 1);
+                var open = false;
+                try {
+                    dummy.draw(this._flashObjs.stage);
+                } catch (e) {
+                    open = true;
+                }
+                dummy.dispose();
+                dummy.destroy();
+                return open;
+            },
+
+            openSecurityDialog: function(fullSecurityDialog) {
+                this.trigger("require_display");
+                if (fullSecurityDialog)
+                    this._flashObjs.Security.showSettings("privacy");
+                else {
+                    this._flashObjs.video.attachCamera(null);
+                    this._flashObjs.video.attachCamera(this._flashObjs.camera);
+                }
+            },
+
+            grantAccess: function(fullSecurityDialog, allowDeny) {
+                var promise = Promise.create();
+                var timer = new Timer({
+                    fire: function() {
+                        if (this.destroyed()) {
+                            timer.destroy();
+                            return;
+                        }
+                        if (this.isSecurityDialogOpen())
+                            return;
+                        if (this.isAccessGranted()) {
+                            timer.destroy();
+                            promise.asyncSuccess(true);
+                        } else {
+                            if (allowDeny) {
+                                timer.destroy();
+                                promise.asyncError(true);
+                            } else
+                                this.openSecurityDialog(fullSecurityDialog);
+                        }
+                    },
+                    context: this,
+                    delay: 10,
+                    start: true
+                });
+                return promise;
+            },
+
+            bindMedia: function(fullSecurityDialog, allowDeny) {
+                return this.grantAccess(fullSecurityDialog, allowDeny).mapSuccess(function() {
+                    this._mediaBound = true;
+                    this._attachCamera();
+                }, this);
+            },
+
+            unbindMedia: function() {
+                this._detachCamera();
+                this._mediaBound = false;
+            },
+
+            _attachCamera: function() {
+                if (this._flashObjs.camera) {
+                    this._flashObjs.camera.setMode(this.__cameraWidth, this.__cameraHeight, this.__fps);
+                    this._flashObjs.camera.setQuality(this.__videoRate, this.__videoQuality);
+                    this._flashObjs.camera.setKeyFrameInterval(5);
+                    this._flashObjs.video.attachCamera(this._flashObjs.camera);
+                    this._flashObjs.cameraVideo.attachCamera(this._flashObjs.camera);
+                }
+                if (this._flip) {
+                    if (this._flashObjs.video.get("scaleX") > 0)
+                        this._flashObjs.video.set("scaleX", -this._flashObjs.video.get("scaleX"));
+                    this._flashObjs.video.set("x", this._flashObjs.video.get("width"));
+                }
+            },
+
+            _detachCamera: function() {
+                this._flashObjs.video.attachCamera(null);
+                this._flashObjs.cameraVideo.attachCamera(null);
+            },
+
+            enumerateDevices: function() {
+                return {
+                    videos: this._flashObjs.Camera.get('names')
+                };
+            },
+
+            selectCamera: function(index) {
+                if (this._flashObjs.camera)
+                    this._flashObjs.camera.weakDestroy();
+                this.__cameraActivityTime = null;
+                this._flashObjs.camera = this._flashObjs.Camera.getCamera(index);
+                this._currentCamera = index;
+                if (this._mediaBound)
+                    this._attachCamera();
+            },
+
+            currentCamera: function() {
+                return this._currentCamera;
+            },
+
+            cameraInfo: function() {
+                if (!this._flashObjs.camera)
+                    return {};
+                return {
+                    muted: this._flashObjs.camera.get("muted"),
+                    name: this._flashObjs.camera.get("name"),
+                    activityLevel: this._flashObjs.camera.get("activityLevel"),
+                    fps: this._flashObjs.camera.get("fps"),
+                    width: this._flashObjs.camera.get("width"),
+                    height: this._flashObjs.camera.get("height"),
+                    inactivityTime: this.__cameraActivityTime ? Time.now() - this.__cameraActivityTime : null
+                };
+            },
+
+            _pixelSample: function(samples, callback, context) {
+                samples = samples || 100;
+                var w = this._flashObjs.cameraVideo.get("width");
+                var h = this._flashObjs.cameraVideo.get("height");
+                var wc = Math.ceil(Math.sqrt(w / h * samples));
+                var hc = Math.ceil(Math.sqrt(h / w * samples));
+                var lightLevelBmp = this._embedding.newObject("flash.display.BitmapData", wc, hc);
+                var scaleMatrix = this._embedding.newObject("flash.geom.Matrix");
+                scaleMatrix.scale(wc / w, hc / h);
+                lightLevelBmp.draw(this._flashObjs.cameraVideo, scaleMatrix);
+                for (var i = 0; i < samples; ++i) {
+                    var x = i % wc;
+                    var y = Math.floor(i / wc);
+                    var rgb = lightLevelBmp.getPixel(x, y);
+                    callback.call(context || this, rgb % 256, (rgb / 256) % 256, (rgb / 256 / 256) % 256);
+                }
+                scaleMatrix.destroy();
+                lightLevelBmp.destroy();
+            },
+
+            _fire: function() {
+                if (!this._mediaBound)
+                    return;
+                if (this._flashObjs.camera) {
+                    var currentCameraActivity = this._flashObjs.camera.get("activityLevel");
+                    if (!this.__lastCameraActivity || this.__lastCameraActivity !== currentCameraActivity)
+                        this.__cameraActivityTime = Time.now();
+                    this.__lastCameraActivity = currentCameraActivity;
+                }
+            },
+
+            createSnapshot: function() {
+                var bmp = this._embedding.newObject(
+                    "flash.display.BitmapData",
+                    this._flashObjs.cameraVideo.get("videoWidth"),
+                    this._flashObjs.cameraVideo.get("videoHeight")
+                );
+                bmp.draw(this._flashObjs.cameraVideo);
+                return bmp;
+            },
+
+            postSnapshot: function(bmp, url, type, quality) {
+                var promise = Promise.create();
+                quality = quality || 90;
+                var header = this._embedding.newObject("flash.net.URLRequestHeader", "Content-type", "application/octet-stream");
+                var request = this._embedding.newObject("flash.net.URLRequest", url);
+                request.set("requestHeaders", [header]);
+                request.set("method", "POST");
+                if (type === "jpg") {
+                    var jpgEncoder = this._embedding.newObject("com.adobe.images.JPGEncoder", quality);
+                    request.set("data", jpgEncoder.encode(bmp));
+                    jpgEncoder.destroy();
+                } else {
+                    var PngEncoder = this._embedding.getClass("com.adobe.images.PNGEncoder");
+                    request.set("data", PngEncoder.encode(bmp));
+                }
+                var poster = this._embedding.newObject("flash.net.URLLoader");
+                poster.set("dataFormat", "BINARY");
+
+                // In case anybody is wondering, no, the progress event does not work for uploads:
+                // http://stackoverflow.com/questions/2106682/a-progress-event-when-uploading-bytearray-to-server-with-as3-php/2107059#2107059
+
+                poster.addEventListener("complete", this._embedding.newCallback(Functions.as_method(function() {
+                    promise.asyncSuccess(true);
+                }, this)));
+                poster.addEventListener("ioError", this._embedding.newCallback(Functions.as_method(function() {
+                    promise.asyncError("IO Error");
+                }, this)));
+                poster.load(request);
+                promise.callback(function() {
+                    poster.destroy();
+                    request.destroy();
+                    header.destroy();
+                });
+                return promise;
+            },
+
+            createSnapshotDisplay: function(bmpData, x, y, w, h) {
+                var bmp = this._embedding.newObject("flash.display.Bitmap", bmpData);
+                this.updateSnapshotDisplay(bmpData, bmp, x, y, w, h);
+                this._flashObjs.main.addChildVoid(bmp);
+                return bmp;
+            },
+
+            updateSnapshotDisplay: function(bmpData, bmp, x, y, w, h) {
+                bmp.set("x", x);
+                bmp.set("y", y);
+                bmp.set("scaleX", w / bmpData.get("width"));
+                bmp.set("scaleY", h / bmpData.get("height"));
+            },
+
+            removeSnapshotDisplay: function(snapshot) {
+                this._flashObjs.main.removeChildVoid(snapshot);
+                snapshot.destroy();
+            },
+
+            idealBB: function() {
+                return {
+                    width: this.__cameraWidth,
+                    height: this.__cameraHeight
+                };
+            },
+
+            setActualBB: function(actualBB) {
+                ["object", "embed"].forEach(function(tag) {
+                    var container = this._element.getElementsByTagName(tag.toUpperCase())[0];
+                    if (container) {
+                        ["width", "height"].forEach(function(attr) {
+                            container.style[attr] = actualBB[attr] + "px";
+                        });
+                    }
+                }, this);
+                var video = this._flashObjs.video;
+                if (video) {
+                    video.set("width", actualBB.width);
+                    video.set("height", actualBB.height);
+                    if (this._flip) {
+                        if (video.get("scaleX") > 0)
+                            video.set("scaleX", -video.get("scaleX"));
+                        video.set("x", video.get("width"));
+                    }
+                }
+            },
+
+            _error: function(s) {
+                this.__status = "error";
+                this.trigger("error", s);
+            }
+
+        };
+    }], {
+
+        flashRegistry: function() {
+            if (!this.__flashRegistry) {
+                this.__flashRegistry = new FlashClassRegistry();
+                this.__flashRegistry.register("flash.media.Camera", ["setMode", "setQuality", "setKeyFrameInterval", "addEventListener"], ["getCamera"]);
+                this.__flashRegistry.register("flash.media.Video", ["attachCamera", "attachNetStream"]);
+                this.__flashRegistry.register("flash.net.URLRequest", []);
+                this.__flashRegistry.register("flash.net.URLRequestHeader", []);
+                this.__flashRegistry.register("flash.net.URLLoader", ["addEventListener", "load"]);
+                this.__flashRegistry.register("flash.display.Sprite", ["addChild", "removeChild", "setChildIndex"]);
+                this.__flashRegistry.register("flash.display.Stage", []);
+                this.__flashRegistry.register("flash.display.Loader", ["load"]);
+                this.__flashRegistry.register("flash.display.LoaderInfo", ["addEventListener"]);
+                this.__flashRegistry.register("flash.display.BitmapData", ["draw", "getPixel", "dispose"]);
+                this.__flashRegistry.register("flash.display.Bitmap", []);
+                this.__flashRegistry.register("flash.geom.Matrix", ["scale"]);
+                this.__flashRegistry.register("flash.system.Security", [], ["allowDomain", "showSettings"]);
+                this.__flashRegistry.register("com.adobe.images.PNGEncoder", [], ["encode"]);
+                this.__flashRegistry.register("com.adobe.images.JPGEncoder", ["encode"]);
+            }
+            return this.__flashRegistry;
+        },
+
+        attach: function(element, attrs) {
+            var cls = new Cls(element, attrs);
+            return element;
+        }
+
+
+    });
+    return Cls;
+});
+Scoped.define("module:ImageRecorder.ImageRecorderWrapper", [
+    "base:Classes.ConditionalInstance",
+    "base:Events.EventsMixin",
+    "base:Objs",
+    "base:Promise"
+], function(ConditionalInstance, EventsMixin, Objs, Promise, scoped) {
+    return ConditionalInstance.extend({
+        scoped: scoped
+    }, [EventsMixin, function(inherited) {
+        return {
+
+            constructor: function(options) {
+                inherited.constructor.call(this, options);
+                this._element = this._options.element;
+                this.ready = Promise.create();
+            },
+
+            destroy: function() {
+                inherited.destroy.call(this);
+            },
+
+            bindMedia: function() {
+                return this._bindMedia();
+            },
+
+            _bindMedia: function() {},
+
+            unbindMedia: function() {
+                return this._unbindMedia();
+            },
+
+            _unbindMedia: function() {},
+
+            softwareDependencies: function() {
+                return this._softwareDependencies();
+            },
+
+            _softwareDependencies: function() {},
+
+            cameraWidth: function() {
+                return this._options.recordingWidth;
+            },
+
+            cameraHeight: function() {
+                return this._options.recordingHeight;
+            },
+
+            lightLevel: function() {},
+            blankLevel: function() {},
+            deltaCoefficient: function() {},
+
+            enumerateDevices: function() {},
+            currentDevices: function() {},
+            setCurrentDevices: function(devices) {},
+
+            createSnapshot: function() {},
+            removeSnapshot: function(snapshot) {},
+            createSnapshotDisplay: function(parent, snapshot, x, y, w, h) {},
+            updateSnapshotDisplay: function(snapshot, display, x, y, w, h) {},
+            removeSnapshotDisplay: function(display) {},
+            createSnapshotUploader: function(snapshot, type, uploaderOptions) {},
+
+            isFlash: function() {
+                return false;
+            },
+
+            snapshotToLocalPoster: function(snapshot) {
+                return null;
+            }
+
+        };
+    }], {
+
+        _initializeOptions: function(options) {
+            return Objs.extend({
+                forceflash: false,
+                noflash: false,
+                recordingWidth: 640,
+                recordingHeight: 480
+            }, options);
+        }
+
+    });
+});
+
+
+Scoped.define("module:ImageRecorder.WebRTCImageRecorderWrapper", [
+    "module:ImageRecorder.ImageRecorderWrapper",
+    "module:WebRTC.RecorderWrapper",
+    "module:WebRTC.Support",
+    "browser:Dom",
+    "browser:Info",
+    "base:Time",
+    "base:Objs",
+    "browser:Upload.FileUploader",
+    "browser:Upload.MultiUploader",
+    "base:Promise"
+], function(ImageRecorderWrapper, RecorderWrapper, Support, Dom, Info, Time, Objs, FileUploader, MultiUploader, Promise, scoped) {
+    return ImageRecorderWrapper.extend({
+        scoped: scoped
+    }, function(inherited) {
+        return {
+
+            constructor: function(options) {
+                inherited.constructor.call(this, options);
+                if (this._element.tagName.toLowerCase() !== "video")
+                    this._element = Dom.changeTag(this._element, "video");
+                this._recorder = RecorderWrapper.create({
+                    video: this._element,
+                    flip: !!this._options.flip,
+                    recordVideo: true,
+                    recordAudio: false,
+                    recordResolution: {
+                        width: this._options.recordingWidth,
+                        height: this._options.recordingHeight
+                    },
+                    videoBitrate: this._options.videoBitrate,
+                    screen: this._options.screen
+                });
+                this._recorder.on("error", function(errorName, errorData) {
+                    this.trigger("error", errorName, errorData);
+                }, this);
+                this.ready.asyncSuccess(true);
+            },
+
+            destroy: function() {
+                this._recorder.destroy();
+                inherited.destroy.call(this);
+            },
+
+            _bindMedia: function() {
+                return this._recorder.bindMedia();
+            },
+
+            _unbindMedia: function() {
+                return this._recorder.unbindMedia();
+            },
+
+            lightLevel: function() {
+                return this._recorder.lightLevel();
+            },
+
+            blankLevel: function() {
+                return this._recorder.blankLevel();
+            },
+
+            deltaCoefficient: function() {
+                return this._recorder.deltaCoefficient();
+            },
+
+            currentDevices: function() {
+                return {
+                    video: this._currentVideo
+                };
+            },
+
+            enumerateDevices: function() {
+                return Support.enumerateMediaSources().success(function(result) {
+                    if (!this._currentVideo)
+                        this._currentVideo = Objs.ithKey(result.video);
+                }, this);
+            },
+
+            setCurrentDevices: function(devices) {
+                if (devices && devices.video)
+                    this._recorder.selectCamera(devices.video);
+            },
+
+            createSnapshot: function(type) {
+                return this._recorder.createSnapshot(type);
+            },
+
+            removeSnapshot: function(snapshot) {},
+
+            createSnapshotDisplay: function(parent, snapshot, x, y, w, h) {
+                var url = Support.globals().URL.createObjectURL(snapshot);
+                var image = document.createElement("img");
+                image.style.position = "absolute";
+                this.updateSnapshotDisplay(snapshot, image, x, y, w, h);
+                image.src = url;
+                Dom.elementPrependChild(parent, image);
+                return image;
+            },
+
+            updateSnapshotDisplay: function(snapshot, image, x, y, w, h) {
+                image.style.left = x + "px";
+                image.style.top = y + "px";
+                image.style.width = w + "px";
+                image.style.height = h + "px";
+            },
+
+            removeSnapshotDisplay: function(image) {
+                image.remove();
+            },
+
+            createSnapshotUploader: function(snapshot, type, uploaderOptions) {
+                return FileUploader.create(Objs.extend({
+                    source: snapshot
+                }, uploaderOptions));
+            },
+
+            snapshotToLocalPoster: function(snapshot) {
+                return snapshot;
+            },
+
+            _softwareDependencies: function() {
+                if (!this._options.screen || Support.globals().supportedConstraints.mediaSource)
+                    return Promise.value(true);
+                var ext = Support.chromeExtensionExtract(this._options.screen);
+                var err = [{
+                    title: "Screen Recorder Extension",
+                    execute: function() {
+                        window.open(ext.extensionInstallLink);
+                    }
+                }];
+                var pingTest = Time.now();
+                return Support.chromeExtensionMessage(ext.extensionId, {
+                    type: "ping",
+                    data: pingTest
+                }).mapError(function() {
+                    return err;
+                }).mapSuccess(function(pingResponse) {
+                    if (pingResponse && pingResponse.type === "success" && pingResponse.data === pingTest)
+                        return true;
+                    return Promise.error(err);
+                });
+            }
+
+        };
+    }, {
+
+        supported: function(options) {
+            if (options.forceflash)
+                return false;
+            if (!RecorderWrapper.anySupport(options))
+                return false;
+            if (options.screen) {
+                if (Support.globals().supportedConstraints.mediaSource && Info.isFirefox() && Info.firefoxVersion() > 55)
+                    return true;
+                if (Info.isChrome() && options.screen.chromeExtensionId)
+                    return true;
+                if (Info.isOpera() && options.screen.operaExtensionId)
+                    return true;
+                return false;
+            }
+            return true;
+        }
+
+    });
+});
+
+
+
+Scoped.define("module:ImageRecorder.FlashImageRecorderWrapper", [
+    "module:ImageRecorder.ImageRecorderWrapper",
+    "module:Flash.FlashImageRecorder",
+    "browser:Dom",
+    "browser:Info",
+    "base:Promise",
+    "base:Objs",
+    "base:Timers.Timer",
+    "browser:Upload.CustomUploader",
+    "browser:Upload.MultiUploader"
+], function(FlashImageRecorderWrapper, FlashRecorder, Dom, Info, Promise, Objs, Timer, CustomUploader, MultiUploader, scoped) {
+    return FlashImageRecorderWrapper.extend({
+        scoped: scoped
+    }, function(inherited) {
+        return {
+
+            constructor: function(options) {
+                inherited.constructor.call(this, options);
+                if (this._element.tagName.toLowerCase() !== "div")
+                    this._element = Dom.changeTag(this._element, "div");
+                this._recorder = new FlashRecorder(this._element, {
+                    flip: !!this._options.flip,
+                    camerawidth: this._options.recordingWidth,
+                    cameraheight: this._options.recordingHeight,
+                    fps: this._options.framerate,
+                    videoRate: this._options.videoBitrate ? this._options.videoBitrate * 1000 : undefined
+                });
+                this._recorder.ready.forwardCallback(this.ready);
+                this._recorder.on("require_display", function() {
+                    this.trigger("require_display");
+                }, this);
+                this._recorder.on("endpoint_connectivity", function(endpoint, connectivity) {
+                    this.trigger("endpoint_connectivity", endpoint, connectivity);
+                }, this);
+            },
+
+            destroy: function() {
+                this._recorder.destroy();
+                inherited.destroy.call(this);
+            },
+
+            _bindMedia: function() {
+                return this._recorder.bindMedia(this._options.flashFullSecurityDialog);
+            },
+
+            _unbindMedia: function() {
+                return this._recorder.unbindMedia();
+            },
+
+            blankLevel: function() {
+                return this._recorder.blankLevel();
+            },
+
+            deltaCoefficient: function() {
+                return this._recorder.deltaCoefficient();
+            },
+
+            lightLevel: function() {
+                return this._recorder.lightLevel();
+            },
+
+            enumerateDevices: function() {
+                var result = this._recorder.enumerateDevices();
+                return Promise.value({
+                    videoCount: Objs.count(result.videos),
+                    video: Objs.map(result.videos, function(value, key) {
+                        return {
+                            id: key,
+                            label: value
+                        };
+                    })
+                });
+            },
+
+            currentDevices: function() {
+                return {
+                    video: this._recorder.currentCamera()
+                };
+            },
+
+            setCurrentDevices: function(devices) {
+                if (devices && devices.video)
+                    this._recorder.selectCamera(devices.video);
+            },
+
+            createSnapshot: function(type) {
+                return this._recorder.createSnapshot();
+            },
+
+            createSnapshotDisplay: function(parent, snapshot, x, y, w, h) {
+                return this._recorder.createSnapshotDisplay(snapshot, x, y, w, h);
+            },
+
+            updateSnapshotDisplay: function(snapshot, display, x, y, w, h) {
+                return this._recorder.updateSnapshotDisplay(snapshot, display, x, y, w, h);
+            },
+
+            removeSnapshotDisplay: function(display) {
+                this._recorder.removeSnapshotDisplay(display);
+            },
+
+            createSnapshotUploader: function(snapshot, type, uploaderOptions) {
+                var uploader = new CustomUploader(Objs.extend({
+                    source: snapshot,
+                    type: type,
+                    recorder: this._recorder
+                }, uploaderOptions));
+                uploader.on("upload", function(options) {
+                    options.recorder.postSnapshot(
+                            options.source,
+                            options.url,
+                            options.type
+                        )
+                        .success(uploader.successCallback, uploader)
+                        .error(uploader.errorCallback, uploader);
+                });
+                return uploader;
+            },
+
+            isFlash: function() {
+                return true;
+            },
+
+            _softwareDependencies: function() {
+                return Info.flash().installed() ? Promise.value(true) : Promise.error([{
+                    "title": "Adobe Flash",
+                    "execute": function() {
+                        window.open("https://get.adobe.com/flashplayer");
+                    }
+                }]);
+            }
+
+        };
+    }, {
+
+        supported: function(options) {
+            return !Info.isMobile() && !options.noflash && Info.flash().supported() && !options.screen;
+        }
+
+    });
+});
+
+
+Scoped.extend("module:ImageRecorder.ImageRecorderWrapper", [
+    "module:ImageRecorder.ImageRecorderWrapper",
+    "module:ImageRecorder.WebRTCImageRecorderWrapper"
+], function(ImageRecorderWrapper, WebRTCImageRecorderWrapper) {
+    ImageRecorderWrapper.register(WebRTCImageRecorderWrapper, 2);
+    return {};
+});
+
+
+Scoped.extend("module:ImageRecorder.ImageRecorderWrapper", [
+    "module:ImageRecorder.ImageRecorderWrapper",
+    "module:ImageRecorder.FlashImageRecorderWrapper"
+], function(ImageRecorderWrapper, FlashImageRecorderWrapper) {
+    ImageRecorderWrapper.register(FlashImageRecorderWrapper, 1);
+    return {};
 });
 Scoped.define("module:Player.Broadcasting", [
     "base:Class",
@@ -4983,21 +6535,35 @@ Scoped.define("module:WebRTC.MediaRecorder", [
                  * 
                  * https://developer.mozilla.org/en-US/docs/Web/API/MediaRecorder/MediaRecorder#Example
                  */
-                var mediaRecorderOptions = {};
+                var mediaRecorderOptions = {
+                    mimeType: ""
+                };
                 //mediaRecorderOptions.mimeType = "video/mp4";
                 try {
-                    if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) {
-                        mediaRecorderOptions = {
-                            mimeType: 'video/webm;codecs=vp9'
-                        };
-                    } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp8')) {
-                        mediaRecorderOptions = {
-                            mimeType: 'video/webm;codecs=vp8'
-                        };
-                    } else if (MediaRecorder.isTypeSupported('video/webm')) {
-                        mediaRecorderOptions = {
-                            mimeType: 'video/webm'
-                        };
+                    if (options.audioonly) {
+                        if (MediaRecorder.isTypeSupported('audio/mp3')) {
+                            mediaRecorderOptions = {
+                                mimeType: 'audio/mp3'
+                            };
+                        } else if (MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')) {
+                            mediaRecorderOptions = {
+                                mimeType: 'audio/ogg;codecs=opus'
+                            };
+                        }
+                    } else {
+                        if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) {
+                            mediaRecorderOptions = {
+                                mimeType: 'video/webm;codecs=vp9'
+                            };
+                        } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp8')) {
+                            mediaRecorderOptions = {
+                                mimeType: 'video/webm;codecs=vp8'
+                            };
+                        } else if (MediaRecorder.isTypeSupported('video/webm')) {
+                            mediaRecorderOptions = {
+                                mimeType: 'video/webm'
+                            };
+                        }
                     }
                 } catch (e) {
                     mediaRecorderOptions = {};
@@ -5006,6 +6572,8 @@ Scoped.define("module:WebRTC.MediaRecorder", [
                     mediaRecorderOptions.videoBitsPerSecond = options.videoBitrate * 1000;
                 if (options.audioBitrate)
                     mediaRecorderOptions.audioBitsPerSecond = options.audioBitrate * 1000;
+                this.__audioonly = options.audioonly;
+                this.__mediaRecorderOptions = mediaRecorderOptions;
                 this._mediaRecorder = new MediaRecorder(stream, mediaRecorderOptions);
                 this._mediaRecorder.ondataavailable = Functions.as_method(this._dataAvailable, this);
                 this._mediaRecorder.onstop = Functions.as_method(this._dataStop, this);
@@ -5041,7 +6609,7 @@ Scoped.define("module:WebRTC.MediaRecorder", [
 
             _dataStop: function(e) {
                 this._data = new Blob(this._chunks, {
-                    type: "video/webm"
+                    type: (this.__mediaRecorderOptions.mimeType.split(";"))[0] || (this.__audioonly ? "audio/ogg" : "video/webm")
                 });
                 this._chunks = [];
                 if (Info.isFirefox()) {
@@ -5099,6 +6667,7 @@ Scoped.define("module:WebRTC.PeerRecorder", [
                     options.videoBitrate = Math.round(options.recorderWidth * options.recorderHeight / 250);
                 this._videoBitrate = options.videoBitrate || 1024;
                 this._audioBitrate = options.audioBitrate || 256;
+                this._audioonly = options.audioonly;
                 this._started = false;
             },
 
@@ -5193,7 +6762,7 @@ Scoped.define("module:WebRTC.PeerRecorder", [
                 var enhanceData = {};
                 if (this._audioBitrate)
                     enhanceData.audioBitrate = this._audioBitrate;
-                if (this._videoBitrate)
+                if (this._videoBitrate && !this._audioonly)
                     enhanceData.videoBitrate = this._videoBitrate;
                 description.sdp = this._enhanceSDP(description.sdp, enhanceData);
                 this._peerConnection.setLocalDescription(description, Functions.as_method(function() {
@@ -5499,7 +7068,8 @@ Scoped.define("module:WebRTC.PeerRecorderWrapper", [
                 recorderWidth: this._options.recordResolution.width,
                 recorderHeight: this._options.recordResolution.height,
                 videoBitrate: this._options.videoBitrate,
-                audioBitrate: this._options.audioBitrate
+                audioBitrate: this._options.audioBitrate,
+                audioonly: !this._options.recordVideo
             });
             if (this._localPlaybackRequested && MediaRecorder.supported())
                 this.__localMediaRecorder = new MediaRecorder(this._stream);
@@ -5551,8 +7121,10 @@ Scoped.define("module:WebRTC.PeerRecorderWrapper", [
             supported: function(options) {
                 if (!inherited.supported.call(this, options))
                     return false;
+                /*
                 if (!options.recordVideo)
                     return false;
+                    */
                 if (options.screen && Info.isFirefox())
                     return false;
                 return options.webrtcStreaming && PeerRecorder.supported();
@@ -5574,7 +7146,8 @@ Scoped.define("module:WebRTC.MediaRecorderWrapper", [
         _boundMedia: function() {
             this._recorder = new MediaRecorder(this._stream, {
                 videoBitrate: this._options.videoBitrate,
-                audioBitrate: this._options.audioBitrate
+                audioBitrate: this._options.audioBitrate,
+                audioonly: !this._options.recordVideo
             });
             this._recorder.on("data", function(blob) {
                 this._dataAvailable(blob);
@@ -5607,8 +7180,10 @@ Scoped.define("module:WebRTC.MediaRecorderWrapper", [
             supported: function(options) {
                 if (!inherited.supported.call(this, options))
                     return false;
+                /*
                 if (!options.recordVideo)
                     return false;
+                    */
                 return MediaRecorder.supported();
             }
 

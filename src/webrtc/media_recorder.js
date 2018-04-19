@@ -22,21 +22,35 @@ Scoped.define("module:WebRTC.MediaRecorder", [
                  * 
                  * https://developer.mozilla.org/en-US/docs/Web/API/MediaRecorder/MediaRecorder#Example
                  */
-                var mediaRecorderOptions = {};
+                var mediaRecorderOptions = {
+                    mimeType: ""
+                };
                 //mediaRecorderOptions.mimeType = "video/mp4";
                 try {
-                    if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) {
-                        mediaRecorderOptions = {
-                            mimeType: 'video/webm;codecs=vp9'
-                        };
-                    } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp8')) {
-                        mediaRecorderOptions = {
-                            mimeType: 'video/webm;codecs=vp8'
-                        };
-                    } else if (MediaRecorder.isTypeSupported('video/webm')) {
-                        mediaRecorderOptions = {
-                            mimeType: 'video/webm'
-                        };
+                    if (options.audioonly) {
+                        if (MediaRecorder.isTypeSupported('audio/mp3')) {
+                            mediaRecorderOptions = {
+                                mimeType: 'audio/mp3'
+                            };
+                        } else if (MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')) {
+                            mediaRecorderOptions = {
+                                mimeType: 'audio/ogg;codecs=opus'
+                            };
+                        }
+                    } else {
+                        if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) {
+                            mediaRecorderOptions = {
+                                mimeType: 'video/webm;codecs=vp9'
+                            };
+                        } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp8')) {
+                            mediaRecorderOptions = {
+                                mimeType: 'video/webm;codecs=vp8'
+                            };
+                        } else if (MediaRecorder.isTypeSupported('video/webm')) {
+                            mediaRecorderOptions = {
+                                mimeType: 'video/webm'
+                            };
+                        }
                     }
                 } catch (e) {
                     mediaRecorderOptions = {};
@@ -45,6 +59,8 @@ Scoped.define("module:WebRTC.MediaRecorder", [
                     mediaRecorderOptions.videoBitsPerSecond = options.videoBitrate * 1000;
                 if (options.audioBitrate)
                     mediaRecorderOptions.audioBitsPerSecond = options.audioBitrate * 1000;
+                this.__audioonly = options.audioonly;
+                this.__mediaRecorderOptions = mediaRecorderOptions;
                 this._mediaRecorder = new MediaRecorder(stream, mediaRecorderOptions);
                 this._mediaRecorder.ondataavailable = Functions.as_method(this._dataAvailable, this);
                 this._mediaRecorder.onstop = Functions.as_method(this._dataStop, this);
@@ -80,7 +96,7 @@ Scoped.define("module:WebRTC.MediaRecorder", [
 
             _dataStop: function(e) {
                 this._data = new Blob(this._chunks, {
-                    type: "video/webm"
+                    type: (this.__mediaRecorderOptions.mimeType.split(";"))[0] || (this.__audioonly ? "audio/ogg" : "video/webm")
                 });
                 this._chunks = [];
                 if (Info.isFirefox()) {

@@ -20,6 +20,7 @@ Scoped.define("module:WebRTC.PeerRecorder", [
                     options.videoBitrate = Math.round(options.recorderWidth * options.recorderHeight / 250);
                 this._videoBitrate = options.videoBitrate || 1024;
                 this._audioBitrate = options.audioBitrate || 256;
+                this._audioonly = options.audioonly;
                 this._started = false;
             },
 
@@ -114,7 +115,7 @@ Scoped.define("module:WebRTC.PeerRecorder", [
                 var enhanceData = {};
                 if (this._audioBitrate)
                     enhanceData.audioBitrate = this._audioBitrate;
-                if (this._videoBitrate)
+                if (this._videoBitrate && !this._audioonly)
                     enhanceData.videoBitrate = this._videoBitrate;
                 description.sdp = this._enhanceSDP(description.sdp, enhanceData);
                 this._peerConnection.setLocalDescription(description, Functions.as_method(function() {
