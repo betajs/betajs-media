@@ -399,7 +399,7 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
 
             _fullscreenElement: function() {
                 //fullscreen issue was present on Chromium based browsers. Could recreate on Iron and Chrome.
-                if (Info.isChromiumBased()) {
+                if (Info.isChromiumBased() && !Info.isMobile()) {
                     return this._element.parentNode;
                 }
 
