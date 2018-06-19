@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.83 - 2018-05-20
+betajs-media - v0.0.84 - 2018-06-19
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -13,7 +13,7 @@ Scoped.binding('flash', 'global:BetaJS.Flash');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.83"
+    "version": "0.0.84"
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.136');
@@ -3452,6 +3452,8 @@ Scoped.define("module:Player.VideoPlayerWrapper", [
             },
 
             _eventPaused: function() {
+                if (this.duration() && this.duration() === this.position())
+                    return;
                 this.trigger("paused");
             },
 

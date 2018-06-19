@@ -102,6 +102,8 @@ Scoped.define("module:Player.VideoPlayerWrapper", [
             },
 
             _eventPaused: function() {
+                if (this.duration() && this.duration() === this.position())
+                    return;
                 this.trigger("paused");
             },
 

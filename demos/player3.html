@@ -38,9 +38,9 @@
                 });
                 if (instance.error())
                 	alert(instance.error());
-                instance.on("error", function (error) {
-                	alert(error);
-                });
+                instance.on("all", function () {
+                    console.log(arguments);
+				});
 		    }).error(function () {
 		    	document.title = "Error";
 		    });
