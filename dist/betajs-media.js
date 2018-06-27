@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.84 - 2018-06-19
+betajs-media - v0.0.85 - 2018-06-27
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -1006,7 +1006,7 @@ Public.exports();
 	return Public;
 }).call(this);
 /*!
-betajs-media - v0.0.84 - 2018-06-19
+betajs-media - v0.0.85 - 2018-06-27
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -1020,7 +1020,7 @@ Scoped.binding('flash', 'global:BetaJS.Flash');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.84"
+    "version": "0.0.85"
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.136');
@@ -1792,6 +1792,7 @@ Scoped.define("module:AudioRecorder.WebRTCAudioRecorderWrapper", [
                     recordAudio: this._options.recordAudio,
                     audioBitrate: this._options.audioBitrate,
                     webrtcStreaming: this._options.webrtcStreaming,
+                    webrtcStreamingIfNecessary: this._options.webrtcStreamingIfNecessary,
                     localPlaybackRequested: this._options.localPlaybackRequested
                 });
                 this._recorder.on("bound", function() {
@@ -5744,6 +5745,7 @@ Scoped.define("module:Recorder.VideoRecorderWrapper", [
             enumerateDevices: function() {},
             currentDevices: function() {},
             setCurrentDevices: function(devices) {},
+            setCameraFace: function(faceFront) {},
 
             createSnapshot: function() {},
             removeSnapshot: function(snapshot) {},
@@ -5760,6 +5762,10 @@ Scoped.define("module:Recorder.VideoRecorderWrapper", [
             },
 
             supportsLocalPlayback: function() {
+                return false;
+            },
+
+            supportsCameraFace: function() {
                 return false;
             },
 
@@ -5832,6 +5838,7 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
                     videoBitrate: this._options.videoBitrate,
                     audioBitrate: this._options.audioBitrate,
                     webrtcStreaming: this._options.webrtcStreaming,
+                    webrtcStreamingIfNecessary: this._options.webrtcStreamingIfNecessary,
                     localPlaybackRequested: this._options.localPlaybackRequested,
                     screen: this._options.screen
                 });
@@ -5922,6 +5929,11 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
                     this._recorder.selectMicrophone(devices.audio);
             },
 
+            setCameraFace: function(faceFront) {
+                if (Info.isMobile())
+                    this._recorder.selectCameraFace(faceFront);
+            },
+
             createSnapshot: function(type) {
                 return this._recorder.createSnapshot(type);
             },
@@ -5988,6 +6000,10 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
 
             supportsLocalPlayback: function() {
                 return !!this.__localPlaybackSource.src;
+            },
+
+            supportsCameraFace: function() {
+                return Info.isMobile();
             },
 
             snapshotToLocalPoster: function(snapshot) {
@@ -6890,7 +6906,8 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                         */
                         sourceId: this._options.videoId,
                         width: this._options.recordResolution.width,
-                        height: this._options.recordResolution.height
+                        height: this._options.recordResolution.height,
+                        cameraFaceFront: this._options.cameraFaceFront
                     } : false,
                     screen: this._screen
                 };
@@ -6928,6 +6945,14 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
 
             selectMicrophone: function(microphoneId) {
                 this._options.audioId = microphoneId;
+                if (this._bound) {
+                    this.unbindMedia();
+                    this.bindMedia();
+                }
+            },
+
+            selectCameraFace: function(faceFront) {
+                this._options.cameraFaceFront = faceFront;
                 if (this._bound) {
                     this.unbindMedia();
                     this.bindMedia();
@@ -7129,7 +7154,27 @@ Scoped.define("module:WebRTC.PeerRecorderWrapper", [
                     */
                 if (options.screen && Info.isFirefox())
                     return false;
-                return options.webrtcStreaming && PeerRecorder.supported();
+                return options.webrtcStreaming && PeerRecorder.supported() && !options.webrtcStreamingIfNecessary;
+            }
+
+        };
+    });
+});
+
+
+Scoped.define("module:WebRTC.PeerRecorderWrapperIfNecessary", [
+    "module:WebRTC.PeerRecorderWrapper",
+    "base:Objs"
+], function(PeerRecorderWrapper, Objs, scoped) {
+    return PeerRecorderWrapper.extend({
+        scoped: scoped
+    }, {}, function(inherited) {
+        return {
+
+            supported: function(options) {
+                options = Objs.clone(options, 1);
+                delete options.webrtcStreamingIfNecessary;
+                return inherited.supported.call(this, options);
             }
 
         };
@@ -7316,11 +7361,13 @@ Scoped.extend("module:WebRTC.RecorderWrapper", [
     "module:WebRTC.RecorderWrapper",
     "module:WebRTC.PeerRecorderWrapper",
     "module:WebRTC.MediaRecorderWrapper",
-    "module:WebRTC.WhammyAudioRecorderWrapper"
-], function(RecorderWrapper, PeerRecorderWrapper, MediaRecorderWrapper, WhammyAudioRecorderWrapper) {
-    RecorderWrapper.register(PeerRecorderWrapper, 3);
-    RecorderWrapper.register(MediaRecorderWrapper, 2);
-    RecorderWrapper.register(WhammyAudioRecorderWrapper, 1);
+    "module:WebRTC.WhammyAudioRecorderWrapper",
+    "module:WebRTC.PeerRecorderWrapperIfNecessary"
+], function(RecorderWrapper, PeerRecorderWrapper, MediaRecorderWrapper, WhammyAudioRecorderWrapper, PeerRecorderWrapperIfNecessary) {
+    RecorderWrapper.register(PeerRecorderWrapper, 4);
+    RecorderWrapper.register(MediaRecorderWrapper, 3);
+    RecorderWrapper.register(WhammyAudioRecorderWrapper, 2);
+    RecorderWrapper.register(PeerRecorderWrapperIfNecessary, 1);
     return {};
 });
 Scoped.define("module:WebRTC.Support", [
@@ -7543,6 +7590,8 @@ Scoped.define("module:WebRTC.Support", [
                 */
                 if (options.video.sourceId)
                     opts.video.sourceId = options.video.sourceId;
+                if (options.video.cameraFaceFront !== undefined && Info.isMobile())
+                    opts.video.facingMode = options.video.cameraFaceFront ? "front" : "environment";
                 return this.userMedia(opts);
             } else {
                 opts.video = {
@@ -7563,6 +7612,8 @@ Scoped.define("module:WebRTC.Support", [
                 }
                 if (options.video.sourceId)
                     opts.video.mandatory.sourceId = options.video.sourceId;
+                if (options.video.cameraFaceFront !== undefined && Info.isMobile())
+                    opts.video.facingMode = options.video.cameraFaceFront ? "front" : "environment";
 
                 var probe = function(count) {
                     var mandatory = opts.video.mandatory;

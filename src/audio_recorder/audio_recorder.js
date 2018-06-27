@@ -110,6 +110,7 @@ Scoped.define("module:AudioRecorder.WebRTCAudioRecorderWrapper", [
                     recordAudio: this._options.recordAudio,
                     audioBitrate: this._options.audioBitrate,
                     webrtcStreaming: this._options.webrtcStreaming,
+                    webrtcStreamingIfNecessary: this._options.webrtcStreamingIfNecessary,
                     localPlaybackRequested: this._options.localPlaybackRequested
                 });
                 this._recorder.on("bound", function() {

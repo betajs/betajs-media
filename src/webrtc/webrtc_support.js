@@ -218,6 +218,8 @@ Scoped.define("module:WebRTC.Support", [
                 */
                 if (options.video.sourceId)
                     opts.video.sourceId = options.video.sourceId;
+                if (options.video.cameraFaceFront !== undefined && Info.isMobile())
+                    opts.video.facingMode = options.video.cameraFaceFront ? "front" : "environment";
                 return this.userMedia(opts);
             } else {
                 opts.video = {
@@ -238,6 +240,8 @@ Scoped.define("module:WebRTC.Support", [
                 }
                 if (options.video.sourceId)
                     opts.video.mandatory.sourceId = options.video.sourceId;
+                if (options.video.cameraFaceFront !== undefined && Info.isMobile())
+                    opts.video.facingMode = options.video.cameraFaceFront ? "front" : "environment";
 
                 var probe = function(count) {
                     var mandatory = opts.video.mandatory;

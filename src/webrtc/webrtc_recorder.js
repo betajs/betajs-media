@@ -39,7 +39,8 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                         */
                         sourceId: this._options.videoId,
                         width: this._options.recordResolution.width,
-                        height: this._options.recordResolution.height
+                        height: this._options.recordResolution.height,
+                        cameraFaceFront: this._options.cameraFaceFront
                     } : false,
                     screen: this._screen
                 };
@@ -77,6 +78,14 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
 
             selectMicrophone: function(microphoneId) {
                 this._options.audioId = microphoneId;
+                if (this._bound) {
+                    this.unbindMedia();
+                    this.bindMedia();
+                }
+            },
+
+            selectCameraFace: function(faceFront) {
+                this._options.cameraFaceFront = faceFront;
                 if (this._bound) {
                     this.unbindMedia();
                     this.bindMedia();
@@ -278,7 +287,27 @@ Scoped.define("module:WebRTC.PeerRecorderWrapper", [
                     */
                 if (options.screen && Info.isFirefox())
                     return false;
-                return options.webrtcStreaming && PeerRecorder.supported();
+                return options.webrtcStreaming && PeerRecorder.supported() && !options.webrtcStreamingIfNecessary;
+            }
+
+        };
+    });
+});
+
+
+Scoped.define("module:WebRTC.PeerRecorderWrapperIfNecessary", [
+    "module:WebRTC.PeerRecorderWrapper",
+    "base:Objs"
+], function(PeerRecorderWrapper, Objs, scoped) {
+    return PeerRecorderWrapper.extend({
+        scoped: scoped
+    }, {}, function(inherited) {
+        return {
+
+            supported: function(options) {
+                options = Objs.clone(options, 1);
+                delete options.webrtcStreamingIfNecessary;
+                return inherited.supported.call(this, options);
             }
 
         };
@@ -465,10 +494,12 @@ Scoped.extend("module:WebRTC.RecorderWrapper", [
     "module:WebRTC.RecorderWrapper",
     "module:WebRTC.PeerRecorderWrapper",
     "module:WebRTC.MediaRecorderWrapper",
-    "module:WebRTC.WhammyAudioRecorderWrapper"
-], function(RecorderWrapper, PeerRecorderWrapper, MediaRecorderWrapper, WhammyAudioRecorderWrapper) {
-    RecorderWrapper.register(PeerRecorderWrapper, 3);
-    RecorderWrapper.register(MediaRecorderWrapper, 2);
-    RecorderWrapper.register(WhammyAudioRecorderWrapper, 1);
+    "module:WebRTC.WhammyAudioRecorderWrapper",
+    "module:WebRTC.PeerRecorderWrapperIfNecessary"
+], function(RecorderWrapper, PeerRecorderWrapper, MediaRecorderWrapper, WhammyAudioRecorderWrapper, PeerRecorderWrapperIfNecessary) {
+    RecorderWrapper.register(PeerRecorderWrapper, 4);
+    RecorderWrapper.register(MediaRecorderWrapper, 3);
+    RecorderWrapper.register(WhammyAudioRecorderWrapper, 2);
+    RecorderWrapper.register(PeerRecorderWrapperIfNecessary, 1);
     return {};
 });

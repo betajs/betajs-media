@@ -1,8 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 	<head>
-		<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.js"></script>
-		<script src="../node_modules/betajs-shims/dist/betajs-shims.js"></script>		
+		<script src="../node_modules/betajs-shims/dist/betajs-shims.js"></script>
         <script src="../node_modules/betajs-scoped/dist/scoped.js"></script>
         <script src="../node_modules/betajs/dist/beta-noscoped.js"></script>
         <script src="../node_modules/betajs-browser/dist/betajs-browser-noscoped.js"></script>
@@ -10,7 +9,7 @@
         <script src="../dist/betajs-media-noscoped.js"></script>
 	</head>
 	<body>
-		<video style="width:50%; background-color: #FFF">
+		<video style="width:50%; background-color: #FFF" id="video" playsinline>
 		</video>
 		<script>
 	        BetaJS.Flash.options = {
@@ -18,8 +17,10 @@
                 forceReload : true
             };
 		    var instance = BetaJS.Media.Recorder.VideoRecorderWrapper.create({
-				element: $("video").get(0),
-				flip: false
+				element: document.getElementById("video"),
+				flip: false,
+				webrtcStreaming: true,
+				webrtcStreamingIfNecessary: true
 		    	//forceflash: true
 		    });
 		    
@@ -27,6 +28,7 @@
 		    
 		    instance.ready.success(function () {
 		    	instance.bindMedia();
+		    	document.title = instance._recorder.cls.classname;
 		    });
 		</script>
 	</body>
