@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.85 - 2018-06-27
+betajs-media - v0.0.86 - 2018-07-08
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -1006,7 +1006,7 @@ Public.exports();
 	return Public;
 }).call(this);
 /*!
-betajs-media - v0.0.85 - 2018-06-27
+betajs-media - v0.0.86 - 2018-07-08
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -1020,7 +1020,7 @@ Scoped.binding('flash', 'global:BetaJS.Flash');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.85"
+    "version": "0.0.86"
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.136');
@@ -5323,7 +5323,9 @@ Scoped.define("module:Flash.FlashRecorder", [
             },
 
             removeSnapshotDisplay: function(snapshot) {
-                this._flashObjs.main.removeChildVoid(snapshot);
+                try {
+                    this._flashObjs.main.removeChildVoid(snapshot);
+                } catch (e) {}
                 snapshot.destroy();
             },
 

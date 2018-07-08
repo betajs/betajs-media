@@ -381,7 +381,9 @@ Scoped.define("module:Flash.FlashRecorder", [
             },
 
             removeSnapshotDisplay: function(snapshot) {
-                this._flashObjs.main.removeChildVoid(snapshot);
+                try {
+                    this._flashObjs.main.removeChildVoid(snapshot);
+                } catch (e) {}
                 snapshot.destroy();
             },
 
