@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.86 - 2018-07-08
+betajs-media - v0.0.87 - 2018-07-10
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -13,7 +13,7 @@ Scoped.binding('flash', 'global:BetaJS.Flash');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.86"
+    "version": "0.0.87"
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.136');
@@ -3304,8 +3304,9 @@ Scoped.define("module:Player.FlashPlayer", [
     return Cls;
 });
 Scoped.define("module:Player.Support", [
-    "base:Promise"
-], function(Promise) {
+    "base:Promise",
+    "base:Objs"
+], function(Promise, Objs) {
     return {
 
         resolutionToLabel: function(width, height) {
@@ -3318,33 +3319,64 @@ Scoped.define("module:Player.Support", [
             return "HD";
         },
 
-        videoFileInfo: function(file) {
+        elementFileInfo: function(elementType, elementEvent, elementAttrs, file) {
             try {
-                var video = document.createElement("video");
-                video.volume = 0;
-                video.muted = true;
-                video.preload = true;
+                var element = document.createElement(elementType);
+                Objs.iter(elementAttrs, function(value, key) {
+                    element[key] = value;
+                });
                 var promise = Promise.create();
                 var failed = false;
                 var timer = setTimeout(function() {
                     failed = true;
                     promise.asyncError("Timeout");
                 }, 1000);
-                video.onloadeddata = function() {
+                element[elementEvent] = function() {
                     if (failed)
                         return;
                     clearTimeout(timer);
-                    promise.asyncSuccess({
-                        width: video.videoWidth,
-                        height: video.videoHeight,
-                        duration: video.duration
-                    });
+                    promise.asyncSuccess(element);
                 };
-                video.src = (window.URL || window.webkitURL).createObjectURL(file);
+                element.src = (window.URL || window.webkitURL).createObjectURL(file);
                 return promise;
             } catch (e) {
                 return Promise.error(e);
             }
+        },
+
+        videoFileInfo: function(file) {
+            return this.elementFileInfo("video", "onloadeddata", {
+                volume: 0,
+                muted: true,
+                preload: true
+            }, file).mapSuccess(function(video) {
+                return {
+                    width: video.videoWidth,
+                    height: video.videoHeight,
+                    duration: video.duration
+                };
+            });
+        },
+
+        audioFileInfo: function(file) {
+            return this.elementFileInfo("audio", "onloadeddata", {
+                volume: 0,
+                muted: true,
+                preload: true
+            }, file).mapSuccess(function(audio) {
+                return {
+                    duration: audio.duration
+                };
+            });
+        },
+
+        imageFileInfo: function(file) {
+            return this.elementFileInfo("img", "onload", {}, file).mapSuccess(function(image) {
+                return {
+                    width: image.width,
+                    height: image.height
+                };
+            });
         }
 
     };
