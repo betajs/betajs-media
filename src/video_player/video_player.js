@@ -453,6 +453,16 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
                     this._audioElement.currentTime = position;
             },
 
+            setSpeed: function(speed) {
+                if (speed < 0.5 && speed > 4.0) {
+                    console.warn('Maximum allowed speed range is from 0.5 to 4.0');
+                    return;
+                }
+                this._element.playbackRate = speed;
+                if (this._audioElement)
+                    this._audioElement.playbackRate = speed;
+            },
+
             muted: function() {
                 return (this._audioElement ? this._audioElement : this._element).muted;
             },
