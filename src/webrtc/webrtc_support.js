@@ -2,8 +2,9 @@ Scoped.define("module:WebRTC.Support", [
     "base:Promise",
     "base:Objs",
     "browser:Info",
+    "browser:Dom",
     "base:Time"
-], function(Promise, Objs, Info, Time) {
+], function(Promise, Objs, Info, Dom, Time) {
     return {
 
         canvasSupportsImageFormat: function(imageFormat) {
@@ -34,9 +35,14 @@ Scoped.define("module:WebRTC.Support", [
             var audioContextScriptProcessor = null;
             var createAnalyser = null;
             if (AudioContext) {
-                var audioContext = new AudioContext();
-                audioContextScriptProcessor = audioContext.createJavaScriptNode || audioContext.createScriptProcessor;
-                createAnalyser = audioContext.createAnalyser;
+                Dom.userInteraction(function() {
+                    if (!this.__globals)
+                        return;
+                    var audioContext = new AudioContext();
+                    this.__globals.audioContext = audioContext;
+                    this.__globals.audioContextScriptProcessor = audioContext.createJavaScriptNode || audioContext.createScriptProcessor;
+                    this.__globals.createAnalyser = audioContext.createAnalyser;
+                }, this);
             }
             var RTCPeerConnection = window.RTCPeerConnection || window.mozRTCPeerConnection || window.webkitRTCPeerConnection;
             var RTCIceCandidate = window.RTCIceCandidate || window.mozRTCIceCandidate || window.webkitRTCIceCandidate;
@@ -48,8 +54,8 @@ Scoped.define("module:WebRTC.Support", [
                 URL: URL,
                 MediaRecorder: MediaRecorder,
                 AudioContext: AudioContext,
-                createAnalyser: createAnalyser,
-                audioContextScriptProcessor: audioContextScriptProcessor,
+                //createAnalyser: createAnalyser,
+                //audioContextScriptProcessor: audioContextScriptProcessor,
                 webpSupport: this.canvasSupportsImageFormat("image/webp"),
                 RTCPeerConnection: RTCPeerConnection,
                 RTCIceCandidate: RTCIceCandidate,

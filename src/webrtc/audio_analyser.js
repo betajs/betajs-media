@@ -9,8 +9,11 @@ Scoped.define("module:WebRTC.AudioAnalyser", [
 
             constructor: function(stream) {
                 inherited.constructor.call(this);
+                /*
                 var AudioContext = Support.globals().AudioContext;
                 this._audioContext = new AudioContext();
+                */
+                this._audioContext = Support.globals().audioContext;
                 this._analyserNode = Support.globals().createAnalyser.call(this._audioContext);
                 this._analyserNode.fftSize = 32;
                 if (stream.getAudioTracks().length > 0) {
@@ -22,8 +25,8 @@ Scoped.define("module:WebRTC.AudioAnalyser", [
             destroy: function() {
                 this._analyserNode.disconnect();
                 delete this._analyserNode;
-                this._audioContext.close();
-                delete this._audioContext;
+                //this._audioContext.close();
+                //delete this._audioContext;
                 inherited.destroy.call(this);
             },
 
@@ -43,7 +46,7 @@ Scoped.define("module:WebRTC.AudioAnalyser", [
     }, {
 
         supported: function() {
-            return !!Support.globals().AudioContext && !!Support.globals().createAnalyser;
+            return !!Support.globals().AudioContext && !!Support.globals().createAnalyser && !!Support.globals().audioContext;
         }
 
     });

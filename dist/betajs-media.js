@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.88 - 2018-07-21
+betajs-media - v0.0.89 - 2018-07-28
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -1006,7 +1006,7 @@ Public.exports();
 	return Public;
 }).call(this);
 /*!
-betajs-media - v0.0.88 - 2018-07-21
+betajs-media - v0.0.89 - 2018-07-28
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -1020,7 +1020,7 @@ Scoped.binding('flash', 'global:BetaJS.Flash');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.88"
+    "version": "0.0.89"
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.136');
@@ -4843,6 +4843,16 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
                     this._audioElement.currentTime = position;
             },
 
+            setSpeed: function(speed) {
+                if (speed < 0.5 && speed > 4.0) {
+                    console.warn('Maximum allowed speed range is from 0.5 to 4.0');
+                    return;
+                }
+                this._element.playbackRate = speed;
+                if (this._audioElement)
+                    this._audioElement.playbackRate = speed;
+            },
+
             muted: function() {
                 return (this._audioElement ? this._audioElement : this._element).muted;
             },
@@ -5926,7 +5936,7 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
             },
 
             soundLevel: function() {
-                if (!this._analyser && this._recorder && this._recorder.stream())
+                if (!this._analyser && this._recorder && this._recorder.stream() && AudioAnalyser.supported())
                     this._analyser = new AudioAnalyser(this._recorder.stream());
                 return this._analyser ? this._analyser.soundLevel() : 0.0;
             },
@@ -5936,7 +5946,7 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
                     this._analyser.weakDestroy();
                     delete this._analyser;
                 }
-                if (activate)
+                if (activate && AudioAnalyser.supported())
                     this._analyser = new AudioAnalyser(this._recorder.stream());
             },
 
@@ -6355,8 +6365,11 @@ Scoped.define("module:WebRTC.AudioAnalyser", [
 
             constructor: function(stream) {
                 inherited.constructor.call(this);
+                /*
                 var AudioContext = Support.globals().AudioContext;
                 this._audioContext = new AudioContext();
+                */
+                this._audioContext = Support.globals().audioContext;
                 this._analyserNode = Support.globals().createAnalyser.call(this._audioContext);
                 this._analyserNode.fftSize = 32;
                 if (stream.getAudioTracks().length > 0) {
@@ -6368,8 +6381,8 @@ Scoped.define("module:WebRTC.AudioAnalyser", [
             destroy: function() {
                 this._analyserNode.disconnect();
                 delete this._analyserNode;
-                this._audioContext.close();
-                delete this._audioContext;
+                //this._audioContext.close();
+                //delete this._audioContext;
                 inherited.destroy.call(this);
             },
 
@@ -6389,7 +6402,7 @@ Scoped.define("module:WebRTC.AudioAnalyser", [
     }, {
 
         supported: function() {
-            return !!Support.globals().AudioContext && !!Support.globals().createAnalyser;
+            return !!Support.globals().AudioContext && !!Support.globals().createAnalyser && !!Support.globals().audioContext;
         }
 
     });
@@ -7408,8 +7421,9 @@ Scoped.define("module:WebRTC.Support", [
     "base:Promise",
     "base:Objs",
     "browser:Info",
+    "browser:Dom",
     "base:Time"
-], function(Promise, Objs, Info, Time) {
+], function(Promise, Objs, Info, Dom, Time) {
     return {
 
         canvasSupportsImageFormat: function(imageFormat) {
@@ -7440,9 +7454,14 @@ Scoped.define("module:WebRTC.Support", [
             var audioContextScriptProcessor = null;
             var createAnalyser = null;
             if (AudioContext) {
-                var audioContext = new AudioContext();
-                audioContextScriptProcessor = audioContext.createJavaScriptNode || audioContext.createScriptProcessor;
-                createAnalyser = audioContext.createAnalyser;
+                Dom.userInteraction(function() {
+                    if (!this.__globals)
+                        return;
+                    var audioContext = new AudioContext();
+                    this.__globals.audioContext = audioContext;
+                    this.__globals.audioContextScriptProcessor = audioContext.createJavaScriptNode || audioContext.createScriptProcessor;
+                    this.__globals.createAnalyser = audioContext.createAnalyser;
+                }, this);
             }
             var RTCPeerConnection = window.RTCPeerConnection || window.mozRTCPeerConnection || window.webkitRTCPeerConnection;
             var RTCIceCandidate = window.RTCIceCandidate || window.mozRTCIceCandidate || window.webkitRTCIceCandidate;
@@ -7454,8 +7473,8 @@ Scoped.define("module:WebRTC.Support", [
                 URL: URL,
                 MediaRecorder: MediaRecorder,
                 AudioContext: AudioContext,
-                createAnalyser: createAnalyser,
-                audioContextScriptProcessor: audioContextScriptProcessor,
+                //createAnalyser: createAnalyser,
+                //audioContextScriptProcessor: audioContextScriptProcessor,
                 webpSupport: this.canvasSupportsImageFormat("image/webp"),
                 RTCPeerConnection: RTCPeerConnection,
                 RTCIceCandidate: RTCIceCandidate,
