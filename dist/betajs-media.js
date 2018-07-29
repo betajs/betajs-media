@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.89 - 2018-07-28
+betajs-media - v0.0.90 - 2018-07-29
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -1006,7 +1006,7 @@ Public.exports();
 	return Public;
 }).call(this);
 /*!
-betajs-media - v0.0.89 - 2018-07-28
+betajs-media - v0.0.90 - 2018-07-29
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -1020,7 +1020,7 @@ Scoped.binding('flash', 'global:BetaJS.Flash');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.89"
+    "version": "0.0.90"
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.136');
@@ -5990,7 +5990,10 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
                 image.style.position = "absolute";
                 this.updateSnapshotDisplay(snapshot, image, x, y, w, h);
                 image.src = url;
-                Dom.elementPrependChild(parent, image);
+                if (parent.tagName.toLowerCase() === "video")
+                    Dom.elementInsertAfter(image, parent);
+                else
+                    Dom.elementPrependChild(parent, image);
                 return image;
             },
 

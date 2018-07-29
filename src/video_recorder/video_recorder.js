@@ -306,7 +306,10 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
                 image.style.position = "absolute";
                 this.updateSnapshotDisplay(snapshot, image, x, y, w, h);
                 image.src = url;
-                Dom.elementPrependChild(parent, image);
+                if (parent.tagName.toLowerCase() === "video")
+                    Dom.elementInsertAfter(image, parent);
+                else
+                    Dom.elementPrependChild(parent, image);
                 return image;
             },
 
