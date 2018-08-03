@@ -289,7 +289,8 @@ Scoped.define("module:WebRTC.Support", [
                         return promise.mapSuccess(function() {
                             return this.chromeExtensionMessage(extensionId, {
                                 type: "acquire",
-                                sources: ['window', 'screen', 'tab']
+                                sources: ['window', 'screen', 'tab'],
+                                url: window.self !== window.top ? window.location.href : null // if recorder is inside of iframe
                             }).mapSuccess(function(acquireResponse) {
                                 if (!acquireResponse || acquireResponse.type !== 'success')
                                     return Promise.error("Could not acquire permission to access screen.");

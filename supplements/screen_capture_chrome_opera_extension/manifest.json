@@ -2,7 +2,7 @@
   "name": "<Extension Name>",
   "short_name": "<Short Extension Name>",
   "description": "<Extension Description>",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "manifest_version": 2,
   "background": {
     "scripts": ["extension.js"],
