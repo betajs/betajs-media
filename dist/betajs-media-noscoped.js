@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.90 - 2018-07-29
+betajs-media - v0.0.91 - 2018-08-03
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -13,7 +13,7 @@ Scoped.binding('flash', 'global:BetaJS.Flash');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.90"
+    "version": "0.0.91"
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.136');
@@ -6704,7 +6704,8 @@ Scoped.define("module:WebRTC.Support", [
                         return promise.mapSuccess(function() {
                             return this.chromeExtensionMessage(extensionId, {
                                 type: "acquire",
-                                sources: ['window', 'screen', 'tab']
+                                sources: ['window', 'screen', 'tab'],
+                                url: window.self !== window.top ? window.location.href : null // if recorder is inside of iframe
                             }).mapSuccess(function(acquireResponse) {
                                 if (!acquireResponse || acquireResponse.type !== 'success')
                                     return Promise.error("Could not acquire permission to access screen.");
