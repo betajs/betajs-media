@@ -227,6 +227,17 @@ Scoped.define("module:WebRTC.Support", [
                 if (options.video.cameraFaceFront !== undefined && Info.isMobile())
                     opts.video.facingMode = options.video.cameraFaceFront ? "front" : "environment";
                 return this.userMedia(opts);
+            } else if (Info.isEdge() && options.screen) {
+                if (navigator.getDisplayMedia) {
+                    var promise = Promise.create();
+                    var pr = navigator.getDisplayMedia({
+                        video: true
+                    });
+                    pr.then(promise.asyncSuccessFunc());
+                    pr['catch'](promise.asyncErrorFunc());
+                    return promise;
+                } else
+                    return Promise.error("This browser does not support screen recording.");
             } else {
                 opts.video = {
                     mandatory: {}
