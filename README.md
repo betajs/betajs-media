@@ -1,4 +1,4 @@
-# betajs-media 0.0.92
+# betajs-media 0.0.93
 [![Code Climate](https://codeclimate.com/github/betajs/betajs-media/badges/gpa.svg)](https://codeclimate.com/github/betajs/betajs-media)
 [![NPM](https://img.shields.io/npm/v/betajs-media.svg?style=flat)](https://www.npmjs.com/package/betajs-media)
 [![Gitter Chat](https://badges.gitter.im/betajs/betajs-media.svg)](https://gitter.im/betajs/betajs-media)
@@ -68,11 +68,11 @@ You can use the library in the browser and compile it as well.
 ## Links
 | Resource   | URL |
 | :--------- | --: |
-| Homepage   | [https://betajs.com](https://betajs.com) |
+| Homepage   | [http://betajs.com](http://betajs.com) |
 | Git        | [git://github.com/betajs/betajs-media.git](git://github.com/betajs/betajs-media.git) |
 | Repository | [https://github.com/betajs/betajs-media](https://github.com/betajs/betajs-media) |
-| Blog       | [https://blog.betajs.com](https://blog.betajs.com) | 
-| Twitter    | [https://twitter.com/thebetajs](https://twitter.com/thebetajs) | 
+| Blog       | [http://blog.betajs.com](http://blog.betajs.com) | 
+| Twitter    | [http://twitter.com/thebetajs](http://twitter.com/thebetajs) | 
 | Gitter     | [https://gitter.im/betajs/betajs-media](https://gitter.im/betajs/betajs-media) | 
 
 
