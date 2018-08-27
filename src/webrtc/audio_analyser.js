@@ -14,7 +14,8 @@ Scoped.define("module:WebRTC.AudioAnalyser", [
                 this._audioContext = new AudioContext();
                 */
                 this._audioContext = Support.globals().audioContext;
-                this._analyserNode = Support.globals().createAnalyser.call(this._audioContext);
+                this._analyserNode = this._audioContext.createAnalyser.call(this._audioContext);
+                //this._analyserNode = Support.globals().createAnalyser.call(this._audioContext);
                 this._analyserNode.fftSize = 32;
                 if (stream.getAudioTracks().length > 0) {
                     this._audioInput = this._audioContext.createMediaStreamSource(stream);
