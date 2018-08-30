@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.92 - 2018-08-25
+betajs-media - v0.0.94 - 2018-08-30
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -1006,7 +1006,7 @@ Public.exports();
 	return Public;
 }).call(this);
 /*!
-betajs-media - v0.0.92 - 2018-08-25
+betajs-media - v0.0.94 - 2018-08-30
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -1020,7 +1020,7 @@ Scoped.binding('flash', 'global:BetaJS.Flash');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.92"
+    "version": "0.0.94"
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.136');
@@ -6373,7 +6373,8 @@ Scoped.define("module:WebRTC.AudioAnalyser", [
                 this._audioContext = new AudioContext();
                 */
                 this._audioContext = Support.globals().audioContext;
-                this._analyserNode = Support.globals().createAnalyser.call(this._audioContext);
+                this._analyserNode = this._audioContext.createAnalyser.call(this._audioContext);
+                //this._analyserNode = Support.globals().createAnalyser.call(this._audioContext);
                 this._analyserNode.fftSize = 32;
                 if (stream.getAudioTracks().length > 0) {
                     this._audioInput = this._audioContext.createMediaStreamSource(stream);
@@ -7442,6 +7443,7 @@ Scoped.define("module:WebRTC.Support", [
         getGlobals: function() {
             var getUserMedia = null;
             var getUserMediaCtx = null;
+            var audioContext = null;
 
             if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia && Info.isFirefox()) {
                 getUserMedia = navigator.mediaDevices.getUserMedia;
@@ -7476,6 +7478,7 @@ Scoped.define("module:WebRTC.Support", [
                 URL: URL,
                 MediaRecorder: MediaRecorder,
                 AudioContext: AudioContext,
+                //audioContext: audioContext,
                 //createAnalyser: createAnalyser,
                 //audioContextScriptProcessor: audioContextScriptProcessor,
                 webpSupport: this.canvasSupportsImageFormat("image/webp"),

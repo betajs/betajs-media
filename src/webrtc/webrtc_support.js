@@ -36,13 +36,10 @@ Scoped.define("module:WebRTC.Support", [
             var audioContextScriptProcessor = null;
             var createAnalyser = null;
             if (AudioContext) {
-                // Need to initialize audio context once to avoid exceed limitation per document
-                audioContext = new AudioContext();
-                this.webAudioResume(audioContext);
                 Dom.userInteraction(function() {
                     if (!this.__globals)
                         return;
-                    //var audioContext = new AudioContext();
+                    var audioContext = new AudioContext();
                     this.__globals.audioContext = audioContext;
                     this.__globals.audioContextScriptProcessor = audioContext.createJavaScriptNode || audioContext.createScriptProcessor;
                     this.__globals.createAnalyser = audioContext.createAnalyser;
@@ -57,8 +54,8 @@ Scoped.define("module:WebRTC.Support", [
                 getUserMediaCtx: getUserMediaCtx,
                 URL: URL,
                 MediaRecorder: MediaRecorder,
-                //AudioContext: AudioContext,
-                audioContext: audioContext,
+                AudioContext: AudioContext,
+                //audioContext: audioContext,
                 //createAnalyser: createAnalyser,
                 //audioContextScriptProcessor: audioContextScriptProcessor,
                 webpSupport: this.canvasSupportsImageFormat("image/webp"),
@@ -396,57 +393,6 @@ Scoped.define("module:WebRTC.Support", [
                 type: mimeString
             });
             return blob;
-        },
-
-        /**
-         * webAudioResume(context).then(function(resumed) {
-         *     if (resumed) {
-         *       // sound will start play
-         *     } else {
-         *       // no need for resume ctx status was not suspended
-         *     }
-         * }, function (reason) {
-         *      console.error(reason);
-         * });
-         *
-         * @param context
-         * @return {*}
-         */
-        // webAudioResumePromised: function (context) {
-        //     return new Promise(function (resolve, reject) {
-        //         // Or we can try Dom.userInteractionCallbackFunc; Dom.userInteraction(function() {
-        //         if (context.state === 'suspended' && 'ontouchstart' in window) {
-        //             var resumeAudio = function () {
-        //                 context.resume().then(function() {
-        //                     document.removeEventListener('touchend', resumeAudio);
-        //                     document.removeEventListener('touchstart', resumeAudio);
-        //
-        //                     resolve(true);
-        //                 }, function (reason) {
-        //                     reject(reason);
-        //                 });
-        //             };
-        //             document.addEventListener('touchend', resumeAudio, false); // or make it once with autodestroy.once
-        //             document.addEventListener('touchstart', resumeAudio, false);
-        //         } else {
-        //             resolve(false);
-        //         }
-        //     });
-        // },
-
-        webAudioResume: function(context) {
-            // Or we can try Dom.userInteractionCallbackFunc; Dom.userInteraction(function() {
-            if (context.state === 'suspended' && 'ontouchstart' in window) {
-                var resumeAudio = function() {
-                    context.resume().then(function() {
-                        document.removeEventListener('touchend', resumeAudio);
-                        document.removeEventListener('touchstart', resumeAudio);
-                        return true;
-                    });
-                };
-                document.addEventListener('touchend', resumeAudio, false); // or make it once with autodestroy.once
-                document.addEventListener('touchstart', resumeAudio, false);
-            }
         }
 
     };

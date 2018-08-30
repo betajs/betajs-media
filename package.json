@@ -1,5 +1,5 @@
 {
-    "homepage": "http://betajs.com",
+    "homepage": "https://betajs.com",
     "license": "Apache-2.0",
     "licenses": [
         {
@@ -15,7 +15,7 @@
         "url": "https://github.com/betajs/betajs-media/issues"
     },
     "name": "betajs-media",
-    "version": "0.0.93",
+    "version": "0.0.94",
     "description": "BetaJS-Media is a JavaScript media framework",
     "contributors": [
         "Ziggeo",
@@ -55,8 +55,8 @@
         "url": "git://github.com/betajs/betajs-media.git"
     },
     "meta": {
-        "blog": "http://blog.betajs.com",
-        "twitter": "http://twitter.com/thebetajs",
+        "blog": "https://blog.betajs.com",
+        "twitter": "https://twitter.com/thebetajs",
         "sponsors": [
             "Ziggeo",
             "Browserstack"
