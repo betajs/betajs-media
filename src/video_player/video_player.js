@@ -322,7 +322,11 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
                     this._setup();
                 }, this);
                 try {
-                    if (!Info.isChrome())
+                    // This case for Chrome was added in this commit:
+                    // https://github.com/betajs/betajs-media/commit/119f914dd00582c011e25f3c6bf6340c0570d2de#diff-a12efbc588b9a37a545b68177107eb0d
+                    // Unfortunately, I don't remember the actual reason, and 'Minor Chrome Playback Fix' is one of the most useless commit messages I have ever seen.
+                    // This seems to be an issue with blobs at least, so playing it safe for now:
+                    if (!Info.isChrome() || sources[0].src.indexOf("blob:") === 0)
                         this._element.load();
                 } catch (e) {}
                 return promise;

@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.94 - 2018-08-30
+betajs-media - v0.0.95 - 2018-09-18
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -1006,7 +1006,7 @@ Public.exports();
 	return Public;
 }).call(this);
 /*!
-betajs-media - v0.0.94 - 2018-08-30
+betajs-media - v0.0.95 - 2018-09-18
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -1020,7 +1020,8 @@ Scoped.binding('flash', 'global:BetaJS.Flash');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.94"
+    "version": "0.0.95",
+    "datetime": 1537307460875
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.136');
@@ -4712,7 +4713,11 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
                     this._setup();
                 }, this);
                 try {
-                    if (!Info.isChrome())
+                    // This case for Chrome was added in this commit:
+                    // https://github.com/betajs/betajs-media/commit/119f914dd00582c011e25f3c6bf6340c0570d2de#diff-a12efbc588b9a37a545b68177107eb0d
+                    // Unfortunately, I don't remember the actual reason, and 'Minor Chrome Playback Fix' is one of the most useless commit messages I have ever seen.
+                    // This seems to be an issue with blobs at least, so playing it safe for now:
+                    if (!Info.isChrome() || sources[0].src.indexOf("blob:") === 0)
                         this._element.load();
                 } catch (e) {}
                 return promise;
