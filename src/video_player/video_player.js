@@ -219,6 +219,7 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
                 var promise = Promise.create();
                 this._element.innerHTML = "";
                 var sources = this.sources();
+                var blobSource = sources[0].src.indexOf("blob:") === 0 ? sources[0].src : false;
                 var ie9 = (Info.isInternetExplorer() && Info.internetExplorerVersion() == 9) || Info.isWindowsPhone();
                 if (this._element.tagName.toLowerCase() !== "video") {
                     this._element = Dom.changeTag(this._element, "video");
@@ -265,7 +266,7 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
                         else if (this._element.networkState === this._element.NETWORK_LOADING) {
                             if (Info.isEdge() || Info.isInternetExplorer())
                                 promise.asyncSuccess(true);
-                            else if (Info.isFirefox() && sources[0].src.indexOf("blob:") === 0)
+                            else if (Info.isFirefox() && !!blobSource)
                                 promise.asyncSuccess(true);
                         }
                     },
@@ -277,7 +278,9 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
                 var errorCount = 0;
                 this._audioElement = null;
                 var errorEvents = new DomEvents();
-                if (!ie9) {
+                if (blobSource) {
+                    this._element.src = blobSource;
+                } else if (!ie9) {
                     Objs.iter(sources, function(source) {
                         var sourceEl = document.createElement("source");
                         if (source.type)
@@ -322,11 +325,7 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
                     this._setup();
                 }, this);
                 try {
-                    // This case for Chrome was added in this commit:
-                    // https://github.com/betajs/betajs-media/commit/119f914dd00582c011e25f3c6bf6340c0570d2de#diff-a12efbc588b9a37a545b68177107eb0d
-                    // Unfortunately, I don't remember the actual reason, and 'Minor Chrome Playback Fix' is one of the most useless commit messages I have ever seen.
-                    // This seems to be an issue with blobs at least, so playing it safe for now:
-                    if (!Info.isChrome() || sources[0].src.indexOf("blob:") === 0)
+                    if (!Info.isChrome())
                         this._element.load();
                 } catch (e) {}
                 return promise;

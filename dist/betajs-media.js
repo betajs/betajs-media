@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.95 - 2018-09-18
+betajs-media - v0.0.96 - 2018-09-20
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -1006,7 +1006,7 @@ Public.exports();
 	return Public;
 }).call(this);
 /*!
-betajs-media - v0.0.95 - 2018-09-18
+betajs-media - v0.0.96 - 2018-09-20
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -1020,8 +1020,8 @@ Scoped.binding('flash', 'global:BetaJS.Flash');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.95",
-    "datetime": 1537307460875
+    "version": "0.0.96",
+    "datetime": 1537434999429
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.136');
@@ -4610,6 +4610,7 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
                 var promise = Promise.create();
                 this._element.innerHTML = "";
                 var sources = this.sources();
+                var blobSource = sources[0].src.indexOf("blob:") === 0 ? sources[0].src : false;
                 var ie9 = (Info.isInternetExplorer() && Info.internetExplorerVersion() == 9) || Info.isWindowsPhone();
                 if (this._element.tagName.toLowerCase() !== "video") {
                     this._element = Dom.changeTag(this._element, "video");
@@ -4656,7 +4657,7 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
                         else if (this._element.networkState === this._element.NETWORK_LOADING) {
                             if (Info.isEdge() || Info.isInternetExplorer())
                                 promise.asyncSuccess(true);
-                            else if (Info.isFirefox() && sources[0].src.indexOf("blob:") === 0)
+                            else if (Info.isFirefox() && !!blobSource)
                                 promise.asyncSuccess(true);
                         }
                     },
@@ -4668,7 +4669,9 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
                 var errorCount = 0;
                 this._audioElement = null;
                 var errorEvents = new DomEvents();
-                if (!ie9) {
+                if (blobSource) {
+                    this._element.src = blobSource;
+                } else if (!ie9) {
                     Objs.iter(sources, function(source) {
                         var sourceEl = document.createElement("source");
                         if (source.type)
@@ -4713,11 +4716,7 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
                     this._setup();
                 }, this);
                 try {
-                    // This case for Chrome was added in this commit:
-                    // https://github.com/betajs/betajs-media/commit/119f914dd00582c011e25f3c6bf6340c0570d2de#diff-a12efbc588b9a37a545b68177107eb0d
-                    // Unfortunately, I don't remember the actual reason, and 'Minor Chrome Playback Fix' is one of the most useless commit messages I have ever seen.
-                    // This seems to be an issue with blobs at least, so playing it safe for now:
-                    if (!Info.isChrome() || sources[0].src.indexOf("blob:") === 0)
+                    if (!Info.isChrome())
                         this._element.load();
                 } catch (e) {}
                 return promise;
