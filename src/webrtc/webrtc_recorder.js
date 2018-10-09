@@ -29,14 +29,7 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                         sourceId: this._options.audioId
                     } : false,
                     video: this._options.recordVideo ? {
-                        /*
-                        mandatory: {
-                        	minWidth: this._options.recordResolution.width,
-                        	maxWidth: this._options.recordResolution.width,
-                        	minHeight: this._options.recordResolution.height,
-                        	maxHeight: this._options.recordResolution.height
-                        }
-                        */
+                        frameRate: this._options.framerate,
                         sourceId: this._options.videoId,
                         width: this._options.recordResolution.width,
                         height: this._options.recordResolution.height,

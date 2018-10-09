@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.96 - 2018-09-20
+betajs-media - v0.0.97 - 2018-10-08
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -13,8 +13,8 @@ Scoped.binding('flash', 'global:BetaJS.Flash');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.96",
-    "datetime": 1537434999429
+    "version": "0.0.97",
+    "datetime": 1539046765179
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.136');
@@ -5944,14 +5944,7 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                         sourceId: this._options.audioId
                     } : false,
                     video: this._options.recordVideo ? {
-                        /*
-                        mandatory: {
-                        	minWidth: this._options.recordResolution.width,
-                        	maxWidth: this._options.recordResolution.width,
-                        	minHeight: this._options.recordResolution.height,
-                        	maxHeight: this._options.recordResolution.height
-                        }
-                        */
+                        frameRate: this._options.framerate,
                         sourceId: this._options.videoId,
                         width: this._options.recordResolution.width,
                         height: this._options.recordResolution.height,
@@ -6634,16 +6627,11 @@ Scoped.define("module:WebRTC.Support", [
                         ideal: options.video.height
                     };
                 }
-                /* This is supposed to work according to docs, but it is not:
-                 * https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia#Frame_rate
-                 */
-                /*
                 if (options.video.frameRate) {
                     opts.video.frameRate = {
                         ideal: options.video.frameRate
                     };
                 }
-                */
                 if (options.video.sourceId)
                     opts.video.sourceId = options.video.sourceId;
                 if (options.video.cameraFaceFront !== undefined && Info.isMobile())
@@ -6680,8 +6668,11 @@ Scoped.define("module:WebRTC.Support", [
                 if (options.video.sourceId)
                     opts.video.mandatory.sourceId = options.video.sourceId;
                 if (options.video.cameraFaceFront !== undefined && Info.isMobile())
-                    opts.video.facingMode = options.video.cameraFaceFront ? "front" : "environment";
-
+                    opts.video.mandatory.facingMode = options.video.cameraFaceFront ? "front" : "environment";
+                if (options.video.frameRate) {
+                    opts.video.mandatory.minFrameRate = options.video.frameRate;
+                    opts.video.mandatory.maxFrameRate = options.video.frameRate;
+                }
                 var probe = function(count) {
                     var mandatory = opts.video.mandatory;
                     return this.userMedia(opts).mapError(function(e) {

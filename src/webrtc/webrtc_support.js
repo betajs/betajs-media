@@ -214,16 +214,11 @@ Scoped.define("module:WebRTC.Support", [
                         ideal: options.video.height
                     };
                 }
-                /* This is supposed to work according to docs, but it is not:
-                 * https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia#Frame_rate
-                 */
-                /*
                 if (options.video.frameRate) {
                     opts.video.frameRate = {
                         ideal: options.video.frameRate
                     };
                 }
-                */
                 if (options.video.sourceId)
                     opts.video.sourceId = options.video.sourceId;
                 if (options.video.cameraFaceFront !== undefined && Info.isMobile())
@@ -260,8 +255,11 @@ Scoped.define("module:WebRTC.Support", [
                 if (options.video.sourceId)
                     opts.video.mandatory.sourceId = options.video.sourceId;
                 if (options.video.cameraFaceFront !== undefined && Info.isMobile())
-                    opts.video.facingMode = options.video.cameraFaceFront ? "front" : "environment";
-
+                    opts.video.mandatory.facingMode = options.video.cameraFaceFront ? "front" : "environment";
+                if (options.video.frameRate) {
+                    opts.video.mandatory.minFrameRate = options.video.frameRate;
+                    opts.video.mandatory.maxFrameRate = options.video.frameRate;
+                }
                 var probe = function(count) {
                     var mandatory = opts.video.mandatory;
                     return this.userMedia(opts).mapError(function(e) {
