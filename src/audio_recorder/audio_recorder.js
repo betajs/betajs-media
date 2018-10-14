@@ -54,6 +54,10 @@ Scoped.define("module:AudioRecorder.AudioRecorderWrapper", [
                 return false;
             },
 
+            isWebrtcStreaming: function() {
+                return false;
+            },
+
             supportsLocalPlayback: function() {
                 return false;
             },
@@ -154,6 +158,10 @@ Scoped.define("module:AudioRecorder.WebRTCAudioRecorderWrapper", [
                 if (!this._analyser && this._recorder && this._recorder.stream())
                     this._analyser = new AudioAnalyser(this._recorder.stream());
                 return this._analyser ? this._analyser.soundLevel() : 0.0;
+            },
+
+            isWebrtcStreaming: function() {
+                return this._recorder.isWebrtcStreaming();
             },
 
             testSoundLevel: function(activate) {

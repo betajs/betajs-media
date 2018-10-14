@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.97 - 2018-10-08
+betajs-media - v0.0.98 - 2018-10-14
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -1006,7 +1006,7 @@ Public.exports();
 	return Public;
 }).call(this);
 /*!
-betajs-media - v0.0.97 - 2018-10-08
+betajs-media - v0.0.98 - 2018-10-14
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -1020,8 +1020,8 @@ Scoped.binding('flash', 'global:BetaJS.Flash');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.97",
-    "datetime": 1539046765179
+    "version": "0.0.98",
+    "datetime": 1539551658896
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.136');
@@ -1737,6 +1737,10 @@ Scoped.define("module:AudioRecorder.AudioRecorderWrapper", [
                 return false;
             },
 
+            isWebrtcStreaming: function() {
+                return false;
+            },
+
             supportsLocalPlayback: function() {
                 return false;
             },
@@ -1837,6 +1841,10 @@ Scoped.define("module:AudioRecorder.WebRTCAudioRecorderWrapper", [
                 if (!this._analyser && this._recorder && this._recorder.stream())
                     this._analyser = new AudioAnalyser(this._recorder.stream());
                 return this._analyser ? this._analyser.soundLevel() : 0.0;
+            },
+
+            isWebrtcStreaming: function() {
+                return this._recorder.isWebrtcStreaming();
             },
 
             testSoundLevel: function(activate) {
@@ -5809,6 +5817,10 @@ Scoped.define("module:Recorder.VideoRecorderWrapper", [
                 return false;
             },
 
+            isWebrtcStreaming: function() {
+                return false;
+            },
+
             supportsLocalPlayback: function() {
                 return false;
             },
@@ -5878,6 +5890,7 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
                     flip: !!this._options.flip,
                     framerate: this._options.framerate,
                     recordVideo: this._options.recordVideo,
+                    recordFakeVideo: !this._options.recordVideo,
                     recordAudio: this._options.recordAudio,
                     recordResolution: {
                         width: this._options.recordingWidth,
@@ -5937,6 +5950,10 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
 
             deltaCoefficient: function() {
                 return this._recorder.deltaCoefficient();
+            },
+
+            isWebrtcStreaming: function() {
+                return this._recorder.isWebrtcStreaming();
             },
 
             soundLevel: function() {
@@ -6969,6 +6986,10 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                 return this._stream;
             },
 
+            isWebrtcStreaming: function() {
+                return false;
+            },
+
             bindMedia: function() {
                 if (this._bound)
                     return;
@@ -7163,6 +7184,10 @@ Scoped.define("module:WebRTC.PeerRecorderWrapper", [
             return this._recorder.start(options.webrtcStreaming);
         },
 
+        isWebrtcStreaming: function() {
+            return true;
+        },
+
         _stopRecord: function() {
             this._recorder.stop();
             var localBlob = null;
@@ -7220,8 +7245,11 @@ Scoped.define("module:WebRTC.PeerRecorderWrapperIfNecessary", [
         return {
 
             supported: function(options) {
-                options = Objs.clone(options, 1);
-                delete options.webrtcStreamingIfNecessary;
+                if (options.webrtcStreamingIfNecessary) {
+                    options = Objs.clone(options, 1);
+                    options.webrtcStreamingIfNecessary = false;
+                    options.webrtcStreaming = true;
+                }
                 return inherited.supported.call(this, options);
             }
 
@@ -7275,10 +7303,8 @@ Scoped.define("module:WebRTC.MediaRecorderWrapper", [
             supported: function(options) {
                 if (!inherited.supported.call(this, options))
                     return false;
-                /*
-                if (!options.recordVideo)
+                if (options.recordFakeVideo)
                     return false;
-                    */
                 return MediaRecorder.supported();
             }
 

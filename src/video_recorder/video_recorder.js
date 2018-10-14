@@ -121,6 +121,10 @@ Scoped.define("module:Recorder.VideoRecorderWrapper", [
                 return false;
             },
 
+            isWebrtcStreaming: function() {
+                return false;
+            },
+
             supportsLocalPlayback: function() {
                 return false;
             },
@@ -190,6 +194,7 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
                     flip: !!this._options.flip,
                     framerate: this._options.framerate,
                     recordVideo: this._options.recordVideo,
+                    recordFakeVideo: !this._options.recordVideo,
                     recordAudio: this._options.recordAudio,
                     recordResolution: {
                         width: this._options.recordingWidth,
@@ -249,6 +254,10 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
 
             deltaCoefficient: function() {
                 return this._recorder.deltaCoefficient();
+            },
+
+            isWebrtcStreaming: function() {
+                return this._recorder.isWebrtcStreaming();
             },
 
             soundLevel: function() {

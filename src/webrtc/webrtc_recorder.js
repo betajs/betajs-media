@@ -47,6 +47,10 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                 return this._stream;
             },
 
+            isWebrtcStreaming: function() {
+                return false;
+            },
+
             bindMedia: function() {
                 if (this._bound)
                     return;
@@ -241,6 +245,10 @@ Scoped.define("module:WebRTC.PeerRecorderWrapper", [
             return this._recorder.start(options.webrtcStreaming);
         },
 
+        isWebrtcStreaming: function() {
+            return true;
+        },
+
         _stopRecord: function() {
             this._recorder.stop();
             var localBlob = null;
@@ -298,8 +306,11 @@ Scoped.define("module:WebRTC.PeerRecorderWrapperIfNecessary", [
         return {
 
             supported: function(options) {
-                options = Objs.clone(options, 1);
-                delete options.webrtcStreamingIfNecessary;
+                if (options.webrtcStreamingIfNecessary) {
+                    options = Objs.clone(options, 1);
+                    options.webrtcStreamingIfNecessary = false;
+                    options.webrtcStreaming = true;
+                }
                 return inherited.supported.call(this, options);
             }
 
@@ -353,10 +364,8 @@ Scoped.define("module:WebRTC.MediaRecorderWrapper", [
             supported: function(options) {
                 if (!inherited.supported.call(this, options))
                     return false;
-                /*
-                if (!options.recordVideo)
+                if (options.recordFakeVideo)
                     return false;
-                    */
                 return MediaRecorder.supported();
             }
 
