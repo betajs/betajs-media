@@ -1,8 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 	<head>
-		<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
-		<script src="../node_modules/betajs-shims/dist/betajs-shims.js"></script>		
+		<script src="../node_modules/betajs-shims/dist/betajs-shims.js"></script>
         <script src="../node_modules/betajs-scoped/dist/scoped.js"></script>
         <script src="../node_modules/betajs/dist/beta-noscoped.js"></script>
         <script src="../node_modules/betajs-browser/dist/betajs-browser-noscoped.js"></script>
@@ -12,18 +11,27 @@
 	<body>
 	   <textarea id="constraints" rows=10 cols=50>{"video": {"width":1920, "height":1080}}</textarea>
 	   <button id="go">OK</button>
+	   <div id="result"></div>
+	   <button id="query">Query</button>
+	   <div id="resolution"></div>
 	   <script>
-	    $("#go").on("click", function () {
-	    	var constraints = JSON.parse($("#constraints").val().trim());
+		   var streamit;
+	    document.querySelector("#go").onclick = function () {
+	    	var constraints = JSON.parse(document.querySelector("#constraints").value.trim());
 	    	BetaJS.Media.WebRTC.Support.userMedia2(constraints).success(function (stream) {
+	    	    streamit = stream;
 	    		console.log("Success", stream);
-	    		BetaJS.Media.WebRTC.Support.streamQueryResolution(stream).success(function (resolution) {
-	    			console.log("Resolution", resolution);
-	    		});
+                document.querySelector("#result").innerText = "Success";
 	        }).error(function (error) {
 	    		console.log("Error", error);
 	    	});
-	    });	   
+	    };
+        document.querySelector("#query").onclick = function () {
+			BetaJS.Media.WebRTC.Support.streamQueryResolution(streamit).success(function (resolution) {
+				console.log("Resolution", resolution);
+				document.querySelector("#resolution").innerText = JSON.stringify(resolution);
+			});
+        };
 	   </script>
 	</body>
 </html>

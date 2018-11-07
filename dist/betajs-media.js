@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.98 - 2018-10-14
+betajs-media - v0.0.99 - 2018-11-07
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -1006,7 +1006,7 @@ Public.exports();
 	return Public;
 }).call(this);
 /*!
-betajs-media - v0.0.98 - 2018-10-14
+betajs-media - v0.0.99 - 2018-11-07
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -1020,8 +1020,8 @@ Scoped.binding('flash', 'global:BetaJS.Flash');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.98",
-    "datetime": 1539551658896
+    "version": "0.0.99",
+    "datetime": 1541625684042
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.136');
@@ -7637,7 +7637,18 @@ Scoped.define("module:WebRTC.Support", [
                 options.video.width = options.video.width || window.innerWidth || document.body.clientWidth;
                 options.video.height = options.video.height || window.innerHeight || document.body.clientHeight;
             }
-            if (Info.isFirefox()) {
+            if (Info.isiOS()) {
+                opts.video = {};
+                if (options.video.width)
+                    opts.video.width = options.video.width;
+                if (options.video.height)
+                    opts.video.height = options.video.height;
+                if (options.video.frameRate)
+                    opts.video.frameRate = options.video.frameRate;
+                if (options.video.cameraFaceFront !== undefined)
+                    opts.video.facingMode = options.video.cameraFaceFront ? "front" : "environment";
+                return this.userMedia(opts);
+            } else if (Info.isFirefox()) {
                 opts.video = {};
                 if (options.screen) {
                     opts.video.mediaSource = "screen";
