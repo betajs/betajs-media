@@ -149,7 +149,11 @@ Scoped.define("module:Player.VideoPlayerWrapper", [
                 if (this._reloadonplay)
                     this._element.load();
                 this._reloadonplay = false;
-                this._element.play();
+                try {
+                    var result = this._element.play();
+                    if (result['catch'])
+                        result['catch'](function() {});
+                } catch (e) {}
             },
 
             pause: function() {
