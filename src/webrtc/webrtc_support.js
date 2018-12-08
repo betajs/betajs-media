@@ -22,7 +22,7 @@ Scoped.define("module:WebRTC.Support", [
             var getUserMediaCtx = null;
             var audioContext = null;
 
-            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia && Info.isFirefox()) {
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
                 getUserMedia = navigator.mediaDevices.getUserMedia;
                 getUserMediaCtx = navigator.mediaDevices;
             } else {

@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.100 - 2018-11-24
+betajs-media - v0.0.101 - 2018-12-08
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -1006,7 +1006,7 @@ Public.exports();
 	return Public;
 }).call(this);
 /*!
-betajs-media - v0.0.100 - 2018-11-24
+betajs-media - v0.0.101 - 2018-12-08
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -1020,8 +1020,8 @@ Scoped.binding('flash', 'global:BetaJS.Flash');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.100",
-    "datetime": 1543095217919
+    "version": "0.0.101",
+    "datetime": 1544287174272
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.136');
@@ -7472,7 +7472,7 @@ Scoped.define("module:WebRTC.Support", [
             var getUserMediaCtx = null;
             var audioContext = null;
 
-            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia && Info.isFirefox()) {
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
                 getUserMedia = navigator.mediaDevices.getUserMedia;
                 getUserMediaCtx = navigator.mediaDevices;
             } else {
