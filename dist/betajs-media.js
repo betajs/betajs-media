@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.101 - 2018-12-08
+betajs-media - v0.0.102 - 2018-12-23
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -1006,7 +1006,7 @@ Public.exports();
 	return Public;
 }).call(this);
 /*!
-betajs-media - v0.0.101 - 2018-12-08
+betajs-media - v0.0.102 - 2018-12-23
 Copyright (c) Ziggeo,Oliver Friedmann
 Apache-2.0 Software License.
 */
@@ -1020,8 +1020,8 @@ Scoped.binding('flash', 'global:BetaJS.Flash');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.101",
-    "datetime": 1544287174272
+    "version": "0.0.102",
+    "datetime": 1545543944545
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.136');
@@ -6820,7 +6820,9 @@ Scoped.define("module:WebRTC.PeerRecorder", [
                     }, this);
                 } else
                     this._peerConnection.addStream(this._stream);
-                this._peerConnection.createOffer(Functions.as_method(this._offerGotDescription, this), this._errorCallback("PEER_CREATE_OFFER"));
+                var offer = this._peerConnection.createOffer();
+                offer.then(Functions.as_method(this._offerGotDescription, this));
+                offer['catch'](this._errorCallback("PEER_CREATE_OFFER"));
             },
 
             _wsOnMessage: function(evt) {
@@ -6834,9 +6836,11 @@ Scoped.define("module:WebRTC.PeerRecorder", [
                     });
                 } else {
                     if (data.sdp !== undefined) {
-                        this._peerConnection.setRemoteDescription(new(Support.globals()).RTCSessionDescription(data.sdp), function() {
+                        var remoteDescription = this._peerConnection.setRemoteDescription(new(Support.globals()).RTCSessionDescription(data.sdp));
+                        remoteDescription.then(function() {
                             // peerConnection.createAnswer(gotDescription, errorHandler);
-                        }, this._errorCallback("PEER_REMOTE_DESCRIPTION"));
+                        });
+                        remoteDescription['catch'](this._errorCallback("PEER_REMOTE_DESCRIPTION"));
                     }
                     if (data.iceCandidates) {
                         Objs.iter(data.iceCandidates, function(iceCandidate) {
@@ -6859,7 +6863,7 @@ Scoped.define("module:WebRTC.PeerRecorder", [
                 if (this._videoBitrate && !this._audioonly)
                     enhanceData.videoBitrate = this._videoBitrate;
                 description.sdp = this._enhanceSDP(description.sdp, enhanceData);
-                this._peerConnection.setLocalDescription(description, Functions.as_method(function() {
+                return this._peerConnection.setLocalDescription(description).then(Functions.as_method(function() {
                     this._wsConnection.send(JSON.stringify({
                         direction: "publish",
                         command: "sendOffer",
@@ -6867,7 +6871,7 @@ Scoped.define("module:WebRTC.PeerRecorder", [
                         sdp: description,
                         userData: this._userData
                     }));
-                }, this), this._errorCallback("PEER_LOCAL_DESCRIPTION"));
+                }, this))['catch'](this._errorCallback("PEER_LOCAL_DESCRIPTION"));
             },
 
             _enhanceSDP: function(sdpStr, enhanceData) {

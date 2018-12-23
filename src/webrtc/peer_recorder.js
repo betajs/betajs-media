@@ -79,7 +79,9 @@ Scoped.define("module:WebRTC.PeerRecorder", [
                     }, this);
                 } else
                     this._peerConnection.addStream(this._stream);
-                this._peerConnection.createOffer(Functions.as_method(this._offerGotDescription, this), this._errorCallback("PEER_CREATE_OFFER"));
+                var offer = this._peerConnection.createOffer();
+                offer.then(Functions.as_method(this._offerGotDescription, this));
+                offer['catch'](this._errorCallback("PEER_CREATE_OFFER"));
             },
 
             _wsOnMessage: function(evt) {
@@ -93,9 +95,11 @@ Scoped.define("module:WebRTC.PeerRecorder", [
                     });
                 } else {
                     if (data.sdp !== undefined) {
-                        this._peerConnection.setRemoteDescription(new(Support.globals()).RTCSessionDescription(data.sdp), function() {
+                        var remoteDescription = this._peerConnection.setRemoteDescription(new(Support.globals()).RTCSessionDescription(data.sdp));
+                        remoteDescription.then(function() {
                             // peerConnection.createAnswer(gotDescription, errorHandler);
-                        }, this._errorCallback("PEER_REMOTE_DESCRIPTION"));
+                        });
+                        remoteDescription['catch'](this._errorCallback("PEER_REMOTE_DESCRIPTION"));
                     }
                     if (data.iceCandidates) {
                         Objs.iter(data.iceCandidates, function(iceCandidate) {
@@ -118,7 +122,7 @@ Scoped.define("module:WebRTC.PeerRecorder", [
                 if (this._videoBitrate && !this._audioonly)
                     enhanceData.videoBitrate = this._videoBitrate;
                 description.sdp = this._enhanceSDP(description.sdp, enhanceData);
-                this._peerConnection.setLocalDescription(description, Functions.as_method(function() {
+                return this._peerConnection.setLocalDescription(description).then(Functions.as_method(function() {
                     this._wsConnection.send(JSON.stringify({
                         direction: "publish",
                         command: "sendOffer",
@@ -126,7 +130,7 @@ Scoped.define("module:WebRTC.PeerRecorder", [
                         sdp: description,
                         userData: this._userData
                     }));
-                }, this), this._errorCallback("PEER_LOCAL_DESCRIPTION"));
+                }, this))['catch'](this._errorCallback("PEER_LOCAL_DESCRIPTION"));
             },
 
             _enhanceSDP: function(sdpStr, enhanceData) {
