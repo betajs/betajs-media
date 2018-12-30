@@ -4818,16 +4818,16 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
                 return Dom.elementSupportsFullscreen(this._fullscreenElement());
             },
 
-            enterFullscreen: function() {
-                Dom.elementEnterFullscreen(this._fullscreenElement());
+            enterFullscreen: function(element) {
+                Dom.elementEnterFullscreen(this._fullscreenElement(element));
             },
 
             exitFullscreen: function() {
                 Dom.documentExitFullscreen();
             },
 
-            isFullscreen: function() {
-                return Dom.elementIsFullscreen(this._fullscreenElement());
+            isFullscreen: function(element) {
+                return Dom.elementIsFullscreen(this._fullscreenElement(element));
             },
 
             videoWidth: function() {
