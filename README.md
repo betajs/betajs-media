@@ -1,4 +1,4 @@
-# betajs-media 0.0.102
+# betajs-media 0.0.103
 [![Code Climate](https://codeclimate.com/github/betajs/betajs-media/badges/gpa.svg)](https://codeclimate.com/github/betajs/betajs-media)
 [![NPM](https://img.shields.io/npm/v/betajs-media.svg?style=flat)](https://www.npmjs.com/package/betajs-media)
 [![Gitter Chat](https://badges.gitter.im/betajs/betajs-media.svg)](https://gitter.im/betajs/betajs-media)
@@ -124,6 +124,7 @@ You can use the library in the browser and compile it as well.
 
 - Ziggeo
 - Oliver Friedmann
+- Rashad Aliyev
 
 ## License
 

@@ -1,6 +1,6 @@
 /*!
-betajs-media - v0.0.102 - 2018-12-23
-Copyright (c) Ziggeo,Oliver Friedmann
+betajs-media - v0.0.103 - 2018-12-30
+Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
 
@@ -13,8 +13,8 @@ Scoped.binding('flash', 'global:BetaJS.Flash');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.102",
-    "datetime": 1545543944545
+    "version": "0.0.103",
+    "datetime": 1546196796912
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.136');
@@ -3798,29 +3798,33 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
                 return this._element.buffered.end(0);
             },
 
-            _fullscreenElement: function() {
+            // Element argument or this._element.parent* has to be top layer (https://fullscreen.spec.whatwg.org/#top-layer)
+            // The z-index property has no effect in the top layer.
+            _fullscreenElement: function(element) {
                 //fullscreen issue was present on Chromium based browsers. Could recreate on Iron and Chrome.
                 if (Info.isChromiumBased() && !Info.isMobile()) {
-                    return this._element.parentNode;
+                    return element || this._element.parentNode;
                 }
 
-                return Info.isFirefox() ? this._element.parentElement : this._element;
+                return Info.isFirefox() ?
+                    element || this._element.parentElement :
+                    element || this._element;
             },
 
-            supportsFullscreen: function() {
-                return Dom.elementSupportsFullscreen(this._fullscreenElement());
+            supportsFullscreen: function(element) {
+                return Dom.elementSupportsFullscreen(this._fullscreenElement(element));
             },
 
-            enterFullscreen: function() {
-                Dom.elementEnterFullscreen(this._fullscreenElement());
+            enterFullscreen: function(element) {
+                Dom.elementEnterFullscreen(this._fullscreenElement(element));
             },
 
             exitFullscreen: function() {
                 Dom.documentExitFullscreen();
             },
 
-            isFullscreen: function() {
-                return Dom.elementIsFullscreen(this._fullscreenElement());
+            isFullscreen: function(element) {
+                return Dom.elementIsFullscreen(this._fullscreenElement(element));
             },
 
             videoWidth: function() {
