@@ -61,6 +61,20 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                     this._stream = stream;
                     Support.bindStreamToVideo(stream, this._video, this._flip);
                     this.trigger("bound", stream);
+                    if (typeof stream.getVideoTracks() !== 'undefined') {
+                        if (stream.getVideoTracks()[0]) {
+                            this._videoTrack = stream.getVideoTracks()[0];
+                            if (typeof this._videoTrack.getSettings() !== 'undefined')
+                                this._videoTrackSettings = this._videoTrack.getSettings();
+                        }
+                    }
+                    if (typeof stream.getAudioTracks() !== 'undefined') {
+                        if (stream.getAudioTracks()[0]) {
+                            this._audioTrack = stream.getAudioTracks()[0];
+                            if (typeof this._audioTrack.getSettings() !== 'undefined')
+                                this._audioTrackSettings = this._audioTrack.getSettings();
+                        }
+                    }
                     this._boundMedia();
                 }, this);
             },

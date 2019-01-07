@@ -176,10 +176,12 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
     "browser:Info",
     "base:Time",
     "base:Objs",
+    "base:Timers.Timer",
+    "base:Comparators",
     "browser:Upload.FileUploader",
     "browser:Upload.MultiUploader",
     "base:Promise"
-], function(VideoRecorderWrapper, RecorderWrapper, Support, AudioAnalyser, Dom, Info, Time, Objs, FileUploader, MultiUploader, Promise, scoped) {
+], function(VideoRecorderWrapper, RecorderWrapper, Support, AudioAnalyser, Dom, Info, Time, Objs, Timer, Comparators, FileUploader, MultiUploader, Promise, scoped) {
     return VideoRecorderWrapper.extend({
         scoped: scoped
     }, function(inherited) {
@@ -282,12 +284,33 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
                 };
             },
 
+            /**
+             * Promise which will return available devices with their counts also will set
+             * current video and audio devices for the recorder
+             * @return {*}
+             */
             enumerateDevices: function() {
                 return Support.enumerateMediaSources().success(function(result) {
-                    if (!this._currentVideo)
-                        this._currentVideo = Objs.ithKey(result.video);
-                    if (!this._currentAudio)
-                        this._currentAudio = Objs.ithKey(result.audio);
+
+                    this._detectCurrendDeviceId(result.video, result.videoCount, true);
+                    this._detectCurrendDeviceId(result.audio, result.audioCount, false);
+
+                    var timer = this.auto_destroy(new Timer({
+                        start: true,
+                        delay: 100,
+                        context: this,
+                        destroy_on_stop: true,
+                        fire: function() {
+                            if (this._currentVideo && this._currentAudio) {
+                                this.trigger("currentdevicesdetected", {
+                                    video: this._currentVideo,
+                                    audio: this._currentAudio
+                                });
+                                timer.stop();
+                            }
+                        }
+                    }));
+
                 }, this);
             },
 
@@ -411,8 +434,74 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
                         return true;
                     return Promise.error(err);
                 });
-            }
+            },
 
+            /**
+             * Reason why set this._currentVideo & _currentAudio based on return value is that Firefox returns 'undefined'
+             * before waiting Objs.iter methods callback
+             * @param devices
+             * @param devicesCount
+             * @param isVideo
+             * @return {*}
+             * @private
+             */
+            _detectCurrendDeviceId: function(devices, devicesCount, isVideo) {
+                var _currentDeviceTrack, _currentDeviceSettings, _counter;
+                if (isVideo) {
+                    _currentDeviceTrack = this._recorder._videoTrack;
+                    _currentDeviceSettings = this._recorder._videoTrackSettings;
+                } else {
+                    _currentDeviceTrack = this._recorder._audioTrack;
+                    _currentDeviceSettings = this._recorder._audioTrackSettings;
+                }
+
+                // First will check if browser could provide device ID via device settings
+                if (_currentDeviceSettings && _currentDeviceTrack) {
+                    if (_currentDeviceSettings.deviceId) {
+                        if (isVideo)
+                            this._currentVideo = devices[_currentDeviceSettings.deviceId].id;
+                        else
+                            this._currentAudio = devices[_currentDeviceSettings.deviceId].id;
+                        return devices[_currentDeviceSettings.deviceId].id;
+                    }
+                    // If browser can provide label of the current device will compare based on label
+                    else if (_currentDeviceTrack.label) {
+                        _counter = 1;
+                        Objs.iter(devices, function(device, index) {
+                            // If determine label will return device ID
+                            if (Comparators.byValue(device.label, _currentDeviceTrack.label) === 0) {
+                                if (isVideo)
+                                    this._currentVideo = index;
+                                else
+                                    this._currentAudio = index;
+                                return index;
+                            }
+
+                            if (_counter >= devicesCount) {
+                                if (isVideo)
+                                    this._currentVideo = Objs.ithKey(devices);
+                                else
+                                    this._currentAudio = Objs.ithKey(devices);
+                                return Objs.ithKey(devices);
+                            }
+
+                            _counter++;
+                        }, this);
+                    } else {
+                        if (isVideo)
+                            this._currentVideo = Objs.ithKey(devices);
+                        else
+                            this._currentAudio = Objs.ithKey(devices);
+                        return Objs.ithKey(devices);
+                    }
+                } else {
+                    if (isVideo)
+                        this._currentVideo = Objs.ithKey(devices);
+                    else
+                        this._currentAudio = Objs.ithKey(devices);
+                    return Objs.ithKey(devices);
+                }
+            }
         };
     }, {
 

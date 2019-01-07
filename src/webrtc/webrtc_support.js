@@ -87,18 +87,27 @@ Scoped.define("module:WebRTC.Support", [
                     videoCount: 0
                 };
                 Objs.iter(sources, function(source) {
+                    // Capabilities method which will show more detailed information about device
+                    // https://www.chromestatus.com/feature/5145556682801152 - Status of the feature
+                    var _sourceCapabilities;
                     if (source.kind.indexOf("video") === 0) {
                         result.videoCount++;
+                        if (typeof source.getCapabilities !== 'undefined')
+                            _sourceCapabilities = source.getCapabilities();
                         result.video[source.id || source.deviceId] = {
                             id: source.id || source.deviceId,
-                            label: source.label
+                            label: source.label,
+                            capabilities: _sourceCapabilities
                         };
                     }
                     if (source.kind.indexOf("audio") === 0) {
                         result.audioCount++;
+                        if (typeof source.getCapabilities !== 'undefined')
+                            _sourceCapabilities = source.getCapabilities();
                         result.audio[source.id || source.deviceId] = {
                             id: source.id || source.deviceId,
-                            label: source.label
+                            label: source.label,
+                            capabilities: _sourceCapabilities
                         };
                     }
                 });
