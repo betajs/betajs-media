@@ -209,7 +209,9 @@ Scoped.define("module:WebRTC.Support", [
                 if (options.video.frameRate)
                     opts.video.frameRate = options.video.frameRate;
                 if (options.video.cameraFaceFront !== undefined)
-                    opts.video.facingMode = options.video.cameraFaceFront ? "front" : "environment";
+                    opts.video.facingMode = {
+                        exact: options.video.cameraFaceFront ? "user" : "environment"
+                    };
                 return this.userMedia(opts);
             } else if (Info.isFirefox()) {
                 opts.video = {};
@@ -242,7 +244,9 @@ Scoped.define("module:WebRTC.Support", [
                 if (options.video.sourceId)
                     opts.video.sourceId = options.video.sourceId;
                 if (options.video.cameraFaceFront !== undefined && Info.isMobile())
-                    opts.video.facingMode = options.video.cameraFaceFront ? "front" : "environment";
+                    opts.video.facingMode = {
+                        exact: options.video.cameraFaceFront ? "user" : "environment"
+                    };
                 return this.userMedia(opts);
             } else if (Info.isEdge() && options.screen) {
                 if (navigator.getDisplayMedia) {
@@ -275,7 +279,12 @@ Scoped.define("module:WebRTC.Support", [
                 if (options.video.sourceId)
                     opts.video.mandatory.sourceId = options.video.sourceId;
                 if (options.video.cameraFaceFront !== undefined && Info.isMobile())
-                    opts.video.mandatory.facingMode = options.video.cameraFaceFront ? "front" : "environment";
+                    // The { exact: } syntax means the constraint is required, and things fail if the user doesn't have the right camera.
+                    // If you leave it out then the constraint is optional, which in Firefox for Android means it only changes the default
+                    // in the camera chooser in the permission prompt.
+                    opts.video.mandatory.facingMode = {
+                        exact: options.video.cameraFaceFront ? "user" : "environment"
+                    };
                 if (options.video.frameRate) {
                     opts.video.mandatory.minFrameRate = options.video.frameRate;
                     opts.video.mandatory.maxFrameRate = options.video.frameRate;
