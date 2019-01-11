@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.103 - 2018-12-30
+betajs-media - v0.0.105 - 2019-01-11
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -1006,7 +1006,7 @@ Public.exports();
 	return Public;
 }).call(this);
 /*!
-betajs-media - v0.0.103 - 2018-12-30
+betajs-media - v0.0.105 - 2019-01-11
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -1020,8 +1020,8 @@ Scoped.binding('flash', 'global:BetaJS.Flash');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.103",
-    "datetime": 1546196796912
+    "version": "0.0.105",
+    "datetime": 1547241439353
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.136');
@@ -5880,10 +5880,12 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
     "browser:Info",
     "base:Time",
     "base:Objs",
+    "base:Timers.Timer",
+    "base:Comparators",
     "browser:Upload.FileUploader",
     "browser:Upload.MultiUploader",
     "base:Promise"
-], function(VideoRecorderWrapper, RecorderWrapper, Support, AudioAnalyser, Dom, Info, Time, Objs, FileUploader, MultiUploader, Promise, scoped) {
+], function(VideoRecorderWrapper, RecorderWrapper, Support, AudioAnalyser, Dom, Info, Time, Objs, Timer, Comparators, FileUploader, MultiUploader, Promise, scoped) {
     return VideoRecorderWrapper.extend({
         scoped: scoped
     }, function(inherited) {
@@ -5986,12 +5988,33 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
                 };
             },
 
+            /**
+             * Promise which will return available devices with their counts also will set
+             * current video and audio devices for the recorder
+             * @return {*}
+             */
             enumerateDevices: function() {
                 return Support.enumerateMediaSources().success(function(result) {
-                    if (!this._currentVideo)
-                        this._currentVideo = Objs.ithKey(result.video);
-                    if (!this._currentAudio)
-                        this._currentAudio = Objs.ithKey(result.audio);
+
+                    this._detectCurrendDeviceId(result.video, result.videoCount, true);
+                    this._detectCurrendDeviceId(result.audio, result.audioCount, false);
+
+                    var timer = this.auto_destroy(new Timer({
+                        start: true,
+                        delay: 100,
+                        context: this,
+                        destroy_on_stop: true,
+                        fire: function() {
+                            if (this._currentVideo && this._currentAudio) {
+                                this.trigger("currentdevicesdetected", {
+                                    video: this._currentVideo,
+                                    audio: this._currentAudio
+                                });
+                                timer.stop();
+                            }
+                        }
+                    }));
+
                 }, this);
             },
 
@@ -6115,8 +6138,74 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
                         return true;
                     return Promise.error(err);
                 });
-            }
+            },
 
+            /**
+             * Reason why set this._currentVideo & _currentAudio based on return value is that Firefox returns 'undefined'
+             * before waiting Objs.iter methods callback
+             * @param devices
+             * @param devicesCount
+             * @param isVideo
+             * @return {*}
+             * @private
+             */
+            _detectCurrendDeviceId: function(devices, devicesCount, isVideo) {
+                var _currentDeviceTrack, _currentDeviceSettings, _counter;
+                if (isVideo) {
+                    _currentDeviceTrack = this._recorder._videoTrack;
+                    _currentDeviceSettings = this._recorder._videoTrackSettings;
+                } else {
+                    _currentDeviceTrack = this._recorder._audioTrack;
+                    _currentDeviceSettings = this._recorder._audioTrackSettings;
+                }
+
+                // First will check if browser could provide device ID via device settings
+                if (_currentDeviceSettings && _currentDeviceTrack) {
+                    if (_currentDeviceSettings.deviceId) {
+                        if (isVideo)
+                            this._currentVideo = devices[_currentDeviceSettings.deviceId].id;
+                        else
+                            this._currentAudio = devices[_currentDeviceSettings.deviceId].id;
+                        return devices[_currentDeviceSettings.deviceId].id;
+                    }
+                    // If browser can provide label of the current device will compare based on label
+                    else if (_currentDeviceTrack.label) {
+                        _counter = 1;
+                        Objs.iter(devices, function(device, index) {
+                            // If determine label will return device ID
+                            if (Comparators.byValue(device.label, _currentDeviceTrack.label) === 0) {
+                                if (isVideo)
+                                    this._currentVideo = index;
+                                else
+                                    this._currentAudio = index;
+                                return index;
+                            }
+
+                            if (_counter >= devicesCount) {
+                                if (isVideo)
+                                    this._currentVideo = Objs.ithKey(devices);
+                                else
+                                    this._currentAudio = Objs.ithKey(devices);
+                                return Objs.ithKey(devices);
+                            }
+
+                            _counter++;
+                        }, this);
+                    } else {
+                        if (isVideo)
+                            this._currentVideo = Objs.ithKey(devices);
+                        else
+                            this._currentAudio = Objs.ithKey(devices);
+                        return Objs.ithKey(devices);
+                    }
+                } else {
+                    if (isVideo)
+                        this._currentVideo = Objs.ithKey(devices);
+                    else
+                        this._currentAudio = Objs.ithKey(devices);
+                    return Objs.ithKey(devices);
+                }
+            }
         };
     }, {
 
@@ -7012,6 +7101,20 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                     this._stream = stream;
                     Support.bindStreamToVideo(stream, this._video, this._flip);
                     this.trigger("bound", stream);
+                    if (typeof stream.getVideoTracks() !== 'undefined') {
+                        if (stream.getVideoTracks()[0]) {
+                            this._videoTrack = stream.getVideoTracks()[0];
+                            if (typeof this._videoTrack.getSettings() !== 'undefined')
+                                this._videoTrackSettings = this._videoTrack.getSettings();
+                        }
+                    }
+                    if (typeof stream.getAudioTracks() !== 'undefined') {
+                        if (stream.getAudioTracks()[0]) {
+                            this._audioTrack = stream.getAudioTracks()[0];
+                            if (typeof this._audioTrack.getSettings() !== 'undefined')
+                                this._audioTrackSettings = this._audioTrack.getSettings();
+                        }
+                    }
                     this._boundMedia();
                 }, this);
             },
@@ -7545,18 +7648,27 @@ Scoped.define("module:WebRTC.Support", [
                     videoCount: 0
                 };
                 Objs.iter(sources, function(source) {
+                    // Capabilities method which will show more detailed information about device
+                    // https://www.chromestatus.com/feature/5145556682801152 - Status of the feature
+                    var _sourceCapabilities;
                     if (source.kind.indexOf("video") === 0) {
                         result.videoCount++;
+                        if (typeof source.getCapabilities !== 'undefined')
+                            _sourceCapabilities = source.getCapabilities();
                         result.video[source.id || source.deviceId] = {
                             id: source.id || source.deviceId,
-                            label: source.label
+                            label: source.label,
+                            capabilities: _sourceCapabilities
                         };
                     }
                     if (source.kind.indexOf("audio") === 0) {
                         result.audioCount++;
+                        if (typeof source.getCapabilities !== 'undefined')
+                            _sourceCapabilities = source.getCapabilities();
                         result.audio[source.id || source.deviceId] = {
                             id: source.id || source.deviceId,
-                            label: source.label
+                            label: source.label,
+                            capabilities: _sourceCapabilities
                         };
                     }
                 });
@@ -7658,7 +7770,9 @@ Scoped.define("module:WebRTC.Support", [
                 if (options.video.frameRate)
                     opts.video.frameRate = options.video.frameRate;
                 if (options.video.cameraFaceFront !== undefined)
-                    opts.video.facingMode = options.video.cameraFaceFront ? "front" : "environment";
+                    opts.video.facingMode = {
+                        exact: options.video.cameraFaceFront ? "user" : "environment"
+                    };
                 return this.userMedia(opts);
             } else if (Info.isFirefox()) {
                 opts.video = {};
@@ -7691,7 +7805,9 @@ Scoped.define("module:WebRTC.Support", [
                 if (options.video.sourceId)
                     opts.video.sourceId = options.video.sourceId;
                 if (options.video.cameraFaceFront !== undefined && Info.isMobile())
-                    opts.video.facingMode = options.video.cameraFaceFront ? "front" : "environment";
+                    opts.video.facingMode = {
+                        exact: options.video.cameraFaceFront ? "user" : "environment"
+                    };
                 return this.userMedia(opts);
             } else if (Info.isEdge() && options.screen) {
                 if (navigator.getDisplayMedia) {
@@ -7724,7 +7840,12 @@ Scoped.define("module:WebRTC.Support", [
                 if (options.video.sourceId)
                     opts.video.mandatory.sourceId = options.video.sourceId;
                 if (options.video.cameraFaceFront !== undefined && Info.isMobile())
-                    opts.video.mandatory.facingMode = options.video.cameraFaceFront ? "front" : "environment";
+                    // The { exact: } syntax means the constraint is required, and things fail if the user doesn't have the right camera.
+                    // If you leave it out then the constraint is optional, which in Firefox for Android means it only changes the default
+                    // in the camera chooser in the permission prompt.
+                    opts.video.mandatory.facingMode = {
+                        exact: options.video.cameraFaceFront ? "user" : "environment"
+                    };
                 if (options.video.frameRate) {
                     opts.video.mandatory.minFrameRate = options.video.frameRate;
                     opts.video.mandatory.maxFrameRate = options.video.frameRate;
