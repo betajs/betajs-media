@@ -1,6 +1,7 @@
 /node_modules
 /temp
 /.idea
+/.vscode
 .idea/
 .DS_Store
 .sass-cache
