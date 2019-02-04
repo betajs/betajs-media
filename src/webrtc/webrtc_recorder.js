@@ -3,9 +3,10 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
     "base:Events.EventsMixin",
     "base:Objs",
     "module:WebRTC.Support",
+    "module:Recorder.Support",
     "base:Time",
     "module:Recorder.PixelSampleMixin"
-], function(ConditionalInstance, EventsMixin, Objs, Support, Time, PixelSampleMixin, scoped) {
+], function(ConditionalInstance, EventsMixin, Objs, Support, RecorderSupport, Time, PixelSampleMixin, scoped) {
     return ConditionalInstance.extend({
         scoped: scoped
     }, [EventsMixin, PixelSampleMixin, function(inherited) {
@@ -136,17 +137,7 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
             },
 
             createSnapshot: function(type) {
-                return Support.dataURItoBlob(this._createSnapshot(type));
-            },
-
-            _createSnapshot: function(type) {
-                var canvas = document.createElement('canvas');
-                canvas.width = this._video.videoWidth || this._video.clientWidth;
-                canvas.height = this._video.videoHeight || this._video.clientHeight;
-                var context = canvas.getContext('2d');
-                context.drawImage(this._video, 0, 0, canvas.width, canvas.height);
-                var data = canvas.toDataURL(type);
-                return data;
+                return RecorderSupport.createSnapshot(type, this._video);
             },
 
             _pixelSample: function(samples, callback, context) {
