@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.105 - 2019-01-11
+betajs-media - v0.0.108 - 2019-02-04
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -1006,7 +1006,7 @@ Public.exports();
 	return Public;
 }).call(this);
 /*!
-betajs-media - v0.0.105 - 2019-01-11
+betajs-media - v0.0.108 - 2019-02-04
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -1020,8 +1020,8 @@ Scoped.binding('flash', 'global:BetaJS.Flash');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.105",
-    "datetime": 1547241439353
+    "version": "0.0.108",
+    "datetime": 1549325621107
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.136');
@@ -5702,6 +5702,135 @@ Scoped.define("module:Flash.Support", [
 
     };
 });
+Scoped.define("module:Recorder.Support", [
+    "module:WebRTC.Support",
+    "browser:Upload.FileUploader",
+    "browser:Upload.CustomUploader",
+    "browser:Dom",
+    "base:Objs"
+], function(Support, FileUploader, CustomUploader, Dom, Objs) {
+    return {
+
+        /**
+         *
+         * @param {string} type
+         * @param {HTMLVideoElement} video
+         * @param {int|undefined} h
+         * @param {int|undefined} w
+         * @param {int|undefined} x
+         * @param {int|undefined} y
+         * @param {int|undefined} quality
+         * @return {Data URL}
+         */
+        createSnapshot: function(type, video, h, w, x, y, quality) {
+            return Support.dataURItoBlob(this._createSnapshot(type, video));
+        },
+
+        /**
+         *
+         * @param {string} type
+         * @param {HTMLVideoElement} video
+         * @param {int|undefined} h
+         * @param {int|undefined} w
+         * @param {int|undefined} x
+         * @param {int|undefined} y
+         * @param {int|undefined} quality
+         * @return {Data URL}
+         */
+        _createSnapshot: function(type, video, h, w, x, y, quality) {
+            x = x || 0;
+            y = y || 0;
+            quality = quality || 1.0;
+            var canvas = document.createElement('canvas');
+            canvas.width = w || (video.videoWidth || video.clientWidth);
+            canvas.height = h || (video.videoHeight || video.clientHeight);
+            var context = canvas.getContext('2d');
+            context.drawImage(video, x, y, canvas.width, canvas.height);
+            var data = canvas.toDataURL(type, quality);
+            return data;
+        },
+
+        removeSnapshot: function(snapshot) {},
+
+        /**
+         *
+         * @param {HTMLImageElement} image
+         */
+        removeSnapshotDisplay: function(image) {
+            image.remove();
+        },
+
+        /**
+         *
+         * @param {HTMLElement} parent
+         * @param {Data URL} snapshot
+         * @param {int} x
+         * @param {int} y
+         * @param {int} w
+         * @param {int} h
+         * @return {HTMLImageElement}
+         */
+        createSnapshotDisplay: function(parent, snapshot, x, y, w, h) {
+            var url = Support.globals().URL.createObjectURL(snapshot);
+            var image = document.createElement("img");
+            image.style.position = "absolute";
+            this.updateSnapshotDisplay(snapshot, image, x, y, w, h);
+            image.src = url;
+            if (parent.tagName.toLowerCase() === "video")
+                Dom.elementInsertAfter(image, parent);
+            else
+                Dom.elementPrependChild(parent, image);
+            return image;
+        },
+
+        /**
+         * @param {Data URL} snapshot
+         * @param {HTMLImageElement} image
+         * @param {int} x
+         * @param {int} y
+         * @param {int} w
+         * @param {int} h
+         * @private
+         * @return {void}
+         */
+        updateSnapshotDisplay: function(snapshot, image, x, y, w, h) {
+            image.style.left = x + "px";
+            image.style.top = y + "px";
+            image.style.width = w + "px";
+            image.style.height = h + "px";
+        },
+
+        /**
+         * @param {Data URL} snapshot
+         * @param {string} type
+         * @param {Object} uploaderOptions
+         * @return {*}
+         */
+        createSnapshotUploader: function(isFlash, snapshot, type, uploaderOptions) {
+            if (isFlash) {
+                var uploader = new CustomUploader(Objs.extend({
+                    source: snapshot,
+                    type: type,
+                    recorder: this._recorder
+                }, uploaderOptions));
+                uploader.on("upload", function(options) {
+                    options.recorder.postSnapshot(
+                            options.source,
+                            options.url,
+                            options.type
+                        )
+                        .success(uploader.successCallback, uploader)
+                        .error(uploader.errorCallback, uploader);
+                });
+                return uploader;
+            } else {
+                return FileUploader.create(Objs.extend({
+                    source: snapshot
+                }, uploaderOptions));
+            }
+        }
+    };
+});
 Scoped.define("module:Recorder.PixelSampleMixin", [], function() {
     return {
 
@@ -7043,9 +7172,10 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
     "base:Events.EventsMixin",
     "base:Objs",
     "module:WebRTC.Support",
+    "module:Recorder.Support",
     "base:Time",
     "module:Recorder.PixelSampleMixin"
-], function(ConditionalInstance, EventsMixin, Objs, Support, Time, PixelSampleMixin, scoped) {
+], function(ConditionalInstance, EventsMixin, Objs, Support, RecorderSupport, Time, PixelSampleMixin, scoped) {
     return ConditionalInstance.extend({
         scoped: scoped
     }, [EventsMixin, PixelSampleMixin, function(inherited) {
@@ -7176,17 +7306,7 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
             },
 
             createSnapshot: function(type) {
-                return Support.dataURItoBlob(this._createSnapshot(type));
-            },
-
-            _createSnapshot: function(type) {
-                var canvas = document.createElement('canvas');
-                canvas.width = this._video.videoWidth || this._video.clientWidth;
-                canvas.height = this._video.videoHeight || this._video.clientHeight;
-                var context = canvas.getContext('2d');
-                context.drawImage(this._video, 0, 0, canvas.width, canvas.height);
-                var data = canvas.toDataURL(type);
-                return data;
+                return RecorderSupport.createSnapshot(type, this._video);
             },
 
             _pixelSample: function(samples, callback, context) {
