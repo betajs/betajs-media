@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.108 - 2019-02-04
+betajs-media - v0.0.109 - 2019-02-04
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -13,8 +13,8 @@ Scoped.binding('flash', 'global:BetaJS.Flash');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.108",
-    "datetime": 1549325621107
+    "version": "0.0.109",
+    "datetime": 1549326183479
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.136');
