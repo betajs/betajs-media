@@ -46,7 +46,9 @@ Scoped.define("module:Player.VideoPlayerWrapper", [
                     if (source.type)
                         source.type = source.type.toLowerCase();
                     if (typeof Blob !== 'undefined' && source.src instanceof Blob)
-                        source.src = (window.URL || window.webkitURL).createObjectURL(source.src);
+                        source.src = (typeof options.onlyaudio !== 'undefined' && options.onlyaudio) ?
+                        (window.URL || window.webkitURL).createObjectURL(source.audiosrc) :
+                        (window.URL || window.webkitURL).createObjectURL(source.src);
                     if (typeof Blob !== 'undefined' && source.audiosrc instanceof Blob)
                         source.audiosrc = (window.URL || window.webkitURL).createObjectURL(source.audiosrc);
                     sourcesMapped.push(source);

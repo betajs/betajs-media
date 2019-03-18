@@ -404,6 +404,8 @@ Scoped.define("module:WebRTC.Support", [
         },
 
         dataURItoBlob: function(dataURI) {
+            // If dataURI is empty return empty
+            if (dataURI === '') return;
             // convert base64 to raw binary data held in a string
             var byteString = atob(dataURI.split(',')[1]);
 
