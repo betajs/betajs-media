@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.109 - 2019-02-04
+betajs-media - v0.0.111 - 2019-03-18
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -1006,7 +1006,7 @@ Public.exports();
 	return Public;
 }).call(this);
 /*!
-betajs-media - v0.0.109 - 2019-02-04
+betajs-media - v0.0.111 - 2019-03-18
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -1020,8 +1020,8 @@ Scoped.binding('flash', 'global:BetaJS.Flash');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.109",
-    "datetime": 1549326183479
+    "version": "0.0.111",
+    "datetime": 1552928988642
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.136');
@@ -4445,7 +4445,9 @@ Scoped.define("module:Player.VideoPlayerWrapper", [
                     if (source.type)
                         source.type = source.type.toLowerCase();
                     if (typeof Blob !== 'undefined' && source.src instanceof Blob)
-                        source.src = (window.URL || window.webkitURL).createObjectURL(source.src);
+                        source.src = (typeof options.onlyaudio !== 'undefined' && options.onlyaudio) ?
+                        (window.URL || window.webkitURL).createObjectURL(source.audiosrc) :
+                        (window.URL || window.webkitURL).createObjectURL(source.src);
                     if (typeof Blob !== 'undefined' && source.audiosrc instanceof Blob)
                         source.audiosrc = (window.URL || window.webkitURL).createObjectURL(source.audiosrc);
                     sourcesMapped.push(source);
@@ -5723,7 +5725,7 @@ Scoped.define("module:Recorder.Support", [
          * @return {Data URL}
          */
         createSnapshot: function(type, video, h, w, x, y, quality) {
-            return Support.dataURItoBlob(this._createSnapshot(type, video));
+            return Support.dataURItoBlob(this._createSnapshot(type, video, h, w, x, y, quality));
         },
 
         /**
@@ -5745,9 +5747,76 @@ Scoped.define("module:Recorder.Support", [
             canvas.width = w || (video.videoWidth || video.clientWidth);
             canvas.height = h || (video.videoHeight || video.clientHeight);
             var context = canvas.getContext('2d');
-            context.drawImage(video, x, y, canvas.width, canvas.height);
+            var orientation = +(canvas.width / canvas.height) > 1.00 ? 'landscape' : 'portrait';
+            var _isWebKit = (Info.isSafari() || (Info.isMobile() && Info.isiOS()));
+
+            // ctx.drawImage(img,0,0,img.width,img.height,0,0,400,300);
+            if (_isWebKit && orientation === 'portrait' && this.__detectVerticalSquash(video, canvas.width, canvas.height) !== 1) {
+
+                // context.drawImage(img,sx,sy,swidth,sheight,x,y,width,height);
+                // img, sx (The x coordinate where to start clipping), sy (The y coordinate where to start clipping)
+                // swidth, sheight (The width/height of the clipped image), x, y(The x/y coordinate where to place the image on the canvas),
+                // width/height (The width/height of the image to use (stretch or reduce the image))
+
+                // BEST Achieved for now
+                canvas.width = canvas.width > canvas.height ? canvas.width : canvas.height;
+                context.rotate((Math.PI / 180) * 90);
+                // context.scale(1, 2); // correct image is 1,1
+                // Correct Image size like below, but it's not fill to the frame
+                context.drawImage(video, 0, -canvas.width / 1.25, canvas.height, canvas.width);
+            } else if (_isWebKit && orientation === 'portrait') {
+                // Will
+                context.drawImage(video, 0, -canvas.width, canvas.height, canvas.width);
+            } else
+                context.drawImage(video, x, y, canvas.width, canvas.height);
+
             var data = canvas.toDataURL(type, quality);
-            return data;
+
+            // will fix Safari, first blank covershot bug
+            if (_isWebKit && data.length < 10000) return '';
+            else return data;
+        },
+
+        /**
+         * Detecting vertical squash in loaded image.
+         * Fixes a bug which squash image vertically while drawing into canvas for some images.
+         * This is a bug in iOS6 devices. This function from https://github.com/stomita/ios-imagefile-megapixel
+         *
+         */
+        __detectVerticalSquash: function(media, w, h) {
+            var iw = w || (media.naturalWidth || media.width),
+                ih = h || (media.naturalHeight || media.height);
+            var canvas = document.createElement('canvas');
+            canvas.width = 1;
+            canvas.height = ih;
+            var ctx = canvas.getContext('2d');
+            ctx.drawImage(media, 0, 0);
+            var data = ctx.getImageData(0, 0, 1, ih).data;
+            // search image edge pixel position in case it is squashed vertically.
+            var sy = 0;
+            var ey = ih;
+            var py = ih;
+            while (py > sy) {
+                var alpha = data[(py - 1) * 4 + 3];
+                if (alpha === 0) {
+                    ey = py;
+                } else {
+                    sy = py;
+                }
+                py = (ey + sy) >> 1;
+            }
+            var ratio = (py / ih);
+            return (ratio === 0) ? 1 : ratio;
+        },
+
+        /**
+         * A replacement for context.drawImage
+         * (args are for source and destination).
+         */
+        _drawImageIOSFix: function(ctx, media, sx, sy, sw, sh, dx, dy, dw, dh) {
+            // Works only if whole image is displayed:
+            // ctx.drawImage(media, sx, sy, sw, sh, dx, dy, dw, dh / vertSquashRatio);
+            // The following works correct also when only a part of the image is displayed: ctx.drawImage(media, sx * vertSquashRatio, sy * vertSquashRatio, sw * vertSquashRatio, sh * vertSquashRatio, dx, dy, dw, dh );
         },
 
         removeSnapshot: function(snapshot) {},
@@ -5784,6 +5853,33 @@ Scoped.define("module:Recorder.Support", [
         },
 
         /**
+         *
+         * @param {Data URL} snapshot
+         * @return {Promise}
+         */
+        snapshotMetaData: function(snapshot) {
+            var promise = Promise.create();
+            var url = Support.globals().URL.createObjectURL(snapshot);
+            var image = new Image();
+            image.src = url;
+
+            image.onload = function(ev) {
+                var _imgHeight = image.naturalHeight || image.height;
+                var _imgWidth = image.naturalWidth || image.width;
+                var _ratio = +(_imgWidth / _imgHeight).toFixed(2);
+
+                promise.asyncSuccess({
+                    width: _imgWidth,
+                    height: _imgHeight,
+                    orientation: _ratio > 1.00 ? 'landscape' : 'portrait',
+                    ratio: _ratio
+                });
+            };
+
+            return promise;
+        },
+
+        /**
          * @param {Data URL} snapshot
          * @param {HTMLImageElement} image
          * @param {int} x
@@ -5801,7 +5897,8 @@ Scoped.define("module:Recorder.Support", [
         },
 
         /**
-         * @param {Data URL} snapshot
+         * @param {Boolean} isFlash
+         * @param {URI} snapshot
          * @param {string} type
          * @param {Object} uploaderOptions
          * @return {*}
@@ -8085,6 +8182,8 @@ Scoped.define("module:WebRTC.Support", [
         },
 
         dataURItoBlob: function(dataURI) {
+            // If dataURI is empty return empty
+            if (dataURI === '') return;
             // convert base64 to raw binary data held in a string
             var byteString = atob(dataURI.split(',')[1]);
 

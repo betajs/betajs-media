@@ -170,7 +170,7 @@ Scoped.define("module:Recorder.Support", [
                 });
             };
 
-            return promise
+            return promise;
         },
 
         /**
@@ -205,7 +205,6 @@ Scoped.define("module:Recorder.Support", [
                     recorder: this._recorder
                 }, uploaderOptions));
                 uploader.on("upload", function(options) {
-                    console.log('--TYPE', typeof snapshot);
                     options.recorder.postSnapshot(
                             options.source,
                             options.url,
