@@ -3,8 +3,9 @@ Scoped.define("module:Recorder.Support", [
     "browser:Upload.FileUploader",
     "browser:Upload.CustomUploader",
     "browser:Dom",
+    "browser:Info",
     "base:Objs"
-], function(Support, FileUploader, CustomUploader, Dom, Objs) {
+], function(Support, FileUploader, CustomUploader, Dom, Info, Objs) {
     return {
 
         /**
