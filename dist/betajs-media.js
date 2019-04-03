@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.111 - 2019-03-18
+betajs-media - v0.0.114 - 2019-04-03
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -1006,7 +1006,7 @@ Public.exports();
 	return Public;
 }).call(this);
 /*!
-betajs-media - v0.0.111 - 2019-03-18
+betajs-media - v0.0.114 - 2019-04-03
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -1020,8 +1020,8 @@ Scoped.binding('flash', 'global:BetaJS.Flash');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.111",
-    "datetime": 1552928988642
+    "version": "0.0.114",
+    "datetime": 1554298226839
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.136');
@@ -5709,8 +5709,10 @@ Scoped.define("module:Recorder.Support", [
     "browser:Upload.FileUploader",
     "browser:Upload.CustomUploader",
     "browser:Dom",
+    "browser:Info",
+    "base:Promise",
     "base:Objs"
-], function(Support, FileUploader, CustomUploader, Dom, Objs) {
+], function(Support, FileUploader, CustomUploader, Dom, Info, Promise, Objs) {
     return {
 
         /**
