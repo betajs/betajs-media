@@ -13,6 +13,7 @@ Scoped.define("module:Recorder.Support", [
          *
          * @param {string} type
          * @param {HTMLVideoElement} video
+         * @param {boolean} isUploader
          * @param {int|undefined} h
          * @param {int|undefined} w
          * @param {int|undefined} x
@@ -20,14 +21,16 @@ Scoped.define("module:Recorder.Support", [
          * @param {int|undefined} quality
          * @return {Data URL}
          */
-        createSnapshot: function(type, video, h, w, x, y, quality) {
-            return Support.dataURItoBlob(this._createSnapshot(type, video, h, w, x, y, quality));
+        createSnapshot: function(type, video, isUploader, h, w, x, y, quality) {
+            var _data = this._createSnapshot(type, video, isUploader, h, w, x, y, quality);
+            if (_data) return Support.dataURItoBlob(_data);
         },
 
         /**
          *
          * @param {string} type
          * @param {HTMLVideoElement} video
+         * @param {boolean} isUploader
          * @param {int|undefined} h
          * @param {int|undefined} w
          * @param {int|undefined} x
@@ -35,19 +38,20 @@ Scoped.define("module:Recorder.Support", [
          * @param {int|undefined} quality
          * @return {Data URL}
          */
-        _createSnapshot: function(type, video, h, w, x, y, quality) {
+        _createSnapshot: function(type, video, isUploader, h, w, x, y, quality) {
             x = x || 0;
             y = y || 0;
             quality = quality || 1.0;
+            isUploader = isUploader || false;
             var canvas = document.createElement('canvas');
             canvas.width = w || (video.videoWidth || video.clientWidth);
             canvas.height = h || (video.videoHeight || video.clientHeight);
             var context = canvas.getContext('2d');
             var orientation = +(canvas.width / canvas.height) > 1.00 ? 'landscape' : 'portrait';
-            var _isWebKit = (Info.isSafari() || (Info.isMobile() && Info.isiOS()));
+            var _isWebKitUploader = (Info.isSafari() || (Info.isMobile() && Info.isiOS())) && isUploader;
 
             // ctx.drawImage(img,0,0,img.width,img.height,0,0,400,300);
-            if (_isWebKit && orientation === 'portrait' && this.__detectVerticalSquash(video, canvas.width, canvas.height) !== 1) {
+            if (_isWebKitUploader && orientation === 'portrait' && this.__detectVerticalSquash(video, canvas.width, canvas.height) !== 1) {
 
                 // context.drawImage(img,sx,sy,swidth,sheight,x,y,width,height);
                 // img, sx (The x coordinate where to start clipping), sy (The y coordinate where to start clipping)
@@ -60,8 +64,7 @@ Scoped.define("module:Recorder.Support", [
                 // context.scale(1, 2); // correct image is 1,1
                 // Correct Image size like below, but it's not fill to the frame
                 context.drawImage(video, 0, -canvas.width / 1.25, canvas.height, canvas.width);
-            } else if (_isWebKit && orientation === 'portrait') {
-                // Will
+            } else if (_isWebKitUploader && orientation === 'portrait') {
                 context.drawImage(video, 0, -canvas.width, canvas.height, canvas.width);
             } else
                 context.drawImage(video, x, y, canvas.width, canvas.height);
@@ -69,8 +72,25 @@ Scoped.define("module:Recorder.Support", [
             var data = canvas.toDataURL(type, quality);
 
             // will fix Safari, first blank covershot bug
-            if (_isWebKit && data.length < 10000) return '';
-            else return data;
+            if (!_isWebKitUploader || (_isWebKitUploader && !this.__isCanvasBlank(canvas)))
+                return data;
+            else
+                return null;
+        },
+
+        /**
+         * Check if snapshot image is blank image
+         *
+         * @param canvas
+         * @return {boolean}
+         * @private
+         */
+        __isCanvasBlank: function(canvas) {
+            return !canvas.getContext('2d')
+                .getImageData(0, 0, canvas.width, canvas.height).data
+                .some(function(channel) {
+                    return channel !== 0;
+                });
         },
 
         /**
