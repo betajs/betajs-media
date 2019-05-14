@@ -23,7 +23,7 @@ Scoped.define("module:Recorder.Support", [
          */
         createSnapshot: function(type, video, isUploader, h, w, x, y, quality) {
             var _data = this._createSnapshot(type, video, isUploader, h, w, x, y, quality);
-            if (_data) return Support.dataURItoBlob(_data);
+            return _data ? Support.dataURItoBlob(_data) : _data;
         },
 
         /**
