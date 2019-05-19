@@ -46,33 +46,26 @@ Scoped.define("module:Recorder.Support", [
             var canvas = document.createElement('canvas');
             canvas.width = w || (video.videoWidth || video.clientWidth);
             canvas.height = h || (video.videoHeight || video.clientHeight);
-            var context = canvas.getContext('2d');
             var orientation = +(canvas.width / canvas.height) > 1.00 ? 'landscape' : 'portrait';
-            var _isWebKitUploader = (Info.isSafari() || (Info.isMobile() && Info.isiOS())) && isUploader;
+            var _isWebKit = (Info.isSafari() || (Info.isMobile() && Info.isiOS()));
+            var _rotationRequired = (orientation === 'portrait') && isUploader && (Info.isFirefox() || _isWebKit);
+            var _positionMove = Info.isFirefox() ? 1.00 : 1.25;
+            var context = canvas.getContext('2d');
 
-            // ctx.drawImage(img,0,0,img.width,img.height,0,0,400,300);
-            if (_isWebKitUploader && orientation === 'portrait' && this.__detectVerticalSquash(video, canvas.width, canvas.height) !== 1) {
-
-                // context.drawImage(img,sx,sy,swidth,sheight,x,y,width,height);
-                // img, sx (The x coordinate where to start clipping), sy (The y coordinate where to start clipping)
-                // swidth, sheight (The width/height of the clipped image), x, y(The x/y coordinate where to place the image on the canvas),
-                // width/height (The width/height of the image to use (stretch or reduce the image))
-
-                // BEST Achieved for now
+            if (_rotationRequired && this.__detectVerticalSquash(video, canvas.width, canvas.height) !== 1) {
+                // Will rotate image
                 canvas.width = canvas.width > canvas.height ? canvas.width : canvas.height;
                 context.rotate((Math.PI / 180) * 90);
-                // context.scale(1, 2); // correct image is 1,1
-                // Correct Image size like below, but it's not fill to the frame
-                context.drawImage(video, 0, -canvas.width / 1.25, canvas.height, canvas.width);
-            } else if (_isWebKitUploader && orientation === 'portrait') {
+                context.drawImage(video, 0, -canvas.width / _positionMove, canvas.height, canvas.width);
+            } else if (_isWebKit && orientation === 'portrait') {
                 context.drawImage(video, 0, -canvas.width, canvas.height, canvas.width);
-            } else
+            } else {
                 context.drawImage(video, x, y, canvas.width, canvas.height);
+            }
 
             var data = canvas.toDataURL(type, quality);
 
-            // will fix Safari, first blank covershot bug
-            if (!_isWebKitUploader || (_isWebKitUploader && !this.__isCanvasBlank(canvas)))
+            if (!this.__isCanvasBlank(canvas))
                 return data;
             else
                 return null;
