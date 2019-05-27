@@ -57,6 +57,7 @@ Scoped.define("module:Player.VideoPlayerWrapper", [
                 this._reloadonplay = options.reloadonplay || false;
                 this._options = options;
                 this._loop = options.loop || false;
+                this._isplaylist = options.isplaylist || false;
                 this._loaded = false;
                 this._postererror = false;
                 this._error = 0;
@@ -277,8 +278,9 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
                     delay: 50
                 });
                 this._element.preload = this._preload ? "auto" : "none";
-                if (this._loop)
-                    this._element.loop = "loop";
+                if (!this._isplaylist)
+                    if (this._loop)
+                        this._element.loop = "loop";
                 var errorCount = 0;
                 this._audioElement = null;
                 var errorEvents = new DomEvents();
