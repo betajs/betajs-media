@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.118 - 2019-05-20
+betajs-media - v0.0.118 - 2019-06-17
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -1006,7 +1006,7 @@ Public.exports();
 	return Public;
 }).call(this);
 /*!
-betajs-media - v0.0.118 - 2019-05-20
+betajs-media - v0.0.118 - 2019-06-17
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -1021,7 +1021,7 @@ Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
     "version": "0.0.118",
-    "datetime": 1558382220813
+    "datetime": 1560820849491
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.136');
@@ -7346,8 +7346,19 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                     if (typeof stream.getVideoTracks() !== 'undefined') {
                         if (stream.getVideoTracks()[0]) {
                             this._videoTrack = stream.getVideoTracks()[0];
-                            if (typeof this._videoTrack.getSettings() !== 'undefined')
-                                this._videoTrackSettings = this._videoTrack.getSettings();
+                            // Will fix Chrome Cropping
+                            if (this._options.screen) {
+                                var _self = this;
+                                this._videoTrack.applyConstraints({
+                                    resizeMode: 'none'
+                                }).then(function() {
+                                    if (typeof _self._videoTrack.getSettings() !== 'undefined')
+                                        _self._videoTrackSettings = _self._videoTrack.getSettings();
+                                });
+                            } else {
+                                if (typeof this._videoTrack.getSettings() !== 'undefined')
+                                    this._videoTrackSettings = this._videoTrack.getSettings();
+                            }
                         }
                     }
                     if (typeof stream.getAudioTracks() !== 'undefined') {
