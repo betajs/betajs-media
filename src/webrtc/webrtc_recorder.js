@@ -65,8 +65,19 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                     if (typeof stream.getVideoTracks() !== 'undefined') {
                         if (stream.getVideoTracks()[0]) {
                             this._videoTrack = stream.getVideoTracks()[0];
-                            if (typeof this._videoTrack.getSettings() !== 'undefined')
-                                this._videoTrackSettings = this._videoTrack.getSettings();
+                            // Will fix Chrome Cropping
+                            if (this._options.screen) {
+                                var _self = this;
+                                this._videoTrack.applyConstraints({
+                                    resizeMode: 'none'
+                                }).then(function() {
+                                    if (typeof _self._videoTrack.getSettings() !== 'undefined')
+                                        _self._videoTrackSettings = _self._videoTrack.getSettings();
+                                });
+                            } else {
+                                if (typeof this._videoTrack.getSettings() !== 'undefined')
+                                    this._videoTrackSettings = this._videoTrack.getSettings();
+                            }
                         }
                     }
                     if (typeof stream.getAudioTracks() !== 'undefined') {
