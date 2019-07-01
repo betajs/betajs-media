@@ -107,6 +107,8 @@ Scoped.define("module:Recorder.VideoRecorderWrapper", [
             setCurrentDevices: function(devices) {},
             setCameraFace: function(faceFront) {},
 
+            addMultiStream: function(device, options) {},
+
             createSnapshot: function() {},
             removeSnapshot: function(snapshot) {},
             createSnapshotDisplay: function(parent, snapshot, x, y, w, h) {},
@@ -292,8 +294,8 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
             enumerateDevices: function() {
                 return Support.enumerateMediaSources().success(function(result) {
 
-                    this._detectCurrendDeviceId(result.video, result.videoCount, true);
-                    this._detectCurrendDeviceId(result.audio, result.audioCount, false);
+                    this._detectCurrentDeviceId(result.video, result.videoCount, true);
+                    this._detectCurrentDeviceId(result.audio, result.audioCount, false);
 
                     var timer = this.auto_destroy(new Timer({
                         start: true,
@@ -312,6 +314,16 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
                     }));
 
                 }, this);
+            },
+
+            /**
+             * Will Recorder function to bind all Streams
+             *
+             * @param {object} device
+             * @param {object} options
+             */
+            addMultiStream: function(device, options) {
+                return this._recorder.addNewSingleStream(device, options);
             },
 
             setCurrentDevices: function(devices) {
@@ -445,7 +457,7 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
              * @return {*}
              * @private
              */
-            _detectCurrendDeviceId: function(devices, devicesCount, isVideo) {
+            _detectCurrentDeviceId: function(devices, devicesCount, isVideo) {
                 var _currentDeviceTrack, _currentDeviceSettings, _counter;
                 if (isVideo) {
                     _currentDeviceTrack = this._recorder._videoTrack;
@@ -457,7 +469,7 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
 
                 // First will check if browser could provide device ID via device settings
                 if (_currentDeviceSettings && _currentDeviceTrack) {
-                    if (_currentDeviceSettings.deviceId) {
+                    if (_currentDeviceSettings.deviceId && devices[_currentDeviceSettings.deviceId]) {
                         if (isVideo)
                             this._currentVideo = devices[_currentDeviceSettings.deviceId].id;
                         else

@@ -358,7 +358,11 @@ Scoped.define("module:WebRTC.Support", [
             }
         },
 
-        stopUserMediaStream: function(stream) {
+        /**
+         * @param {MediaStream} stream
+         * @param {Array} sourceTracks
+         */
+        stopUserMediaStream: function(stream, sourceTracks) {
             var stopped = false;
             try {
                 if (stream.getTracks) {
@@ -366,6 +370,15 @@ Scoped.define("module:WebRTC.Support", [
                         track.stop();
                         stopped = true;
                     });
+                }
+                // In multi stream above steam contains newly generated canvas stream
+                // but missing source streams which generated that canvas stream
+                // So, we have to stop them also
+                if (sourceTracks.length > 0) {
+                    Objs.iter(sourceTracks, function(track) {
+                        track.stop();
+                        stopped = true;
+                    }, this);
                 }
             } catch (e) {}
             try {

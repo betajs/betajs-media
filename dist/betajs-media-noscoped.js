@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.118 - 2019-06-17
+betajs-media - v0.0.120 - 2019-07-01
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -13,8 +13,8 @@ Scoped.binding('flash', 'global:BetaJS.Flash');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.118",
-    "datetime": 1560820849491
+    "version": "0.0.120",
+    "datetime": 1561991250867
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.136');
@@ -5045,6 +5045,8 @@ Scoped.define("module:Recorder.VideoRecorderWrapper", [
             setCurrentDevices: function(devices) {},
             setCameraFace: function(faceFront) {},
 
+            addMultiStream: function(device, options) {},
+
             createSnapshot: function() {},
             removeSnapshot: function(snapshot) {},
             createSnapshotDisplay: function(parent, snapshot, x, y, w, h) {},
@@ -5230,8 +5232,8 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
             enumerateDevices: function() {
                 return Support.enumerateMediaSources().success(function(result) {
 
-                    this._detectCurrendDeviceId(result.video, result.videoCount, true);
-                    this._detectCurrendDeviceId(result.audio, result.audioCount, false);
+                    this._detectCurrentDeviceId(result.video, result.videoCount, true);
+                    this._detectCurrentDeviceId(result.audio, result.audioCount, false);
 
                     var timer = this.auto_destroy(new Timer({
                         start: true,
@@ -5250,6 +5252,16 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
                     }));
 
                 }, this);
+            },
+
+            /**
+             * Will Recorder function to bind all Streams
+             *
+             * @param {object} device
+             * @param {object} options
+             */
+            addMultiStream: function(device, options) {
+                return this._recorder.addNewSingleStream(device, options);
             },
 
             setCurrentDevices: function(devices) {
@@ -5383,7 +5395,7 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
              * @return {*}
              * @private
              */
-            _detectCurrendDeviceId: function(devices, devicesCount, isVideo) {
+            _detectCurrentDeviceId: function(devices, devicesCount, isVideo) {
                 var _currentDeviceTrack, _currentDeviceSettings, _counter;
                 if (isVideo) {
                     _currentDeviceTrack = this._recorder._videoTrack;
@@ -5395,7 +5407,7 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
 
                 // First will check if browser could provide device ID via device settings
                 if (_currentDeviceSettings && _currentDeviceTrack) {
-                    if (_currentDeviceSettings.deviceId) {
+                    if (_currentDeviceSettings.deviceId && devices[_currentDeviceSettings.deviceId]) {
                         if (isVideo)
                             this._currentVideo = devices[_currentDeviceSettings.deviceId].id;
                         else
@@ -6276,11 +6288,13 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
     "base:Classes.ConditionalInstance",
     "base:Events.EventsMixin",
     "base:Objs",
+    "base:Async",
+    "base:Promise",
     "module:WebRTC.Support",
     "module:Recorder.Support",
     "base:Time",
     "module:Recorder.PixelSampleMixin"
-], function(ConditionalInstance, EventsMixin, Objs, Support, RecorderSupport, Time, PixelSampleMixin, scoped) {
+], function(ConditionalInstance, EventsMixin, Objs, Async, Promise, Support, RecorderSupport, Time, PixelSampleMixin, scoped) {
     return ConditionalInstance.extend({
         scoped: scoped
     }, [EventsMixin, PixelSampleMixin, function(inherited) {
@@ -6314,6 +6328,64 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                 };
             },
 
+            /**
+             * Will add a new Stream to Existing one
+             *
+             * @param {object} device
+             * @param {object} options
+             */
+            addNewSingleStream: function(device, options) {
+                this._initMultiStreamSettings();
+                // this._videoElements.push(this._video);
+                var _options, _positionX, _positionY, _height, _width, _aspectRatio, _constraints;
+                _constraints = {};
+                _aspectRatio = this._options.video.aspectRatio;
+                _positionX = options.positionX || 0;
+                _positionY = options.positionY || 0;
+                _width = options.width || (this._options.recordResolution.width * 0.20) || 120;
+                _height = options.height || _aspectRatio ? Math.floor(_width * _aspectRatio) : Math.floor(_width / 1.33);
+                _videoElement = options.videoElement;
+                _options = {
+                    frameRate: this._options.framerate,
+                    sourceId: device.id,
+                    width: _width,
+                    height: _height,
+                    cameraFaceFront: this._options.cameraFaceFront
+                };
+                _constraints = {
+                    video: _options
+                };
+                this._prepareMultiStreamCanvas();
+                this.drawing = false;
+                this._multiSteamConstraints = _constraints;
+                this.__addedStreamOptions = Objs.tree_merge(_options, {
+                    positionX: _positionX,
+                    positionY: _positionY
+                });
+                return this.addNewMediaStream();
+            },
+
+            /**
+             * Add new stream to existing one
+             * @return {Promise}
+             */
+            addNewMediaStream: function() {
+                var promise = Promise.create();
+                if (this._multiStreams.length < 1)
+                    this._multiStreams.push(this._stream);
+                return Support.userMedia2(this._multiSteamConstraints, this).success(function(stream) {
+                    this._multiStreams.push(stream);
+                    this._addNewVideoElement(promise);
+
+                    this.on("multistream-canvas-drawn", function() {
+                        console.log('DRAWN');
+                        return promise.asyncSuccess();
+                    }, this);
+
+                }, this);
+            },
+
+
             recordDelay: function(opts) {
                 return 0;
             },
@@ -6336,31 +6408,7 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                     this._stream = stream;
                     Support.bindStreamToVideo(stream, this._video, this._flip);
                     this.trigger("bound", stream);
-                    if (typeof stream.getVideoTracks() !== 'undefined') {
-                        if (stream.getVideoTracks()[0]) {
-                            this._videoTrack = stream.getVideoTracks()[0];
-                            // Will fix Chrome Cropping
-                            if (this._options.screen) {
-                                var _self = this;
-                                this._videoTrack.applyConstraints({
-                                    resizeMode: 'none'
-                                }).then(function() {
-                                    if (typeof _self._videoTrack.getSettings() !== 'undefined')
-                                        _self._videoTrackSettings = _self._videoTrack.getSettings();
-                                });
-                            } else {
-                                if (typeof this._videoTrack.getSettings() !== 'undefined')
-                                    this._videoTrackSettings = this._videoTrack.getSettings();
-                            }
-                        }
-                    }
-                    if (typeof stream.getAudioTracks() !== 'undefined') {
-                        if (stream.getAudioTracks()[0]) {
-                            this._audioTrack = stream.getAudioTracks()[0];
-                            if (typeof this._audioTrack.getSettings() !== 'undefined')
-                                this._audioTrackSettings = this._audioTrack.getSettings();
-                        }
-                    }
+                    this._setLocalTrackSettings(stream);
                     this._boundMedia();
                 }, this);
             },
@@ -6415,7 +6463,7 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
             unbindMedia: function() {
                 if (!this._bound || this._recording)
                     return;
-                Support.stopUserMediaStream(this._stream);
+                Support.stopUserMediaStream(this._stream, this._soruceTracks);
                 this._bound = false;
                 this.trigger("unbound");
                 this._unboundMedia();
@@ -6442,6 +6490,163 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                     var data = ctx.getImageData(x, y, 1, 1).data;
                     callback.call(context || this, data[0], data[1], data[2]);
                 }
+            },
+
+            /**
+             * Initialize multi-stream related variables
+             * @private
+             */
+            _initMultiStreamSettings: function() {
+                this._multiStreams = [];
+                this._videoElements = [];
+                this._audioInputs = [];
+                this._soruceTracks = [];
+                this._multiSteamConstraints = {};
+            },
+
+            /**
+             * Will prepare canvas element, to merge video streams
+             * @private
+             */
+            _prepareMultiStreamCanvas: function() {
+                var _height = this._video.clientHeight || this._video.videoHeight;
+                var _width = this._video.clientWidth || this._video.videoWidth;
+                this.__multiStreamCanvas = document.createElement('canvas');
+                this.__multiStreamCanvas.setAttribute('width', _width);
+                this.__multiStreamCanvas.setAttribute('height', _height);
+                this.__multiStreamCanvas.setAttribute('style', 'position:fixed; left: 200%; pointer-events: none'); // Out off from the screen
+                this.__multiStreamCtx = this.__multiStreamCanvas.getContext('2d');
+                // document.body.append(this.__multiStreamCanvas);
+            },
+
+            /**
+             * Set local track setting values
+             * @param {MediaStream} stream
+             * @private
+             */
+            _setLocalTrackSettings: function(stream) {
+                if (typeof stream.getVideoTracks() !== 'undefined') {
+                    if (stream.getVideoTracks()[0]) {
+                        this._videoTrack = stream.getVideoTracks()[0];
+                        // Will fix Chrome Cropping
+                        if (this._options.screen) {
+                            var _self = this;
+                            this._videoTrack.applyConstraints({
+                                resizeMode: 'none'
+                            }).then(function() {
+                                if (typeof _self._videoTrack.getSettings() !== 'undefined')
+                                    _self._videoTrackSettings = _self._videoTrack.getSettings();
+                            });
+                        } else {
+                            if (typeof this._videoTrack.getSettings() !== 'undefined')
+                                this._videoTrackSettings = this._videoTrack.getSettings();
+                        }
+                    }
+                }
+                if (typeof stream.getAudioTracks() !== 'undefined') {
+                    if (stream.getAudioTracks()[0]) {
+                        this._audioTrack = stream.getAudioTracks()[0];
+                        if (typeof this._audioTrack.getSettings() !== 'undefined')
+                            this._audioTrackSettings = this._audioTrack.getSettings();
+                    }
+                }
+            },
+
+            /**
+             * Will add new video DOM Element to draw inside Multi-Stream Canvas
+             * @param promise
+             * @private
+             */
+            _addNewVideoElement: function(promise) {
+                Objs.iter(this._multiStreams, function(stream, index) {
+                    var _tracks = stream.getTracks();
+                    Objs.iter(_tracks, function(track) {
+                        // Will require to stop all existing tracks after recorder stop
+                        this._soruceTracks.push(track);
+                        if (track.kind === 'video') {
+                            if (track.id !== this._videoTrack.id)
+                                this._videoElements.push(this._singleVideoElement(this.__addedStreamOptions, stream));
+                            else
+                                this._videoElements.push(this._singleVideoElement(this._getConstraints().video, stream));
+                        }
+                        if (track.kind === 'audio') {
+                            this._audioInputs.push(track);
+                        }
+                    }, this);
+                    if ((this._videoElements.length + this._audioInputs.length) === _tracks.length) {
+                        try {
+                            this.drawing = true;
+                            this._drawTracksToCanvas();
+                            this._startMultiStreaming();
+                        } catch (e) {
+                            console.warn(e);
+                        }
+                    }
+
+                    // If After 1 seconds, if we can not get required tracks, something wrong
+                    Async.eventually(function() {
+                        if (!this.drawing)
+                            return promise.asyncError({
+                                message: 'Could not be able to get required tracks'
+                            });
+                    }, this, 1000);
+                }, this);
+            },
+
+            /**
+             * Merge streams and draw Canvas.
+             * @private
+             */
+            _drawTracksToCanvas: function() {
+                if (!this.drawing)
+                    return;
+                var _videosCount = this._videoElements.length;
+                for (var _i = 0; _i < this._videoElements.length; _i++) {
+                    var video = this._videoElements[_i];
+                    var _constraints = _i !== 0 ? this.__addedStreamOptions : {};
+                    var _positionX = _constraints.positionX || 0;
+                    var _positionY = _constraints.positionY || 0;
+                    var _width = _constraints.width || this.__multiStreamCanvas.width || 360;
+                    var _height = _constraints.height || this.__multiStreamCanvas.height || 240;
+                    this.__multiStreamCtx.drawImage(video, _positionX, _positionY, _width, _height);
+                    _videosCount--;
+                    if (_videosCount === 0) {
+                        Async.eventually(this._drawTracksToCanvas, [], this, 1000 / 30); // drawing at 30 fps
+                    }
+                }
+            },
+
+            /**
+             * Start streaming from merged Canvas Element
+             * @private
+             */
+            _startMultiStreaming: function() {
+                var stream = this.__multiStreamCanvas.captureStream(25);
+                stream.addTrack(this._audioInputs[0]);
+                this._stream = stream;
+                Support.bindStreamToVideo(stream, this._video, this._flip);
+                this.trigger("bound", stream);
+                this.trigger("multistream-canvas-drawn");
+                this._setLocalTrackSettings(stream);
+                this._boundMedia(stream);
+            },
+
+            /**
+             * Generate single video DOM element to draw inside canvas
+             * @param {object} options
+             * @param stream
+             * @return {HTMLElement}
+             * @private
+             */
+            _singleVideoElement: function(options, stream) {
+                var video = Support.bindStreamToVideo(stream);
+                video.className = 'betajs-multistream-element';
+                video.muted = true;
+                video.volume = 0;
+                video.width = options.width || 360;
+                video.height = options.height || 240;
+                video.play();
+                return video;
             },
 
             _boundMedia: function() {},
@@ -6617,8 +6822,9 @@ Scoped.define("module:WebRTC.MediaRecorderWrapper", [
         scoped: scoped
     }, {
 
-        _boundMedia: function() {
-            this._recorder = new MediaRecorder(this._stream, {
+        _boundMedia: function(stream) {
+            var _stream = stream || this._stream;
+            this._recorder = new MediaRecorder(_stream, {
                 videoBitrate: this._options.videoBitrate,
                 audioBitrate: this._options.audioBitrate,
                 audioonly: !this._options.recordVideo
@@ -7155,7 +7361,11 @@ Scoped.define("module:WebRTC.Support", [
             }
         },
 
-        stopUserMediaStream: function(stream) {
+        /**
+         * @param {MediaStream} stream
+         * @param {Array} sourceTracks
+         */
+        stopUserMediaStream: function(stream, sourceTracks) {
             var stopped = false;
             try {
                 if (stream.getTracks) {
@@ -7163,6 +7373,15 @@ Scoped.define("module:WebRTC.Support", [
                         track.stop();
                         stopped = true;
                     });
+                }
+                // In multi stream above steam contains newly generated canvas stream
+                // but missing source streams which generated that canvas stream
+                // So, we have to stop them also
+                if (sourceTracks.length > 0) {
+                    Objs.iter(sourceTracks, function(track) {
+                        track.stop();
+                        stopped = true;
+                    }, this);
                 }
             } catch (e) {}
             try {
