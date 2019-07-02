@@ -537,8 +537,8 @@ Scoped.define("module:WebRTC.MediaRecorderWrapper", [
     }, {
 
         _boundMedia: function(stream) {
-            var _stream = stream || this._stream;
-            this._recorder = new MediaRecorder(_stream, {
+            stream = stream || this._stream;
+            this._recorder = new MediaRecorder(stream, {
                 videoBitrate: this._options.videoBitrate,
                 audioBitrate: this._options.audioBitrate,
                 audioonly: !this._options.recordVideo
