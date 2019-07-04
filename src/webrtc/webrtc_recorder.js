@@ -55,7 +55,9 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                 _positionX = options.positionX || 0;
                 _positionY = options.positionY || 0;
                 _width = options.width || (this._options.recordResolution.width * 0.20) || 120;
-                _height = options.height || _aspectRatio ? Math.floor(_width * _aspectRatio) : Math.floor(_width / 1.33);
+                _height = options.height;
+                if (!_height)
+                    _height = _aspectRatio ? Math.floor(_width * _aspectRatio) : Math.floor(_width / 1.33);
                 _options = {
                     frameRate: this._options.framerate,
                     sourceId: device.id,
