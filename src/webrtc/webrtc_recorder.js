@@ -69,7 +69,7 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                     video: _options
                 };
                 this._prepareMultiStreamCanvas();
-                this._multiSteamConstraints = _constraints;
+                this._multiStreamConstraints = _constraints;
                 this.__addedStreamOptions = Objs.tree_merge(_options, {
                     positionX: _positionX,
                     positionY: _positionY
@@ -85,7 +85,7 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                 var promise = Promise.create();
                 if (this._multiStreams.length < 1)
                     this._multiStreams.push(this._stream);
-                return Support.userMedia2(this._multiSteamConstraints, this).success(function(stream) {
+                return Support.userMedia2(this._multiStreamConstraints, this).success(function(stream) {
                     this._multiStreams.push(stream);
                     this._addNewVideoElement(promise);
 
@@ -174,7 +174,7 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
             unbindMedia: function() {
                 if (!this._bound || this._recording)
                     return;
-                Support.stopUserMediaStream(this._stream, this._soruceTracks);
+                Support.stopUserMediaStream(this._stream, this._sourceTracks);
                 this._bound = false;
                 this.trigger("unbound");
                 this._unboundMedia();
@@ -211,8 +211,8 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                 this._multiStreams = [];
                 this._videoElements = [];
                 this._audioInputs = [];
-                this._soruceTracks = [];
-                this._multiSteamConstraints = {};
+                this._sourceTracks = [];
+                this._multiStreamConstraints = {};
                 this._drawingStream = false;
             },
 
@@ -276,7 +276,7 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                     var _tracks = stream.getTracks();
                     Objs.iter(_tracks, function(track) {
                         // Will require to stop all existing tracks after recorder stop
-                        this._soruceTracks.push(track);
+                        this._sourceTracks.push(track);
                         if (track.kind === 'video') {
                             if (track.id !== this._videoTrack.id)
                                 this._videoElements.push(this._singleVideoElement(this.__addedStreamOptions, stream));

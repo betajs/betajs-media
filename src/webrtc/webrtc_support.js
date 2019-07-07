@@ -371,7 +371,7 @@ Scoped.define("module:WebRTC.Support", [
                         stopped = true;
                     });
                 }
-                // In multi stream above steam contains newly generated canvas stream
+                // In multi stream above stream contains newly generated canvas stream
                 // but missing source streams which generated that canvas stream
                 // So, we have to stop them also
                 if (sourceTracks.length > 0) {

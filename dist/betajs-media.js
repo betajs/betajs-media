@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.120 - 2019-07-01
+betajs-media - v0.0.123 - 2019-07-07
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -1006,7 +1006,7 @@ Public.exports();
 	return Public;
 }).call(this);
 /*!
-betajs-media - v0.0.120 - 2019-07-01
+betajs-media - v0.0.123 - 2019-07-07
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -1020,8 +1020,8 @@ Scoped.binding('flash', 'global:BetaJS.Flash');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.120",
-    "datetime": 1561991250867
+    "version": "0.0.123",
+    "datetime": 1562542554081
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.136');
@@ -7343,15 +7343,14 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
              */
             addNewSingleStream: function(device, options) {
                 this._initMultiStreamSettings();
-                // this._videoElements.push(this._video);
                 var _options, _positionX, _positionY, _height, _width, _aspectRatio, _constraints;
-                _constraints = {};
                 _aspectRatio = this._options.video.aspectRatio;
                 _positionX = options.positionX || 0;
                 _positionY = options.positionY || 0;
                 _width = options.width || (this._options.recordResolution.width * 0.20) || 120;
-                _height = options.height || _aspectRatio ? Math.floor(_width * _aspectRatio) : Math.floor(_width / 1.33);
-                _videoElement = options.videoElement;
+                _height = options.height;
+                if (!_height)
+                    _height = _aspectRatio ? Math.floor(_width * _aspectRatio) : Math.floor(_width / 1.33);
                 _options = {
                     frameRate: this._options.framerate,
                     sourceId: device.id,
@@ -7363,8 +7362,7 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                     video: _options
                 };
                 this._prepareMultiStreamCanvas();
-                this.drawing = false;
-                this._multiSteamConstraints = _constraints;
+                this._multiStreamConstraints = _constraints;
                 this.__addedStreamOptions = Objs.tree_merge(_options, {
                     positionX: _positionX,
                     positionY: _positionY
@@ -7380,12 +7378,11 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                 var promise = Promise.create();
                 if (this._multiStreams.length < 1)
                     this._multiStreams.push(this._stream);
-                return Support.userMedia2(this._multiSteamConstraints, this).success(function(stream) {
+                return Support.userMedia2(this._multiStreamConstraints, this).success(function(stream) {
                     this._multiStreams.push(stream);
                     this._addNewVideoElement(promise);
 
                     this.on("multistream-canvas-drawn", function() {
-                        console.log('DRAWN');
                         return promise.asyncSuccess();
                     }, this);
 
@@ -7470,7 +7467,7 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
             unbindMedia: function() {
                 if (!this._bound || this._recording)
                     return;
-                Support.stopUserMediaStream(this._stream, this._soruceTracks);
+                Support.stopUserMediaStream(this._stream, this._sourceTracks);
                 this._bound = false;
                 this.trigger("unbound");
                 this._unboundMedia();
@@ -7507,8 +7504,9 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                 this._multiStreams = [];
                 this._videoElements = [];
                 this._audioInputs = [];
-                this._soruceTracks = [];
-                this._multiSteamConstraints = {};
+                this._sourceTracks = [];
+                this._multiStreamConstraints = {};
+                this._drawingStream = false;
             },
 
             /**
@@ -7518,9 +7516,11 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
             _prepareMultiStreamCanvas: function() {
                 var _height = this._video.clientHeight || this._video.videoHeight;
                 var _width = this._video.clientWidth || this._video.videoWidth;
-                this.__multiStreamCanvas = document.createElement('canvas');
-                this.__multiStreamCanvas.setAttribute('width', _width);
-                this.__multiStreamCanvas.setAttribute('height', _height);
+                if (typeof this.__multiStreamCanvas === 'undefined') {
+                    this.__multiStreamCanvas = document.createElement('canvas');
+                }
+                this.__multiStreamCanvas.setAttribute('width', _width + 'px');
+                this.__multiStreamCanvas.setAttribute('height', _height + 'px');
                 this.__multiStreamCanvas.setAttribute('style', 'position:fixed; left: 200%; pointer-events: none'); // Out off from the screen
                 this.__multiStreamCtx = this.__multiStreamCanvas.getContext('2d');
                 // document.body.append(this.__multiStreamCanvas);
@@ -7569,7 +7569,7 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                     var _tracks = stream.getTracks();
                     Objs.iter(_tracks, function(track) {
                         // Will require to stop all existing tracks after recorder stop
-                        this._soruceTracks.push(track);
+                        this._sourceTracks.push(track);
                         if (track.kind === 'video') {
                             if (track.id !== this._videoTrack.id)
                                 this._videoElements.push(this._singleVideoElement(this.__addedStreamOptions, stream));
@@ -7582,7 +7582,7 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                     }, this);
                     if ((this._videoElements.length + this._audioInputs.length) === _tracks.length) {
                         try {
-                            this.drawing = true;
+                            this._drawingStream = true;
                             this._drawTracksToCanvas();
                             this._startMultiStreaming();
                         } catch (e) {
@@ -7592,7 +7592,7 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
 
                     // If After 1 seconds, if we can not get required tracks, something wrong
                     Async.eventually(function() {
-                        if (!this.drawing)
+                        if (!this._drawingStream)
                             return promise.asyncError({
                                 message: 'Could not be able to get required tracks'
                             });
@@ -7605,7 +7605,7 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
              * @private
              */
             _drawTracksToCanvas: function() {
-                if (!this.drawing)
+                if (!this._drawingStream)
                     return;
                 var _videosCount = this._videoElements.length;
                 for (var _i = 0; _i < this._videoElements.length; _i++) {
@@ -7830,8 +7830,8 @@ Scoped.define("module:WebRTC.MediaRecorderWrapper", [
     }, {
 
         _boundMedia: function(stream) {
-            var _stream = stream || this._stream;
-            this._recorder = new MediaRecorder(_stream, {
+            stream = stream || this._stream;
+            this._recorder = new MediaRecorder(stream, {
                 videoBitrate: this._options.videoBitrate,
                 audioBitrate: this._options.audioBitrate,
                 audioonly: !this._options.recordVideo
@@ -7843,6 +7843,8 @@ Scoped.define("module:WebRTC.MediaRecorderWrapper", [
 
         _unboundMedia: function() {
             this._recorder.destroy();
+            if (this._drawingStream)
+                this._initMultiStreamSettings();
         },
 
         _startRecord: function() {
@@ -8381,7 +8383,7 @@ Scoped.define("module:WebRTC.Support", [
                         stopped = true;
                     });
                 }
-                // In multi stream above steam contains newly generated canvas stream
+                // In multi stream above stream contains newly generated canvas stream
                 // but missing source streams which generated that canvas stream
                 // So, we have to stop them also
                 if (sourceTracks.length > 0) {
