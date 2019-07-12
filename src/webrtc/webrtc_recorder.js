@@ -4,11 +4,12 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
     "base:Objs",
     "base:Async",
     "base:Promise",
+    "base:Timers.Timer",
     "module:WebRTC.Support",
     "module:Recorder.Support",
     "base:Time",
     "module:Recorder.PixelSampleMixin"
-], function(ConditionalInstance, EventsMixin, Objs, Async, Promise, Support, RecorderSupport, Time, PixelSampleMixin, scoped) {
+], function(ConditionalInstance, EventsMixin, Objs, Async, Promise, Timer, Support, RecorderSupport, Time, PixelSampleMixin, scoped) {
     return ConditionalInstance.extend({
         scoped: scoped
     }, [EventsMixin, PixelSampleMixin, function(inherited) {
@@ -154,9 +155,41 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                 this._recording = true;
                 var promise = this._startRecord(options);
                 promise.success(function() {
+                    this._pausedDuration = 0;
                     this._startTime = Time.now();
                 }, this);
                 return promise;
+            },
+
+            pauseRecord: function() {
+                if (this._paused && this._recorder._mediaRecorder.state !== 'recording')
+                    return;
+                var _self = this;
+                this._paused = true;
+                this._recorder.pause();
+                this._recorder._mediaRecorder.onpause = function() {
+                    _self.trigger("paused");
+                    _self.pauseInterval = _self.auto_destroy(new Timer({
+                        context: _self,
+                        fire: function() {
+                            this._pausedDuration += 100;
+                        },
+                        delay: 100,
+                        immediate: true
+                    }));
+                };
+            },
+
+            resumeRecord: function() {
+                if (!this._paused && this._recorder._mediaRecorder.state !== 'paused')
+                    return;
+                var _self = this;
+                this._paused = false;
+                this._recorder.resume();
+                this._recorder._mediaRecorder.onresume = function() {
+                    _self.trigger("resumed");
+                    _self.pauseInterval.destroy();
+                };
             },
 
             stopRecord: function() {
@@ -168,7 +201,7 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
             },
 
             duration: function() {
-                return (this._recording || !this._stopTime ? Time.now() : this._stopTime) - this._startTime;
+                return (this._recording || !this._stopTime ? Time.now() : this._stopTime) - this._startTime - this._pausedDuration;
             },
 
             unbindMedia: function() {

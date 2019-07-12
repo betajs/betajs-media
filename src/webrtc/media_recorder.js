@@ -81,6 +81,22 @@ Scoped.define("module:WebRTC.MediaRecorder", [
                 return Promise.value(true);
             },
 
+            pause: function() {
+                if (this._paused || !this._started)
+                    return;
+                this._paused = true;
+                this._mediaRecorder.pause();
+                this.trigger("paused");
+            },
+
+            resume: function() {
+                if (!this._paused || !this._started)
+                    return;
+                this._paused = false;
+                this._mediaRecorder.resume();
+                this.trigger("resumed");
+            },
+
             stop: function() {
                 if (!this._started)
                     return;
