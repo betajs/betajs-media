@@ -117,6 +117,8 @@ Scoped.define("module:Recorder.VideoRecorderWrapper", [
             createSnapshotUploader: function(snapshot, type, uploaderOptions) {},
 
             startRecord: function(options) {},
+            pauseRecord: function() {},
+            resumeRecord: function() {},
             stopRecord: function(options) {},
 
             isFlash: function() {
@@ -124,6 +126,10 @@ Scoped.define("module:Recorder.VideoRecorderWrapper", [
             },
 
             isWebrtcStreaming: function() {
+                return false;
+            },
+
+            canPause: function() {
                 return false;
             },
 
@@ -262,6 +268,10 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
 
             isWebrtcStreaming: function() {
                 return this._recorder.isWebrtcStreaming();
+            },
+
+            canPause: function() {
+                return !this.isWebrtcStreaming();
             },
 
             soundLevel: function() {

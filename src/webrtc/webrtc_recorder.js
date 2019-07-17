@@ -162,7 +162,7 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
             },
 
             pauseRecord: function() {
-                if (this._paused && this._recorder._mediaRecorder.state !== 'recording')
+                if (this._paused || typeof this._recorder._mediaRecorder === 'undefined')
                     return;
                 var _self = this;
                 this._paused = true;
@@ -181,7 +181,7 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
             },
 
             resumeRecord: function() {
-                if (!this._paused && this._recorder._mediaRecorder.state !== 'paused')
+                if (!this._paused || typeof this._recorder._mediaRecorder === 'undefined')
                     return;
                 var _self = this;
                 this._paused = false;
