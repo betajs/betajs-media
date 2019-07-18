@@ -4,12 +4,11 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
     "base:Objs",
     "base:Async",
     "base:Promise",
-    "base:Timers.Timer",
     "module:WebRTC.Support",
     "module:Recorder.Support",
     "base:Time",
     "module:Recorder.PixelSampleMixin"
-], function(ConditionalInstance, EventsMixin, Objs, Async, Promise, Timer, Support, RecorderSupport, Time, PixelSampleMixin, scoped) {
+], function(ConditionalInstance, EventsMixin, Objs, Async, Promise, Support, RecorderSupport, Time, PixelSampleMixin, scoped) {
     return ConditionalInstance.extend({
         scoped: scoped
     }, [EventsMixin, PixelSampleMixin, function(inherited) {
@@ -110,6 +109,10 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                 return false;
             },
 
+            canPause: function() {
+                return false;
+            },
+
             bindMedia: function() {
                 if (this._bound)
                     return;
@@ -162,34 +165,26 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
             },
 
             pauseRecord: function() {
-                if (this._paused || typeof this._recorder._mediaRecorder === 'undefined')
+                if (!this.canPause() || this._paused)
                     return;
-                var _self = this;
                 this._paused = true;
+                this._recorder.once("paused", function() {
+                    this.trigger("paused");
+                    this.__pauseStartTime = Time.now();
+                }, this);
                 this._recorder.pause();
-                this._recorder._mediaRecorder.onpause = function() {
-                    _self.trigger("paused");
-                    _self.pauseInterval = _self.auto_destroy(new Timer({
-                        context: _self,
-                        fire: function() {
-                            this._pausedDuration += 100;
-                        },
-                        delay: 100,
-                        immediate: true
-                    }));
-                };
             },
 
             resumeRecord: function() {
-                if (!this._paused || typeof this._recorder._mediaRecorder === 'undefined')
+                if (!this.canPause() || !this._paused)
                     return;
-                var _self = this;
                 this._paused = false;
+                this._recorder.once("resumed", function() {
+                    this.trigger("resumed");
+                    this._pausedDuration += Time.now() - this.__pauseStartTime;
+                    delete this.__pauseStartTime;
+                }, this);
                 this._recorder.resume();
-                this._recorder._mediaRecorder.onresume = function() {
-                    _self.trigger("resumed");
-                    _self.pauseInterval.destroy();
-                };
             },
 
             stopRecord: function() {
@@ -201,7 +196,9 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
             },
 
             duration: function() {
-                return (this._recording || !this._stopTime ? Time.now() : this._stopTime) - this._startTime - this._pausedDuration;
+                return (this._recording || !this._stopTime ? Time.now() : this._stopTime) - this._startTime -
+                    this._pausedDuration -
+                    (this.__pauseStartTime !== undefined ? Time.now() - this.__pauseStartTime : 0);
             },
 
             unbindMedia: function() {
@@ -593,6 +590,10 @@ Scoped.define("module:WebRTC.MediaRecorderWrapper", [
 
         _stopRecord: function() {
             this._recorder.stop();
+        },
+
+        canPause: function() {
+            return true;
         },
 
         getVolumeGain: function() {},

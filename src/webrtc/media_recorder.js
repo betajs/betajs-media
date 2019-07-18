@@ -64,6 +64,8 @@ Scoped.define("module:WebRTC.MediaRecorder", [
                 this._mediaRecorder = new MediaRecorder(stream, mediaRecorderOptions);
                 this._mediaRecorder.ondataavailable = Functions.as_method(this._dataAvailable, this);
                 this._mediaRecorder.onstop = Functions.as_method(this._dataStop, this);
+                this._mediaRecorder.onpause = Functions.as_method(this._hasPaused, this);
+                this._mediaRecorder.onresume = Functions.as_method(this._hasResumed, this);
             },
 
             destroy: function() {
@@ -86,6 +88,10 @@ Scoped.define("module:WebRTC.MediaRecorder", [
                     return;
                 this._paused = true;
                 this._mediaRecorder.pause();
+                this.trigger("pause");
+            },
+
+            _hasPaused: function() {
                 this.trigger("paused");
             },
 
@@ -94,6 +100,10 @@ Scoped.define("module:WebRTC.MediaRecorder", [
                     return;
                 this._paused = false;
                 this._mediaRecorder.resume();
+                this.trigger("resume");
+            },
+
+            _hasResumed: function() {
                 this.trigger("resumed");
             },
 

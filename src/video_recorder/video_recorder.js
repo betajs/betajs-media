@@ -271,7 +271,7 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
             },
 
             canPause: function() {
-                return !this.isWebrtcStreaming();
+                return this._recorder.canPause();
             },
 
             soundLevel: function() {

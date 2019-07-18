@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.123 - 2019-07-07
+betajs-media - v0.0.125 - 2019-07-17
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -1006,7 +1006,7 @@ Public.exports();
 	return Public;
 }).call(this);
 /*!
-betajs-media - v0.0.123 - 2019-07-07
+betajs-media - v0.0.125 - 2019-07-17
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -1020,8 +1020,8 @@ Scoped.binding('flash', 'global:BetaJS.Flash');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.123",
-    "datetime": 1562542554081
+    "version": "0.0.125",
+    "datetime": 1563418799133
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.136');
@@ -6062,6 +6062,8 @@ Scoped.define("module:Recorder.VideoRecorderWrapper", [
             createSnapshotUploader: function(snapshot, type, uploaderOptions) {},
 
             startRecord: function(options) {},
+            pauseRecord: function() {},
+            resumeRecord: function() {},
             stopRecord: function(options) {},
 
             isFlash: function() {
@@ -6069,6 +6071,10 @@ Scoped.define("module:Recorder.VideoRecorderWrapper", [
             },
 
             isWebrtcStreaming: function() {
+                return false;
+            },
+
+            canPause: function() {
                 return false;
             },
 
@@ -6209,6 +6215,10 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
                 return this._recorder.isWebrtcStreaming();
             },
 
+            canPause: function() {
+                return this._recorder.canPause();
+            },
+
             soundLevel: function() {
                 if (!this._analyser && this._recorder && this._recorder.stream() && AudioAnalyser.supported())
                     this._analyser = new AudioAnalyser(this._recorder.stream());
@@ -6322,6 +6332,14 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
             startRecord: function(options) {
                 this.__localPlaybackSource = null;
                 return this._recorder.startRecord(options);
+            },
+
+            pauseRecord: function() {
+                return this._recorder.pauseRecord();
+            },
+
+            resumeRecord: function() {
+                return this._recorder.resumeRecord();
             },
 
             stopRecord: function(options) {
@@ -7017,6 +7035,8 @@ Scoped.define("module:WebRTC.MediaRecorder", [
                 this._mediaRecorder = new MediaRecorder(stream, mediaRecorderOptions);
                 this._mediaRecorder.ondataavailable = Functions.as_method(this._dataAvailable, this);
                 this._mediaRecorder.onstop = Functions.as_method(this._dataStop, this);
+                this._mediaRecorder.onpause = Functions.as_method(this._hasPaused, this);
+                this._mediaRecorder.onresume = Functions.as_method(this._hasResumed, this);
             },
 
             destroy: function() {
@@ -7032,6 +7052,30 @@ Scoped.define("module:WebRTC.MediaRecorder", [
                 this._mediaRecorder.start(10);
                 this.trigger("started");
                 return Promise.value(true);
+            },
+
+            pause: function() {
+                if (this._paused || !this._started)
+                    return;
+                this._paused = true;
+                this._mediaRecorder.pause();
+                this.trigger("pause");
+            },
+
+            _hasPaused: function() {
+                this.trigger("paused");
+            },
+
+            resume: function() {
+                if (!this._paused || !this._started)
+                    return;
+                this._paused = false;
+                this._mediaRecorder.resume();
+                this.trigger("resume");
+            },
+
+            _hasResumed: function() {
+                this.trigger("resumed");
             },
 
             stop: function() {
@@ -7402,6 +7446,10 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                 return false;
             },
 
+            canPause: function() {
+                return false;
+            },
+
             bindMedia: function() {
                 if (this._bound)
                     return;
@@ -7447,9 +7495,33 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                 this._recording = true;
                 var promise = this._startRecord(options);
                 promise.success(function() {
+                    this._pausedDuration = 0;
                     this._startTime = Time.now();
                 }, this);
                 return promise;
+            },
+
+            pauseRecord: function() {
+                if (!this.canPause() || this._paused)
+                    return;
+                this._paused = true;
+                this._recorder.once("paused", function() {
+                    this.trigger("paused");
+                    this.__pauseStartTime = Time.now();
+                }, this);
+                this._recorder.pause();
+            },
+
+            resumeRecord: function() {
+                if (!this.canPause() || !this._paused)
+                    return;
+                this._paused = false;
+                this._recorder.once("resumed", function() {
+                    this.trigger("resumed");
+                    this._pausedDuration += Time.now() - this.__pauseStartTime;
+                    delete this.__pauseStartTime;
+                }, this);
+                this._recorder.resume();
             },
 
             stopRecord: function() {
@@ -7461,7 +7533,9 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
             },
 
             duration: function() {
-                return (this._recording || !this._stopTime ? Time.now() : this._stopTime) - this._startTime;
+                return (this._recording || !this._stopTime ? Time.now() : this._stopTime) - this._startTime -
+                    this._pausedDuration -
+                    (this.__pauseStartTime !== undefined ? Time.now() - this.__pauseStartTime : 0);
             },
 
             unbindMedia: function() {
@@ -7853,6 +7927,10 @@ Scoped.define("module:WebRTC.MediaRecorderWrapper", [
 
         _stopRecord: function() {
             this._recorder.stop();
+        },
+
+        canPause: function() {
+            return true;
         },
 
         getVolumeGain: function() {},
