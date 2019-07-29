@@ -110,6 +110,9 @@ Scoped.define("module:Player.VideoPlayerWrapper", [
             },
 
             _eventEnded: function() {
+                // As during loop we will play player after ended event fire, need initial cover will be hidden
+                if (this._loop && !this._options.forceflash)
+                    this.play();
                 this.trigger("ended");
             },
 
@@ -279,8 +282,10 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
                     delay: 50
                 });
                 this._element.preload = this._preload ? "auto" : "none";
-                if (this._loop)
-                    this._element.loop = "loop";
+                // Replaced with ended -> play way, to be able get ended listener
+                // Left here to inform don't do on this way in the future
+                // if (this._loop)
+                //     this._element.loop = "loop";
                 var errorCount = 0;
                 this._audioElement = null;
                 var errorEvents = new DomEvents();
