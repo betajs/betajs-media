@@ -110,9 +110,6 @@ Scoped.define("module:Player.VideoPlayerWrapper", [
             },
 
             _eventEnded: function() {
-                // As during loop we will play player after ended event fire, need initial cover will be hidden
-                if (this._loop && !this._options.forceflash)
-                    this.play();
                 this.trigger("ended");
             },
 
@@ -357,6 +354,13 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
                 if (!Info.isInternetExplorer() || Info.internetExplorerVersion() > 8)
                     this._element.innerHTML = "";
                 inherited.destroy.call(this);
+            },
+
+            _eventEnded: function() {
+                // As during loop we will play player after ended event fire, need initial cover will be hidden
+                if (this._loop)
+                    this.play();
+                inherited._eventEnded.call(this);
             },
 
             _setup: function() {

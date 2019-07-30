@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.125 - 2019-07-17
+betajs-media - v0.0.127 - 2019-07-29
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -1006,7 +1006,7 @@ Public.exports();
 	return Public;
 }).call(this);
 /*!
-betajs-media - v0.0.125 - 2019-07-17
+betajs-media - v0.0.127 - 2019-07-29
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -1020,8 +1020,8 @@ Scoped.binding('flash', 'global:BetaJS.Flash');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.125",
-    "datetime": 1563418799133
+    "version": "0.0.127",
+    "datetime": 1564451566916
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.136');
@@ -1119,6 +1119,9 @@ Scoped.define("module:AudioPlayer.AudioPlayerWrapper", [
             },
 
             _eventEnded: function() {
+                // As during loop we will play player after ended event fire, need initial cover will be hidden
+                if (this._loop && !this._options.forceflash)
+                    this.play();
                 this.trigger("ended");
             },
 
@@ -1262,8 +1265,10 @@ Scoped.define("module:AudioPlayer.Html5AudioPlayerWrapper", [
                     delay: 50
                 });
                 this._element.preload = this._preload ? "auto" : "none";
-                if (this._loop)
-                    this._element.loop = "loop";
+                // Replaced with ended -> play way, to be able get ended listener
+                // Left here to inform don't do on this way in the future
+                // if (this._loop)
+                //     this._element.loop = "loop";
                 var errorCount = 0;
                 var errorEvents = new DomEvents();
                 if (!ie9) {
@@ -4678,8 +4683,10 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
                     delay: 50
                 });
                 this._element.preload = this._preload ? "auto" : "none";
-                if (this._loop)
-                    this._element.loop = "loop";
+                // Replaced with ended -> play way, to be able get ended listener
+                // Left here to inform don't do on this way in the future
+                // if (this._loop)
+                //     this._element.loop = "loop";
                 var errorCount = 0;
                 this._audioElement = null;
                 var errorEvents = new DomEvents();
@@ -4751,6 +4758,13 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
                 if (!Info.isInternetExplorer() || Info.internetExplorerVersion() > 8)
                     this._element.innerHTML = "";
                 inherited.destroy.call(this);
+            },
+
+            _eventEnded: function() {
+                // As during loop we will play player after ended event fire, need initial cover will be hidden
+                if (this._loop)
+                    this.play();
+                inherited._eventEnded.call(this);
             },
 
             _setup: function() {
