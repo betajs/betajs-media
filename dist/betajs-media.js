@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.127 - 2019-07-29
+betajs-media - v0.0.127 - 2019-08-12
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -1006,7 +1006,7 @@ Public.exports();
 	return Public;
 }).call(this);
 /*!
-betajs-media - v0.0.127 - 2019-07-29
+betajs-media - v0.0.127 - 2019-08-12
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -1021,7 +1021,7 @@ Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
     "version": "0.0.127",
-    "datetime": 1564451566916
+    "datetime": 1565643954533
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.136');
@@ -4463,6 +4463,7 @@ Scoped.define("module:Player.VideoPlayerWrapper", [
                 this._reloadonplay = options.reloadonplay || false;
                 this._options = options;
                 this._loop = options.loop || false;
+                this._fullscreenedElement = options.fullscreenedElement;
                 this._loaded = false;
                 this._postererror = false;
                 this._error = 0;
@@ -4804,7 +4805,8 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
                 }
                 if (this.supportsFullscreen()) {
                     this.__videoClassBackup = "";
-                    this.__fullscreenListener = Dom.elementOnFullscreenChange(this._element, function(element, inFullscreen) {
+                    var fullscreenedElement = this._fullscreenedElement || this._element;
+                    this.__fullscreenListener = Dom.elementOnFullscreenChange(fullscreenedElement, function(element, inFullscreen) {
                         this.trigger("fullscreen-change", inFullscreen);
                         if (inFullscreen) {
                             this.__videoClassBackup = this._element.className;
