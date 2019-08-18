@@ -26,6 +26,18 @@ Scoped.define("module:Recorder.Support", [
             return _data ? Support.dataURItoBlob(_data) : _data;
         },
 
+        /**
+         *
+         * @param {string} type
+         * @param {HTMLVideoElement} video
+         * @param {boolean} isUploader
+         * @param {int|undefined} h
+         * @param {int|undefined} w
+         * @param {int|undefined} x
+         * @param {int|undefined} y
+         * @param {int|undefined} quality
+         * @return {Data URL}
+         */
         _createSnapshot: function(type, video, isUploader, h, w, x, y, quality) {
             x = x || 0;
             y = y || 0;
