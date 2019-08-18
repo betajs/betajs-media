@@ -26,18 +26,6 @@ Scoped.define("module:Recorder.Support", [
             return _data ? Support.dataURItoBlob(_data) : _data;
         },
 
-        /**
-         *
-         * @param {string} type
-         * @param {HTMLVideoElement} video
-         * @param {boolean} isUploader
-         * @param {int|undefined} h
-         * @param {int|undefined} w
-         * @param {int|undefined} x
-         * @param {int|undefined} y
-         * @param {int|undefined} quality
-         * @return {Data URL}
-         */
         _createSnapshot: function(type, video, isUploader, h, w, x, y, quality) {
             x = x || 0;
             y = y || 0;
@@ -46,17 +34,14 @@ Scoped.define("module:Recorder.Support", [
             var canvas = document.createElement('canvas');
             canvas.width = w || (video.videoWidth || video.clientWidth);
             canvas.height = h || (video.videoHeight || video.clientHeight);
-            var orientation = +(canvas.width / canvas.height) > 1.00 ? 'landscape' : 'portrait';
+            var ratio = +(canvas.width/canvas.height);
+            var orientation = ratio > 1.00 ? 'landscape' : 'portrait';
             var _isWebKit = (Info.isSafari() || (Info.isMobile() && Info.isiOS()));
             var _rotationRequired = (orientation === 'portrait') && isUploader && (Info.isFirefox() || _isWebKit);
-            var _positionMove = Info.isFirefox() ? 1.00 : 1.25;
             var context = canvas.getContext('2d');
 
             if (_rotationRequired && this.__detectVerticalSquash(video, canvas.width, canvas.height) !== 1) {
-                // Will rotate image
-                canvas.width = canvas.width > canvas.height ? canvas.width : canvas.height;
-                context.rotate((Math.PI / 180) * 90);
-                context.drawImage(video, 0, -canvas.width / _positionMove, canvas.height, canvas.width);
+                this.__rotateToPortrait(video, canvas, context);
             } else if (_isWebKit && orientation === 'portrait') {
                 context.drawImage(video, 0, -canvas.width, canvas.height, canvas.width);
             } else {
@@ -69,6 +54,30 @@ Scoped.define("module:Recorder.Support", [
                 return data;
             else
                 return null;
+        },
+
+        /**
+         *
+         * @param {HTMLMediaElement} video
+         * @param {HTMLCanvasElement} canvas
+         * @param {CanvasRenderingContext2D} ctx
+         * @private
+         */
+        __rotateToPortrait: function (video, canvas, ctx) {
+            var diff = Math.abs(canvas.height - canvas.width);
+            var maxSize = canvas.width > canvas.height ? canvas.width : canvas.height;
+            canvas.height = canvas.width = maxSize;
+            ctx.drawImage(video, 0, 0, canvas.height, canvas.width);
+            ctx.clearRect(0,0, canvas.width, canvas.height);
+            ctx.save();
+            canvas.width -= diff;
+            ctx.translate(canvas.width / 2,canvas.height / 2);
+            ctx.rotate(90 * ( Math.PI / 180 ));
+            if (Info.isFirefox())
+                ctx.drawImage(video, -canvas.height / 2, -canvas.width / 2, canvas.height, canvas.width);
+            else
+                ctx.drawImage(video, -canvas.height / 2, -canvas.width / 2, canvas.height, canvas.width + diff);
+            ctx.restore();
         },
 
         /**
@@ -116,16 +125,6 @@ Scoped.define("module:Recorder.Support", [
             }
             var ratio = (py / ih);
             return (ratio === 0) ? 1 : ratio;
-        },
-
-        /**
-         * A replacement for context.drawImage
-         * (args are for source and destination).
-         */
-        _drawImageIOSFix: function(ctx, media, sx, sy, sw, sh, dx, dy, dw, dh) {
-            // Works only if whole image is displayed:
-            // ctx.drawImage(media, sx, sy, sw, sh, dx, dy, dw, dh / vertSquashRatio);
-            // The following works correct also when only a part of the image is displayed: ctx.drawImage(media, sx * vertSquashRatio, sy * vertSquashRatio, sw * vertSquashRatio, sh * vertSquashRatio, dx, dy, dw, dh );
         },
 
         removeSnapshot: function(snapshot) {},
