@@ -130,7 +130,7 @@ Scoped.define("module:WebRTC.PeerRecorder", [
                         sdp: description,
                         userData: this._userData
                     }));
-                }, this))['catch'](this._errorCallback("PEER_LOCAL_DESCRIPTION"));
+                }, this))['catch'](this._errorCallback("Peer Local Description"));
             },
 
             _enhanceSDP: function(sdpStr, enhanceData) {
@@ -172,7 +172,7 @@ Scoped.define("module:WebRTC.PeerRecorder", [
             _wsOnClose: function() {},
 
             _error: function(errorName, errorData) {
-                this.trigger("error", errorName, errorData);
+                this.trigger("error", errorName + " " + errorData.toString(), errorData);
                 this.stop();
             },
 
