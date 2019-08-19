@@ -46,7 +46,7 @@ Scoped.define("module:Recorder.Support", [
             var canvas = document.createElement('canvas');
             canvas.width = w || (video.videoWidth || video.clientWidth);
             canvas.height = h || (video.videoHeight || video.clientHeight);
-            var ratio = +(canvas.width/canvas.height);
+            var ratio = +(canvas.width / canvas.height);
             var orientation = ratio > 1.00 ? 'landscape' : 'portrait';
             var _isWebKit = (Info.isSafari() || (Info.isMobile() && Info.isiOS()));
             var _rotationRequired = (orientation === 'portrait') && isUploader && (Info.isFirefox() || _isWebKit);
@@ -75,16 +75,16 @@ Scoped.define("module:Recorder.Support", [
          * @param {CanvasRenderingContext2D} ctx
          * @private
          */
-        __rotateToPortrait: function (video, canvas, ctx) {
+        __rotateToPortrait: function(video, canvas, ctx) {
             var diff = Math.abs(canvas.height - canvas.width);
             var maxSize = canvas.width > canvas.height ? canvas.width : canvas.height;
             canvas.height = canvas.width = maxSize;
             ctx.drawImage(video, 0, 0, canvas.height, canvas.width);
-            ctx.clearRect(0,0, canvas.width, canvas.height);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.save();
             canvas.width -= diff;
-            ctx.translate(canvas.width / 2,canvas.height / 2);
-            ctx.rotate(90 * ( Math.PI / 180 ));
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.rotate(90 * (Math.PI / 180));
             if (Info.isFirefox())
                 ctx.drawImage(video, -canvas.height / 2, -canvas.width / 2, canvas.height, canvas.width);
             else
