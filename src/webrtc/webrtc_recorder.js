@@ -5,11 +5,10 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
     "base:Async",
     "base:Promise",
     "base:Time",
-    "browser:Dom",
     "module:WebRTC.Support",
     "module:Recorder.Support",
     "module:Recorder.PixelSampleMixin"
-], function(ConditionalInstance, EventsMixin, Objs, Async, Promise, Time, Dom, Support, RecorderSupport, PixelSampleMixin, scoped) {
+], function(ConditionalInstance, EventsMixin, Objs, Async, Promise, Time, Support, RecorderSupport, PixelSampleMixin, scoped) {
     return ConditionalInstance.extend({
         scoped: scoped
     }, [EventsMixin, PixelSampleMixin, function(inherited) {
@@ -352,7 +351,7 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                     _constraints = _i !== 0 ? this.__addedStreamOptions : {};
                     _positionX = _constraints.positionX || 0;
                     _positionY = _constraints.positionY || 0;
-                    if (Dom.elementHasClass(_video, 'betajs-multistream-element')) {
+                    if (_video.__multistreamElement) {
                         _width = _constraints.width || 360;
                         _height = _constraints.height || 240;
                     } else {
@@ -420,7 +419,7 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                 var video = Support.bindStreamToVideo(stream);
                 additionalStream = additionalStream || false;
                 if (additionalStream)
-                    video.className = 'betajs-multistream-element';
+                    video.__multistreamElement = true;
                 video.muted = true;
                 video.volume = 0;
                 video.width = this.__addedStreamOptions.width || options.width || 360;
