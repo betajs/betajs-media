@@ -4,11 +4,12 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
     "base:Objs",
     "base:Async",
     "base:Promise",
+    "base:Time",
+    "browser:Dom",
     "module:WebRTC.Support",
     "module:Recorder.Support",
-    "base:Time",
     "module:Recorder.PixelSampleMixin"
-], function(ConditionalInstance, EventsMixin, Objs, Async, Promise, Support, RecorderSupport, Time, PixelSampleMixin, scoped) {
+], function(ConditionalInstance, EventsMixin, Objs, Async, Promise, Time, Dom, Support, RecorderSupport, PixelSampleMixin, scoped) {
     return ConditionalInstance.extend({
         scoped: scoped
     }, [EventsMixin, PixelSampleMixin, function(inherited) {
@@ -61,8 +62,6 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                 _options = {
                     frameRate: this._options.framerate,
                     sourceId: device.id,
-                    width: _width,
-                    height: _height,
                     cameraFaceFront: this._options.cameraFaceFront
                 };
                 _constraints = {
@@ -72,7 +71,9 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                 this._multiStreamConstraints = _constraints;
                 this.__addedStreamOptions = Objs.tree_merge(_options, {
                     positionX: _positionX,
-                    positionY: _positionY
+                    positionY: _positionY,
+                    width: _width,
+                    height: _height
                 });
                 return this.addNewMediaStream();
             },
@@ -309,7 +310,7 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                         this._sourceTracks.push(track);
                         if (track.kind === 'video') {
                             if (track.id !== this._videoTrack.id)
-                                this._videoElements.push(this._singleVideoElement(this.__addedStreamOptions, stream));
+                                this._videoElements.push(this._singleVideoElement(this.__addedStreamOptions, stream, true));
                             else
                                 this._videoElements.push(this._singleVideoElement(this._getConstraints().video, stream));
                         }
@@ -346,16 +347,48 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                     return;
                 var _videosCount = this._videoElements.length;
                 for (var _i = 0; _i < this._videoElements.length; _i++) {
-                    var video = this._videoElements[_i];
-                    var _constraints = _i !== 0 ? this.__addedStreamOptions : {};
-                    var _positionX = _constraints.positionX || 0;
-                    var _positionY = _constraints.positionY || 0;
-                    var _width = _constraints.width || this.__multiStreamCanvas.width || 360;
-                    var _height = _constraints.height || this.__multiStreamCanvas.height || 240;
-                    this.__multiStreamCtx.drawImage(video, _positionX, _positionY, _width, _height);
+                    var _video, _constraints, _width, _height, _positionX, _positionY;
+                    _video = this._videoElements[_i];
+                    _constraints = _i !== 0 ? this.__addedStreamOptions : {};
+                    _positionX = _constraints.positionX || 0;
+                    _positionY = _constraints.positionY || 0;
+                    if (Dom.elementHasClass(_video, 'betajs-multistream-element')) {
+                        _width = _constraints.width || 360;
+                        _height = _constraints.height || 240;
+                    } else {
+                        _width = this.__multiStreamCanvas.width || _constraints.width || 360;
+                        _height = this.__multiStreamCanvas.height || _constraints.height || 240;
+                    }
+                    this.__multiStreamCtx.drawImage(_video, _positionX, _positionY, _width, _height);
                     _videosCount--;
                     if (_videosCount === 0) {
                         Async.eventually(this._drawTracksToCanvas, [], this, 1000 / 30); // drawing at 30 fps
+                    }
+                }
+            },
+
+            /**
+             * Will change screen sources during multi-record
+             */
+            reverseVideos: function() {
+                if (this._drawingStream) {
+                    var _temp_video = document.createElement('video');
+                    for (var _i = 0; _i < this._videoElements.length; _i++) {
+                        if (!_temp_video.srcObject) {
+                            _temp_video.srcObject = this._videoElements[_i].srcObject;
+                            this._videoElements[_i].srcObject = this._videoElements[_i + 1].srcObject;
+                            this._videoElements[_i].load();
+                            this._videoElements[_i].oncanplay = function() {
+                                this.play();
+                            };
+                        } else if (_temp_video.srcObject) {
+                            this._videoElements[_i].srcObject = _temp_video.srcObject;
+                            this._videoElements[_i].load();
+                            this._videoElements[_i].oncanplay = function() {
+                                this.play();
+                            };
+                            _temp_video.remove();
+                        }
                     }
                 }
             },
@@ -379,17 +412,22 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
              * Generate single video DOM element to draw inside canvas
              * @param {object} options
              * @param stream
+             * @param {Boolean} additionalStream // If it's newly added stream
              * @return {HTMLElement}
              * @private
              */
-            _singleVideoElement: function(options, stream) {
+            _singleVideoElement: function(options, stream, additionalStream) {
                 var video = Support.bindStreamToVideo(stream);
-                video.className = 'betajs-multistream-element';
+                additionalStream = additionalStream || false;
+                if (additionalStream)
+                    video.className = 'betajs-multistream-element';
                 video.muted = true;
                 video.volume = 0;
-                video.width = options.width || 360;
-                video.height = options.height || 240;
-                video.play();
+                video.width = this.__addedStreamOptions.width || options.width || 360;
+                video.height = this.__addedStreamOptions.height || options.height || 240;
+                video.oncanplay = function() {
+                    this.play();
+                };
                 return video;
             },
 

@@ -108,6 +108,7 @@ Scoped.define("module:Recorder.VideoRecorderWrapper", [
             setCameraFace: function(faceFront) {},
 
             addMultiStream: function(device, options) {},
+            reverseCameraScreens: function() {},
 
             createSnapshot: function() {},
             removeSnapshot: function(snapshot) {},
@@ -334,6 +335,14 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
              */
             addMultiStream: function(device, options) {
                 return this._recorder.addNewSingleStream(device, options);
+            },
+
+            /**
+             * Will switch between video screen in multiple stream recorder
+             * @return {*|void}
+             */
+            reverseCameraScreens: function() {
+                return this._recorder.reverseVideos();
             },
 
             setCurrentDevices: function(devices) {
