@@ -78,6 +78,22 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
             },
 
             /**
+             * Update small screen dimensions and position
+             *
+             * @param x
+             * @param y
+             * @param w
+             * @param h
+             */
+            updateMultiStreamPosition: function (x, y, w, h) {
+                this.__addedStreamOptions.positionX = x || this.__addedStreamOptions.positionX;
+                this.__addedStreamOptions.positionY = y || this.__addedStreamOptions.positionY;
+                this.__addedStreamOptions.width = w || this.__addedStreamOptions.width;
+                this.__addedStreamOptions.height = h || this.__addedStreamOptions.height;
+            },
+
+
+            /**
              * Add new stream to existing one
              * @return {Promise}
              */
