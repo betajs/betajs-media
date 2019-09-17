@@ -347,7 +347,7 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
              * @param h
              * @return {*|void}
              */
-            updateMultiStreamPosition: function (x, y, w, h) {
+            updateMultiStreamPosition: function(x, y, w, h) {
                 return this._recorder.updateMultiStreamPosition(x, y, w, h);
             },
 

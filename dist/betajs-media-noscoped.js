@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.134 - 2019-09-03
+betajs-media - v0.0.136 - 2019-09-16
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -13,8 +13,8 @@ Scoped.binding('flash', 'global:BetaJS.Flash');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.134",
-    "datetime": 1567555289274
+    "version": "0.0.136",
+    "datetime": 1568687523632
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.136');
@@ -5073,6 +5073,7 @@ Scoped.define("module:Recorder.VideoRecorderWrapper", [
             setCameraFace: function(faceFront) {},
 
             addMultiStream: function(device, options) {},
+            updateMultiStreamPosition: function(x, y, w, h) {},
             reverseCameraScreens: function() {},
 
             createSnapshot: function() {},
@@ -5301,6 +5302,20 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
             addMultiStream: function(device, options) {
                 return this._recorder.addNewSingleStream(device, options);
             },
+
+            /**
+             * Update small stream screen dimensions
+             *
+             * @param x
+             * @param y
+             * @param w
+             * @param h
+             * @return {*|void}
+             */
+            updateMultiStreamPosition: function(x, y, w, h) {
+                return this._recorder.updateMultiStreamPosition(x, y, w, h);
+            },
+
 
             /**
              * Will switch between video screen in multiple stream recorder
@@ -6442,6 +6457,22 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                 });
                 return this.addNewMediaStream();
             },
+
+            /**
+             * Update small screen dimensions and position
+             *
+             * @param x
+             * @param y
+             * @param w
+             * @param h
+             */
+            updateMultiStreamPosition: function(x, y, w, h) {
+                this.__addedStreamOptions.positionX = x || this.__addedStreamOptions.positionX;
+                this.__addedStreamOptions.positionY = y || this.__addedStreamOptions.positionY;
+                this.__addedStreamOptions.width = w || this.__addedStreamOptions.width;
+                this.__addedStreamOptions.height = h || this.__addedStreamOptions.height;
+            },
+
 
             /**
              * Add new stream to existing one

@@ -85,7 +85,7 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
              * @param w
              * @param h
              */
-            updateMultiStreamPosition: function (x, y, w, h) {
+            updateMultiStreamPosition: function(x, y, w, h) {
                 this.__addedStreamOptions.positionX = x || this.__addedStreamOptions.positionX;
                 this.__addedStreamOptions.positionY = y || this.__addedStreamOptions.positionY;
                 this.__addedStreamOptions.width = w || this.__addedStreamOptions.width;
