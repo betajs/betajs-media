@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.136 - 2019-09-16
+betajs-media - v0.0.138 - 2019-09-22
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -13,8 +13,8 @@ Scoped.binding('flash', 'global:BetaJS.Flash');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.136",
-    "datetime": 1568687523632
+    "version": "0.0.138",
+    "datetime": 1569159960376
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.136');
@@ -5010,7 +5010,6 @@ Scoped.define("module:Recorder.PixelSampleMixin", [], function() {
     };
 });
 
-
 Scoped.define("module:Recorder.VideoRecorderWrapper", [
     "base:Classes.ConditionalInstance",
     "base:Events.EventsMixin",
@@ -5087,6 +5086,8 @@ Scoped.define("module:Recorder.VideoRecorderWrapper", [
             pauseRecord: function() {},
             resumeRecord: function() {},
             stopRecord: function(options) {},
+
+            errorHandler: function(error) {},
 
             isFlash: function() {
                 return false;
@@ -5520,6 +5521,10 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
                         this._currentAudio = Objs.ithKey(devices);
                     return Objs.ithKey(devices);
                 }
+            },
+
+            errorHandler: function(error) {
+                return Support.errorHandler(error);
             }
         };
     }, {
@@ -7622,8 +7627,52 @@ Scoped.define("module:WebRTC.Support", [
                 type: mimeString
             });
             return blob;
-        }
+        },
 
+        errorHandler: function(err) {
+            switch (err) {
+                case 'NotReadableError':
+                case 'TrackStartError':
+                    return {
+                        key: 'device-already-in-use',
+                        message: 'Web camera or microphone are already in use',
+                        userLevel: true
+                    };
+                case 'NotFoundError':
+                case 'DevicesNotFoundError':
+                    return {
+                        key: 'missing-track',
+                        message: 'Required audio or video track is missing',
+                        userLevel: true
+                    };
+                case 'OverconstrainedError':
+                case 'ConstraintNotSatisfiedError':
+                    return {
+                        key: 'constrains-error',
+                        message: 'Constraints can not be satisfied by available devices',
+                        userLevel: false
+                    };
+                case 'NotAllowedError':
+                case 'PermissionDeniedError':
+                    return {
+                        key: 'browser-permission-denied',
+                        message: 'Permission denied by browser, please grant access to proceed',
+                        userLevel: true
+                    };
+                case 'TypeError':
+                    return {
+                        key: 'empty-constraints',
+                        message: 'Empty constraints object',
+                        userLevel: false
+                    };
+                default:
+                    return {
+                        key: 'unknown-error',
+                        message: 'Unknown Error',
+                        userLevel: false
+                    };
+            }
+        }
     };
 });
 // Credits: https://github.com/antimatter15/whammy/blob/master/whammy.js
