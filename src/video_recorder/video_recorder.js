@@ -45,7 +45,6 @@ Scoped.define("module:Recorder.PixelSampleMixin", [], function() {
     };
 });
 
-
 Scoped.define("module:Recorder.VideoRecorderWrapper", [
     "base:Classes.ConditionalInstance",
     "base:Events.EventsMixin",
@@ -122,6 +121,8 @@ Scoped.define("module:Recorder.VideoRecorderWrapper", [
             pauseRecord: function() {},
             resumeRecord: function() {},
             stopRecord: function(options) {},
+
+            errorHandler: function(error) {},
 
             isFlash: function() {
                 return false;
@@ -555,6 +556,10 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
                         this._currentAudio = Objs.ithKey(devices);
                     return Objs.ithKey(devices);
                 }
+            },
+
+            errorHandler: function(error) {
+                return Support.errorHandler(error);
             }
         };
     }, {
