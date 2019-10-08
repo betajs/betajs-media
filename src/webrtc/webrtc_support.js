@@ -20,7 +20,6 @@ Scoped.define("module:WebRTC.Support", [
         getGlobals: function() {
             var getUserMedia = null;
             var getUserMediaCtx = null;
-            var audioContext = null;
 
             if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
                 getUserMedia = navigator.mediaDevices.getUserMedia;
@@ -33,36 +32,30 @@ Scoped.define("module:WebRTC.Support", [
             var URL = window.URL || window.webkitURL;
             var MediaRecorder = window.MediaRecorder;
             var AudioContext = window.AudioContext || window.webkitAudioContext;
-            var audioContextScriptProcessor = null;
-            var createAnalyser = null;
             if (AudioContext) {
                 Dom.userInteraction(function() {
                     if (!this.__globals)
                         return;
-                    var audioContext = new AudioContext();
-                    this.__globals.audioContext = audioContext;
-                    this.__globals.audioContextScriptProcessor = audioContext.createJavaScriptNode || audioContext.createScriptProcessor;
-                    this.__globals.createAnalyser = audioContext.createAnalyser;
+                    this.__globals.audioContext = new AudioContext();
                 }, this);
             }
             var RTCPeerConnection = window.RTCPeerConnection || window.mozRTCPeerConnection || window.webkitRTCPeerConnection;
             var RTCIceCandidate = window.RTCIceCandidate || window.mozRTCIceCandidate || window.webkitRTCIceCandidate;
             var RTCSessionDescription = window.RTCSessionDescription || window.mozRTCSessionDescription || window.webkitRTCSessionDescription;
-            var WebSocket = window.WebSocket;
             return {
                 getUserMedia: getUserMedia,
                 getUserMediaCtx: getUserMediaCtx,
                 URL: URL,
                 MediaRecorder: MediaRecorder,
                 AudioContext: AudioContext,
-                //audioContext: audioContext,
-                //createAnalyser: createAnalyser,
-                //audioContextScriptProcessor: audioContextScriptProcessor,
+                audioContextScriptProcessor: function() {
+                    return (this.createScriptProcessor || this.createJavaScriptNode).apply(this, arguments);
+                },
                 webpSupport: this.canvasSupportsImageFormat("image/webp"),
                 RTCPeerConnection: RTCPeerConnection,
                 RTCIceCandidate: RTCIceCandidate,
                 RTCSessionDescription: RTCSessionDescription,
-                WebSocket: WebSocket,
+                WebSocket: window.WebSocket,
                 supportedConstraints: navigator.mediaDevices && navigator.mediaDevices.getSupportedConstraints ? navigator.mediaDevices.getSupportedConstraints() : {}
             };
         },

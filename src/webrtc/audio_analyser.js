@@ -1,7 +1,8 @@
 Scoped.define("module:WebRTC.AudioAnalyser", [
     "base:Class",
+    "browser:Info",
     "module:WebRTC.Support"
-], function(Class, Support, scoped) {
+], function(Class, Info, Support, scoped) {
     return Class.extend({
         scoped: scoped
     }, function(inherited) {
@@ -15,7 +16,6 @@ Scoped.define("module:WebRTC.AudioAnalyser", [
                 */
                 this._audioContext = Support.globals().audioContext;
                 this._analyserNode = this._audioContext.createAnalyser.call(this._audioContext);
-                //this._analyserNode = Support.globals().createAnalyser.call(this._audioContext);
                 this._analyserNode.fftSize = 32;
                 if (stream.getAudioTracks().length > 0) {
                     this._audioInput = this._audioContext.createMediaStreamSource(stream);
@@ -47,7 +47,8 @@ Scoped.define("module:WebRTC.AudioAnalyser", [
     }, {
 
         supported: function() {
-            return !!Support.globals().AudioContext && !!Support.globals().createAnalyser && !!Support.globals().audioContext;
+            // It works on iOS and on Safari, but it takes over the audio from the stream indefinitely
+            return !!Support.globals().AudioContext && !Info.isSafari() && !Info.isiOS();
         }
 
     });

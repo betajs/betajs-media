@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.138 - 2019-09-22
+betajs-media - v0.0.139 - 2019-10-07
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -1006,7 +1006,7 @@ Public.exports();
 	return Public;
 }).call(this);
 /*!
-betajs-media - v0.0.138 - 2019-09-22
+betajs-media - v0.0.139 - 2019-10-07
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -1020,8 +1020,8 @@ Scoped.binding('flash', 'global:BetaJS.Flash');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.138",
-    "datetime": 1569159960376
+    "version": "0.0.139",
+    "datetime": 1570500178528
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.136');
@@ -6252,7 +6252,8 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
             soundLevel: function() {
                 if (!this._analyser && this._recorder && this._recorder.stream() && AudioAnalyser.supported())
                     this._analyser = new AudioAnalyser(this._recorder.stream());
-                return this._analyser ? this._analyser.soundLevel() : 0.0;
+                // Just so unsupported analysers don't lead to displaying that the microphone is not working
+                return this._analyser ? this._analyser.soundLevel() : 1.1;
             },
 
             testSoundLevel: function(activate) {
@@ -6804,8 +6805,9 @@ Scoped.extend("module:Recorder.VideoRecorderWrapper", [
 });
 Scoped.define("module:WebRTC.AudioAnalyser", [
     "base:Class",
+    "browser:Info",
     "module:WebRTC.Support"
-], function(Class, Support, scoped) {
+], function(Class, Info, Support, scoped) {
     return Class.extend({
         scoped: scoped
     }, function(inherited) {
@@ -6819,7 +6821,6 @@ Scoped.define("module:WebRTC.AudioAnalyser", [
                 */
                 this._audioContext = Support.globals().audioContext;
                 this._analyserNode = this._audioContext.createAnalyser.call(this._audioContext);
-                //this._analyserNode = Support.globals().createAnalyser.call(this._audioContext);
                 this._analyserNode.fftSize = 32;
                 if (stream.getAudioTracks().length > 0) {
                     this._audioInput = this._audioContext.createMediaStreamSource(stream);
@@ -6851,7 +6852,8 @@ Scoped.define("module:WebRTC.AudioAnalyser", [
     }, {
 
         supported: function() {
-            return !!Support.globals().AudioContext && !!Support.globals().createAnalyser && !!Support.globals().audioContext;
+            // It works on iOS and on Safari, but it takes over the audio from the stream indefinitely
+            return !!Support.globals().AudioContext && !Info.isSafari() && !Info.isiOS();
         }
 
     });
@@ -7010,8 +7012,6 @@ Scoped.define("module:WebRTC.AudioRecorder", [
                 this._data = new Blob([view], {
                     type: 'audio/wav'
                 });
-                this._leftChannel = [];
-                this._rightChannel = [];
                 this._recordingLength = 0;
                 this.trigger("data", this._data);
             }
@@ -7020,7 +7020,7 @@ Scoped.define("module:WebRTC.AudioRecorder", [
     }], {
 
         supported: function() {
-            return !!Support.globals().AudioContext && !!Support.globals().audioContextScriptProcessor;
+            return !!Support.globals().AudioContext;
         }
 
     });
@@ -8219,7 +8219,6 @@ Scoped.define("module:WebRTC.Support", [
         getGlobals: function() {
             var getUserMedia = null;
             var getUserMediaCtx = null;
-            var audioContext = null;
 
             if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
                 getUserMedia = navigator.mediaDevices.getUserMedia;
@@ -8232,36 +8231,30 @@ Scoped.define("module:WebRTC.Support", [
             var URL = window.URL || window.webkitURL;
             var MediaRecorder = window.MediaRecorder;
             var AudioContext = window.AudioContext || window.webkitAudioContext;
-            var audioContextScriptProcessor = null;
-            var createAnalyser = null;
             if (AudioContext) {
                 Dom.userInteraction(function() {
                     if (!this.__globals)
                         return;
-                    var audioContext = new AudioContext();
-                    this.__globals.audioContext = audioContext;
-                    this.__globals.audioContextScriptProcessor = audioContext.createJavaScriptNode || audioContext.createScriptProcessor;
-                    this.__globals.createAnalyser = audioContext.createAnalyser;
+                    this.__globals.audioContext = new AudioContext();
                 }, this);
             }
             var RTCPeerConnection = window.RTCPeerConnection || window.mozRTCPeerConnection || window.webkitRTCPeerConnection;
             var RTCIceCandidate = window.RTCIceCandidate || window.mozRTCIceCandidate || window.webkitRTCIceCandidate;
             var RTCSessionDescription = window.RTCSessionDescription || window.mozRTCSessionDescription || window.webkitRTCSessionDescription;
-            var WebSocket = window.WebSocket;
             return {
                 getUserMedia: getUserMedia,
                 getUserMediaCtx: getUserMediaCtx,
                 URL: URL,
                 MediaRecorder: MediaRecorder,
                 AudioContext: AudioContext,
-                //audioContext: audioContext,
-                //createAnalyser: createAnalyser,
-                //audioContextScriptProcessor: audioContextScriptProcessor,
+                audioContextScriptProcessor: function() {
+                    return (this.createScriptProcessor || this.createJavaScriptNode).apply(this, arguments);
+                },
                 webpSupport: this.canvasSupportsImageFormat("image/webp"),
                 RTCPeerConnection: RTCPeerConnection,
                 RTCIceCandidate: RTCIceCandidate,
                 RTCSessionDescription: RTCSessionDescription,
-                WebSocket: WebSocket,
+                WebSocket: window.WebSocket,
                 supportedConstraints: navigator.mediaDevices && navigator.mediaDevices.getSupportedConstraints ? navigator.mediaDevices.getSupportedConstraints() : {}
             };
         },

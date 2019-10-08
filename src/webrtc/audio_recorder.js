@@ -152,8 +152,6 @@ Scoped.define("module:WebRTC.AudioRecorder", [
                 this._data = new Blob([view], {
                     type: 'audio/wav'
                 });
-                this._leftChannel = [];
-                this._rightChannel = [];
                 this._recordingLength = 0;
                 this.trigger("data", this._data);
             }
@@ -162,7 +160,7 @@ Scoped.define("module:WebRTC.AudioRecorder", [
     }], {
 
         supported: function() {
-            return !!Support.globals().AudioContext && !!Support.globals().audioContextScriptProcessor;
+            return !!Support.globals().AudioContext;
         }
 
     });
