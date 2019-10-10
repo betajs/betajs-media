@@ -273,8 +273,8 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                 if (typeof this.__multiStreamCanvas === 'undefined') {
                     this.__multiStreamCanvas = document.createElement('canvas');
                 }
-                this.__multiStreamCanvas.setAttribute('width', _width + 'px');
-                this.__multiStreamCanvas.setAttribute('height', _height + 'px');
+                this.__multiStreamCanvas.setAttribute('width', _width);
+                this.__multiStreamCanvas.setAttribute('height', _height);
                 this.__multiStreamCanvas.setAttribute('style', 'position:fixed; left: 200%; pointer-events: none'); // Out off from the screen
                 this.__multiStreamCtx = this.__multiStreamCanvas.getContext('2d');
                 // document.body.append(this.__multiStreamCanvas);
