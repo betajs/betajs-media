@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.139 - 2019-10-07
+betajs-media - v0.0.140 - 2019-10-09
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -13,8 +13,8 @@ Scoped.binding('flash', 'global:BetaJS.Flash');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.139",
-    "datetime": 1570500178528
+    "version": "0.0.140",
+    "datetime": 1570677602132
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.136');
@@ -7687,9 +7687,20 @@ Scoped.define("module:WebRTC.WhammyRecorder", [
     }, [EventsMixin, function(inherited) {
 
         var CLUSTER_MAX_DURATION = 30000;
+        /*
         var NO_STREAM_WIDTH = 40;
         var NO_STREAM_HEIGHT = 30;
         var NO_STREAM_WEBP = "data:image/webp;base64,UklGRjQAAABXRUJQVlA4ICgAAADwAgCdASooAB4APpFGnkslo6KhpWgAsBIJaQAAKUNt8AD++E0AAAAA";
+
+        See: https://stackoverflow.com/questions/57132690/cloudfront-mp4-not-playing-on-some-android-and-iphone-browsers/58314774#58314774
+        To re-create webp file:
+        1. Create 80x60 colored white-background png in e.g. Gimp
+        2. Convert to webp via cwebp command line tool.
+        3. Base64 it.
+         */
+        var NO_STREAM_WIDTH = 80;
+        var NO_STREAM_HEIGHT = 60;
+        var NO_STREAM_WEBP = "data:image/webp;base64,UklGRjwAAABXRUJQVlA4IDAAAADQAwCdASpQADwAPpFIoUylpCMiIagAsBIJaQAADHThw4cOHDhwrAAA/vhNAAAAAAA=";
 
         return {
 

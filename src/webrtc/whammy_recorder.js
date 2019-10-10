@@ -17,9 +17,20 @@ Scoped.define("module:WebRTC.WhammyRecorder", [
     }, [EventsMixin, function(inherited) {
 
         var CLUSTER_MAX_DURATION = 30000;
+        /*
         var NO_STREAM_WIDTH = 40;
         var NO_STREAM_HEIGHT = 30;
         var NO_STREAM_WEBP = "data:image/webp;base64,UklGRjQAAABXRUJQVlA4ICgAAADwAgCdASooAB4APpFGnkslo6KhpWgAsBIJaQAAKUNt8AD++E0AAAAA";
+
+        See: https://stackoverflow.com/questions/57132690/cloudfront-mp4-not-playing-on-some-android-and-iphone-browsers/58314774#58314774
+        To re-create webp file:
+        1. Create 80x60 colored white-background png in e.g. Gimp
+        2. Convert to webp via cwebp command line tool.
+        3. Base64 it.
+         */
+        var NO_STREAM_WIDTH = 80;
+        var NO_STREAM_HEIGHT = 60;
+        var NO_STREAM_WEBP = "data:image/webp;base64,UklGRjwAAABXRUJQVlA4IDAAAADQAwCdASpQADwAPpFIoUylpCMiIagAsBIJaQAADHThw4cOHDhwrAAA/vhNAAAAAAA=";
 
         return {
 
