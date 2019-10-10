@@ -24,6 +24,7 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                 this._hasVideo = false;
                 this._screen = options.screen;
                 this._flip = !!options.flip;
+                this._initialVideoTrackSettings = {};
             },
 
             _getConstraints: function() {
@@ -267,8 +268,8 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
              * @private
              */
             _prepareMultiStreamCanvas: function() {
-                var _height = this._video.clientHeight || this._video.videoHeight;
-                var _width = this._video.clientWidth || this._video.videoWidth;
+                var _height = this._initialVideoTrackSettings.height || this._video.clientHeight || this._video.videoHeight;
+                var _width = this._initialVideoTrackSettings.width || this._video.clientWidth || this._video.videoWidth;
                 if (typeof this.__multiStreamCanvas === 'undefined') {
                     this.__multiStreamCanvas = document.createElement('canvas');
                 }
@@ -291,6 +292,9 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                         // Will fix Chrome Cropping
                         if (this._options.screen) {
                             var _self = this;
+                            // Get actual video track dimensions before it was draw inside canvas
+                            if (!this._videoTrack.canvas)
+                                this._initialVideoTrackSettings = this._videoTrack.getSettings();
                             this._videoTrack.applyConstraints({
                                 resizeMode: 'none'
                             }).then(function() {
