@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.142 - 2019-10-10
+betajs-media - v0.0.145 - 2019-11-04
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -13,8 +13,8 @@ Scoped.binding('flash', 'global:BetaJS.Flash');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.142",
-    "datetime": 1570747420803
+    "version": "0.0.145",
+    "datetime": 1572875606279
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.136');
@@ -5183,7 +5183,8 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
                     webrtcStreaming: this._options.webrtcStreaming,
                     webrtcStreamingIfNecessary: this._options.webrtcStreamingIfNecessary,
                     localPlaybackRequested: this._options.localPlaybackRequested,
-                    screen: this._options.screen
+                    screen: this._options.screen,
+                    getDisplayMediaSupported: typeof navigator.mediaDevices.getDisplayMedia !== 'undefined'
                 });
                 this._recorder.on("bound", function() {
                     if (this._analyser)
@@ -5536,6 +5537,8 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
             if (!RecorderWrapper.anySupport(options))
                 return false;
             if (options.screen) {
+                if ((Info.isChrome() || Info.isFirefox() || Info.isOpera()) && typeof navigator.mediaDevices.getDisplayMedia !== 'undefined')
+                    return true;
                 if (Support.globals().supportedConstraints.mediaSource && Info.isFirefox() && Info.firefoxVersion() > 55)
                     return true;
                 if (Info.isChrome() && options.screen.chromeExtensionId)
@@ -6410,7 +6413,12 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                 this._hasVideo = false;
                 this._screen = options.screen;
                 this._flip = !!options.flip;
-                this._initialVideoTrackSettings = {};
+                this._videoTrackSettings = {
+                    slippedFromOrigin: {
+                        height: 1.00,
+                        width: 1.00
+                    }
+                };
             },
 
             _getConstraints: function() {
@@ -6491,11 +6499,9 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                 return Support.userMedia2(this._multiStreamConstraints, this).success(function(stream) {
                     this._multiStreams.push(stream);
                     this._addNewVideoElement(promise);
-
                     this.on("multistream-canvas-drawn", function() {
                         return promise.asyncSuccess();
                     }, this);
-
                 }, this);
             },
 
@@ -6654,8 +6660,8 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
              * @private
              */
             _prepareMultiStreamCanvas: function() {
-                var _height = this._initialVideoTrackSettings.height || this._video.clientHeight || this._video.videoHeight;
-                var _width = this._initialVideoTrackSettings.width || this._video.clientWidth || this._video.videoWidth;
+                var _height = this._videoTrackSettings.height || this._video.clientHeight || this._video.videoHeight;
+                var _width = this._videoTrackSettings.width || this._video.clientWidth || this._video.videoWidth;
                 if (typeof this.__multiStreamCanvas === 'undefined') {
                     this.__multiStreamCanvas = document.createElement('canvas');
                 }
@@ -6674,26 +6680,57 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
             _setLocalTrackSettings: function(stream) {
                 if (typeof stream.getVideoTracks() !== 'undefined') {
                     if (stream.getVideoTracks()[0]) {
+                        var self = this;
                         this._videoTrack = stream.getVideoTracks()[0];
-                        // Will fix Chrome Cropping
-                        if (this._options.screen) {
-                            var _self = this;
-                            // Get actual video track dimensions before it was draw inside canvas
-                            if (!this._videoTrack.canvas)
-                                this._initialVideoTrackSettings = this._videoTrack.getSettings();
+                        // Will fix older version Chrome Cropping
+                        if (!this._options.getDisplayMediaSupported) {
                             this._videoTrack.applyConstraints({
                                 resizeMode: 'none'
                             }).then(function() {
-                                if (typeof _self._videoTrack.getSettings() !== 'undefined')
-                                    _self._videoTrackSettings = _self._videoTrack.getSettings();
+                                if (typeof self._videoTrack.getSettings !== 'undefined')
+                                    self._videoTrackSettings = Objs.extend(sourceVideoSettings, self._videoTrackSettings);
                             });
                         } else {
-                            if (typeof this._videoTrack.getSettings() !== 'undefined')
-                                this._videoTrackSettings = this._videoTrack.getSettings();
+                            if (typeof this._videoTrack.getSettings !== 'undefined') {
+                                var sourceVideoSettings = this._videoTrack.getSettings();
+                                if (typeof this._videoTrackSettings.videoInnerFrame === 'undefined')
+                                    this._videoTrackSettings = Objs.extend(sourceVideoSettings, this._videoTrackSettings);
+
+                                this._video.onloadedmetadata = function(v) {
+                                    var _videoElement = v.target;
+                                    var _lookedWidth, _lookedHeight, _slippedWidth, _slippedHeight;
+                                    var _asR = sourceVideoSettings.aspectRatio || (sourceVideoSettings.width / sourceVideoSettings.height);
+                                    if (!isNaN(_asR)) {
+                                        var _maxWidth = _videoElement.offsetWidth;
+                                        var _maxHeight = _videoElement.offsetHeight;
+                                        // FireFox don't calculates aspectRatio like Chrome does
+                                        _lookedWidth = _maxWidth <= _maxHeight * _asR ? _maxWidth : Math.round(_maxHeight * _asR);
+                                        _lookedHeight = _maxWidth > _maxHeight * _asR ? _maxHeight : Math.round(_maxWidth / _asR);
+
+                                        _slippedWidth = sourceVideoSettings.width > _lookedWidth ? sourceVideoSettings.width / _lookedWidth : _lookedWidth / sourceVideoSettings.width;
+                                        _slippedHeight = sourceVideoSettings.height > _lookedHeight ? sourceVideoSettings.height / _lookedHeight : _lookedHeight / sourceVideoSettings.height;
+
+                                        self._videoTrackSettings = Objs.extend(sourceVideoSettings, {
+                                            videoElement: {
+                                                width: _maxWidth,
+                                                height: _maxHeight
+                                            },
+                                            videoInnerFrame: {
+                                                width: _lookedWidth,
+                                                height: _lookedHeight
+                                            },
+                                            slippedFromOrigin: {
+                                                width: _slippedWidth,
+                                                height: _slippedHeight
+                                            }
+                                        });
+                                    }
+                                };
+                            }
                         }
                     }
                 }
-                if (typeof stream.getAudioTracks() !== 'undefined') {
+                if (typeof stream.getAudioTracks !== 'undefined') {
                     if (stream.getAudioTracks()[0]) {
                         this._audioTrack = stream.getAudioTracks()[0];
                         if (typeof this._audioTrack.getSettings() !== 'undefined')
@@ -7379,6 +7416,7 @@ Scoped.define("module:WebRTC.Support", [
          */
         userMedia2: function(options) {
             var opts = {};
+            var promise;
             if (options.audio)
                 opts.audio = options.audio;
             if (options.screen && !options.video)
@@ -7402,6 +7440,47 @@ Scoped.define("module:WebRTC.Support", [
                         exact: options.video.cameraFaceFront ? "user" : "environment"
                     };
                 return this.userMedia(opts);
+            } else if (options.screen && typeof navigator.mediaDevices.getDisplayMedia !== 'undefined') {
+                /**
+                 * https://w3c.github.io/mediacapture-screen-share/#constrainable-properties-for-captured-display-surfaces
+                 * partial interface MediaDevices {
+                 *    Promise<MediaStream> getDisplayMedea(optional DisplayMediaStreamConstraints constraints = {});
+                 * };
+                 * enum DisplayCaptureSurfaceType { "monitor", "window", "application", "browser"};
+                 * enum CursorCaptureConstraint { "never", "always", "motion" };
+                 */
+                promise = Promise.create();
+                var _self = this;
+                var displayMediaPromise = navigator.mediaDevices.getDisplayMedia({
+                    video: {
+                        cursor: 'motion',
+                        resizeMode: 'none',
+                        displaySurface: 'application'
+                    },
+                    audio: true
+                });
+                displayMediaPromise.then(function(videoStream) {
+                    if (videoStream.getAudioTracks().length < 1) {
+                        _self.userMedia({
+                                video: false,
+                                audio: true
+                            })
+                            .mapError(function(err) {
+                                promise.asyncSuccess(videoStream);
+                            })
+                            .mapSuccess(function(audioStream) {
+                                promise.asyncSuccess(new MediaStream([videoStream.getTracks()[0], audioStream.getAudioTracks()[0]]));
+                            });
+                    } else {
+                        promise.asyncSuccess(videoStream);
+                    }
+                });
+
+                // Declaring catch this way will fix IE8 related `SCRIPT1010: Expected identifier`
+                displayMediaPromise['catch'](function(err) {
+                    promise.asyncError(err);
+                });
+                return promise;
             } else if (Info.isFirefox()) {
                 opts.video = {};
                 if (options.screen) {
@@ -7439,7 +7518,7 @@ Scoped.define("module:WebRTC.Support", [
                 return this.userMedia(opts);
             } else if (Info.isEdge() && options.screen) {
                 if (navigator.getDisplayMedia) {
-                    var promise = Promise.create();
+                    promise = Promise.create();
                     var pr = navigator.getDisplayMedia({
                         video: true
                     });
@@ -7510,7 +7589,7 @@ Scoped.define("module:WebRTC.Support", [
                         type: "ping",
                         data: pingTest
                     }).mapSuccess(function(pingResponse) {
-                        var promise = Promise.create();
+                        promise = Promise.create();
                         if (!pingResponse || pingResponse.type !== "success" || pingResponse.data !== pingTest)
                             return Promise.error("This browser does not support screen recording.");
                         else
