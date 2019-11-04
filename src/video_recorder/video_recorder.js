@@ -218,7 +218,8 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
                     webrtcStreaming: this._options.webrtcStreaming,
                     webrtcStreamingIfNecessary: this._options.webrtcStreamingIfNecessary,
                     localPlaybackRequested: this._options.localPlaybackRequested,
-                    screen: this._options.screen
+                    screen: this._options.screen,
+                    getDisplayMediaSupported: typeof navigator.mediaDevices.getDisplayMedia !== 'undefined'
                 });
                 this._recorder.on("bound", function() {
                     if (this._analyser)
@@ -571,6 +572,8 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
             if (!RecorderWrapper.anySupport(options))
                 return false;
             if (options.screen) {
+                if ((Info.isChrome() || Info.isFirefox() || Info.isOpera()) && typeof navigator.mediaDevices.getDisplayMedia !== 'undefined')
+                    return true;
                 if (Support.globals().supportedConstraints.mediaSource && Info.isFirefox() && Info.firefoxVersion() > 55)
                     return true;
                 if (Info.isChrome() && options.screen.chromeExtensionId)

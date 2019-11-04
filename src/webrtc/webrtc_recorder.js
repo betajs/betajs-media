@@ -24,7 +24,12 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                 this._hasVideo = false;
                 this._screen = options.screen;
                 this._flip = !!options.flip;
-                this._initialVideoTrackSettings = {};
+                this._videoTrackSettings = {
+                    slippedFromOrigin: {
+                        height: 1.00,
+                        width: 1.00
+                    }
+                };
             },
 
             _getConstraints: function() {
@@ -105,11 +110,9 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                 return Support.userMedia2(this._multiStreamConstraints, this).success(function(stream) {
                     this._multiStreams.push(stream);
                     this._addNewVideoElement(promise);
-
                     this.on("multistream-canvas-drawn", function() {
                         return promise.asyncSuccess();
                     }, this);
-
                 }, this);
             },
 
@@ -268,8 +271,8 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
              * @private
              */
             _prepareMultiStreamCanvas: function() {
-                var _height = this._initialVideoTrackSettings.height || this._video.clientHeight || this._video.videoHeight;
-                var _width = this._initialVideoTrackSettings.width || this._video.clientWidth || this._video.videoWidth;
+                var _height = this._videoTrackSettings.height || this._video.clientHeight || this._video.videoHeight;
+                var _width = this._videoTrackSettings.width || this._video.clientWidth || this._video.videoWidth;
                 if (typeof this.__multiStreamCanvas === 'undefined') {
                     this.__multiStreamCanvas = document.createElement('canvas');
                 }
@@ -288,26 +291,57 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
             _setLocalTrackSettings: function(stream) {
                 if (typeof stream.getVideoTracks() !== 'undefined') {
                     if (stream.getVideoTracks()[0]) {
+                        var self = this;
                         this._videoTrack = stream.getVideoTracks()[0];
-                        // Will fix Chrome Cropping
-                        if (this._options.screen) {
-                            var _self = this;
-                            // Get actual video track dimensions before it was draw inside canvas
-                            if (!this._videoTrack.canvas)
-                                this._initialVideoTrackSettings = this._videoTrack.getSettings();
+                        // Will fix older version Chrome Cropping
+                        if (!this._options.getDisplayMediaSupported) {
                             this._videoTrack.applyConstraints({
                                 resizeMode: 'none'
                             }).then(function() {
-                                if (typeof _self._videoTrack.getSettings() !== 'undefined')
-                                    _self._videoTrackSettings = _self._videoTrack.getSettings();
+                                if (typeof self._videoTrack.getSettings !== 'undefined')
+                                    self._videoTrackSettings = Objs.extend(sourceVideoSettings, self._videoTrackSettings);
                             });
                         } else {
-                            if (typeof this._videoTrack.getSettings() !== 'undefined')
-                                this._videoTrackSettings = this._videoTrack.getSettings();
+                            if (typeof this._videoTrack.getSettings !== 'undefined') {
+                                var sourceVideoSettings = this._videoTrack.getSettings();
+                                if (typeof this._videoTrackSettings.videoInnerFrame === 'undefined')
+                                    this._videoTrackSettings = Objs.extend(sourceVideoSettings, this._videoTrackSettings);
+
+                                this._video.onloadedmetadata = function(v) {
+                                    var _videoElement = v.target;
+                                    var _lookedWidth, _lookedHeight, _slippedWidth, _slippedHeight;
+                                    var _asR = sourceVideoSettings.aspectRatio || (sourceVideoSettings.width / sourceVideoSettings.height);
+                                    if (!isNaN(_asR)) {
+                                        var _maxWidth = _videoElement.offsetWidth;
+                                        var _maxHeight = _videoElement.offsetHeight;
+                                        // FireFox don't calculates aspectRatio like Chrome does
+                                        _lookedWidth = _maxWidth <= _maxHeight * _asR ? _maxWidth : Math.round(_maxHeight * _asR);
+                                        _lookedHeight = _maxWidth > _maxHeight * _asR ? _maxHeight : Math.round(_maxWidth / _asR);
+
+                                        _slippedWidth = sourceVideoSettings.width > _lookedWidth ? sourceVideoSettings.width / _lookedWidth : _lookedWidth / sourceVideoSettings.width;
+                                        _slippedHeight = sourceVideoSettings.height > _lookedHeight ? sourceVideoSettings.height / _lookedHeight : _lookedHeight / sourceVideoSettings.height;
+
+                                        self._videoTrackSettings = Objs.extend(sourceVideoSettings, {
+                                            videoElement: {
+                                                width: _maxWidth,
+                                                height: _maxHeight
+                                            },
+                                            videoInnerFrame: {
+                                                width: _lookedWidth,
+                                                height: _lookedHeight
+                                            },
+                                            slippedFromOrigin: {
+                                                width: _slippedWidth,
+                                                height: _slippedHeight
+                                            }
+                                        });
+                                    }
+                                };
+                            }
                         }
                     }
                 }
-                if (typeof stream.getAudioTracks() !== 'undefined') {
+                if (typeof stream.getAudioTracks !== 'undefined') {
                     if (stream.getAudioTracks()[0]) {
                         this._audioTrack = stream.getAudioTracks()[0];
                         if (typeof this._audioTrack.getSettings() !== 'undefined')

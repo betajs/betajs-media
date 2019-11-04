@@ -183,6 +183,7 @@ Scoped.define("module:WebRTC.Support", [
          */
         userMedia2: function(options) {
             var opts = {};
+            var promise;
             if (options.audio)
                 opts.audio = options.audio;
             if (options.screen && !options.video)
@@ -206,6 +207,47 @@ Scoped.define("module:WebRTC.Support", [
                         exact: options.video.cameraFaceFront ? "user" : "environment"
                     };
                 return this.userMedia(opts);
+            } else if (options.screen && typeof navigator.mediaDevices.getDisplayMedia !== 'undefined') {
+                /**
+                 * https://w3c.github.io/mediacapture-screen-share/#constrainable-properties-for-captured-display-surfaces
+                 * partial interface MediaDevices {
+                 *    Promise<MediaStream> getDisplayMedea(optional DisplayMediaStreamConstraints constraints = {});
+                 * };
+                 * enum DisplayCaptureSurfaceType { "monitor", "window", "application", "browser"};
+                 * enum CursorCaptureConstraint { "never", "always", "motion" };
+                 */
+                promise = Promise.create();
+                var _self = this;
+                var displayMediaPromise = navigator.mediaDevices.getDisplayMedia({
+                    video: {
+                        cursor: 'motion',
+                        resizeMode: 'none',
+                        displaySurface: 'application'
+                    },
+                    audio: true
+                });
+                displayMediaPromise.then(function(videoStream) {
+                    if (videoStream.getAudioTracks().length < 1) {
+                        _self.userMedia({
+                                video: false,
+                                audio: true
+                            })
+                            .mapError(function(err) {
+                                promise.asyncSuccess(videoStream);
+                            })
+                            .mapSuccess(function(audioStream) {
+                                promise.asyncSuccess(new MediaStream([videoStream.getTracks()[0], audioStream.getAudioTracks()[0]]));
+                            });
+                    } else {
+                        promise.asyncSuccess(videoStream);
+                    }
+                });
+
+                // Declaring catch this way will fix IE8 related `SCRIPT1010: Expected identifier`
+                displayMediaPromise['catch'](function(err) {
+                    promise.asyncError(err);
+                });
+                return promise;
             } else if (Info.isFirefox()) {
                 opts.video = {};
                 if (options.screen) {
@@ -243,7 +285,7 @@ Scoped.define("module:WebRTC.Support", [
                 return this.userMedia(opts);
             } else if (Info.isEdge() && options.screen) {
                 if (navigator.getDisplayMedia) {
-                    var promise = Promise.create();
+                    promise = Promise.create();
                     var pr = navigator.getDisplayMedia({
                         video: true
                     });
@@ -314,7 +356,7 @@ Scoped.define("module:WebRTC.Support", [
                         type: "ping",
                         data: pingTest
                     }).mapSuccess(function(pingResponse) {
-                        var promise = Promise.create();
+                        promise = Promise.create();
                         if (!pingResponse || pingResponse.type !== "success" || pingResponse.data !== pingTest)
                             return Promise.error("This browser does not support screen recording.");
                         else
