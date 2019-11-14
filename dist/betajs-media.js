@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.145 - 2019-11-04
+betajs-media - v0.0.145 - 2019-11-13
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -1010,7 +1010,7 @@ Public.exports();
 	return Public;
 }).call(this);
 /*!
-betajs-media - v0.0.145 - 2019-11-04
+betajs-media - v0.0.145 - 2019-11-13
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -1025,7 +1025,7 @@ Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
     "version": "0.0.145",
-    "datetime": 1572875606279
+    "datetime": 1573682443220
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.136');
@@ -6860,7 +6860,7 @@ Scoped.define("module:WebRTC.AudioAnalyser", [
 
         supported: function() {
             // It works on iOS and on Safari, but it takes over the audio from the stream indefinitely
-            return !!Support.globals().AudioContext && !Info.isSafari() && !Info.isiOS();
+            return !!Support.globals().AudioContext && !!Support.globals().audioContext && !Info.isSafari() && !Info.isiOS();
         }
 
     });

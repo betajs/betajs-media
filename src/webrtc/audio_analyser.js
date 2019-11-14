@@ -48,7 +48,7 @@ Scoped.define("module:WebRTC.AudioAnalyser", [
 
         supported: function() {
             // It works on iOS and on Safari, but it takes over the audio from the stream indefinitely
-            return !!Support.globals().AudioContext && !Info.isSafari() && !Info.isiOS();
+            return !!Support.globals().AudioContext && !!Support.globals().audioContext && !Info.isSafari() && !Info.isiOS();
         }
 
     });
