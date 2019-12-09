@@ -43,8 +43,9 @@ Scoped.define("module:WebRTC.MediaRecorder", [
                                 mimeType: 'video/webm;codecs=vp9'
                             };
                         } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp8')) {
+                            // https://bugzilla.mozilla.org/show_bug.cgi?id=1594466
                             mediaRecorderOptions = {
-                                mimeType: 'video/webm;codecs=vp8'
+                                mimeType: 'video/webm;codecs=vp8' + (Info.isFirefox() && Info.firefoxVersion() >= 71 ? ",opus" : "")
                             };
                         } else if (MediaRecorder.isTypeSupported('video/webm')) {
                             mediaRecorderOptions = {

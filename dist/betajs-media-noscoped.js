@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.145 - 2019-11-13
+betajs-media - v0.0.147 - 2019-12-09
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -13,8 +13,8 @@ Scoped.binding('flash', 'global:BetaJS.Flash');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.145",
-    "datetime": 1573682443220
+    "version": "0.0.147",
+    "datetime": 1575925772650
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.136');
@@ -6066,8 +6066,9 @@ Scoped.define("module:WebRTC.MediaRecorder", [
                                 mimeType: 'video/webm;codecs=vp9'
                             };
                         } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp8')) {
+                            // https://bugzilla.mozilla.org/show_bug.cgi?id=1594466
                             mediaRecorderOptions = {
-                                mimeType: 'video/webm;codecs=vp8'
+                                mimeType: 'video/webm;codecs=vp8' + (Info.isFirefox() && Info.firefoxVersion() >= 71 ? ",opus" : "")
                             };
                         } else if (MediaRecorder.isTypeSupported('video/webm')) {
                             mediaRecorderOptions = {
