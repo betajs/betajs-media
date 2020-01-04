@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.147 - 2019-12-09
+betajs-media - v0.0.148 - 2020-01-03
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -13,8 +13,8 @@ Scoped.binding('flash', 'global:BetaJS.Flash');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.147",
-    "datetime": 1575925772650
+    "version": "0.0.148",
+    "datetime": 1578096352127
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.136');
@@ -3541,6 +3541,18 @@ Scoped.define("module:Player.VideoPlayerWrapper", [
                 return false;
             },
 
+            supportsPIP: function() {
+                return false;
+            },
+
+            enterPIPMode: function() {},
+
+            exitPIPMode: function() {},
+
+            isInPIPMode: function() {
+                return false;
+            },
+
             error: function() {
                 return this._error;
             },
@@ -3749,6 +3761,8 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
                     this._audioElement.remove();
                 if (this.supportsFullscreen() && this.__fullscreenListener)
                     Dom.elementOffFullscreenChange(this._element, this.__fullscreenListener);
+                if (this.supportsPIP() && this.__pipListener)
+                    Dom.videoRemovePIPChangeListeners(this._element, this.__pipListener);
                 if (!Info.isInternetExplorer() || Info.internetExplorerVersion() > 8)
                     this._element.innerHTML = "";
                 inherited.destroy.call(this);
@@ -3810,6 +3824,11 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
                         }
                     }, this);
                 }
+                if (this.supportsPIP() && ('pictureInPictureElement' in document)) {
+                    this.__pipListener = Dom.videoAddPIPChangeListeners(this._element, function(element, inPIPMode) {
+                        this.trigger("pip-mode-change", element, inPIPMode);
+                    }, this);
+                }
             },
 
             buffered: function() {
@@ -3843,6 +3862,21 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
 
             isFullscreen: function(element) {
                 return Dom.elementIsFullscreen(this._fullscreenElement(element));
+            },
+            supportsPIP: function() {
+                return Dom.browserSupportsPIP(this._element);
+            },
+
+            enterPIPMode: function(element) {
+                Dom.videoElementEnterPIPMode(this._element);
+            },
+
+            exitPIPMode: function() {
+                Dom.videoElementExitPIPMode(this._element);
+            },
+
+            isInPIPMode: function() {
+                return Dom.videoIsInPIPMode(this._element);
             },
 
             videoWidth: function() {
