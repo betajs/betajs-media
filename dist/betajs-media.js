@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.148 - 2020-01-03
+betajs-media - v0.0.149 - 2020-01-05
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -1010,7 +1010,7 @@ Public.exports();
 	return Public;
 }).call(this);
 /*!
-betajs-media - v0.0.148 - 2020-01-03
+betajs-media - v0.0.149 - 2020-01-05
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -1024,8 +1024,8 @@ Scoped.binding('flash', 'global:BetaJS.Flash');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.148",
-    "datetime": 1578096352127
+    "version": "0.0.149",
+    "datetime": 1578250062337
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.136');
@@ -6481,7 +6481,7 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
             },
 
             _softwareDependencies: function() {
-                if (!this._options.screen || Support.globals().supportedConstraints.mediaSource)
+                if (!this._options.screen || (this._options.screen && typeof navigator.mediaDevices.getDisplayMedia !== 'undefined') || Support.globals().supportedConstraints.mediaSource)
                     return Promise.value(true);
                 var ext = Support.chromeExtensionExtract(this._options.screen);
                 var err = [{
