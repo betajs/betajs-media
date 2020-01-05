@@ -471,7 +471,7 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
             },
 
             _softwareDependencies: function() {
-                if (!this._options.screen || Support.globals().supportedConstraints.mediaSource)
+                if (!this._options.screen || (this._options.screen && typeof navigator.mediaDevices.getDisplayMedia !== 'undefined') || Support.globals().supportedConstraints.mediaSource)
                     return Promise.value(true);
                 var ext = Support.chromeExtensionExtract(this._options.screen);
                 var err = [{
