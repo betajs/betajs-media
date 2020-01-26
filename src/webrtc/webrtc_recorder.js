@@ -24,7 +24,7 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                 this._hasVideo = false;
                 this._screen = options.screen;
                 this._flip = !!options.flip;
-                if (this._screen && !options.flipcreen)
+                if (this._screen && !options.flipscreen)
                     this._flip = false;
                 this._videoTrackSettings = {
                     slippedFromOrigin: {
