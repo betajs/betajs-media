@@ -205,6 +205,7 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
                 this._recorder = RecorderWrapper.create({
                     video: this._element,
                     flip: !!this._options.flip,
+                    flipscreen: !!this._options.flipscreen,
                     framerate: this._options.framerate,
                     recordVideo: this._options.recordVideo,
                     recordFakeVideo: !this._options.recordVideo,
