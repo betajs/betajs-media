@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.149 - 2020-01-05
+betajs-media - v0.0.150 - 2020-01-26
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -1010,7 +1010,7 @@ Public.exports();
 	return Public;
 }).call(this);
 /*!
-betajs-media - v0.0.149 - 2020-01-05
+betajs-media - v0.0.150 - 2020-01-26
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -1024,8 +1024,8 @@ Scoped.binding('flash', 'global:BetaJS.Flash');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.149",
-    "datetime": 1578250062337
+    "version": "0.0.150",
+    "datetime": 1580097338583
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.136');
@@ -6215,6 +6215,7 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
                 this._recorder = RecorderWrapper.create({
                     video: this._element,
                     flip: !!this._options.flip,
+                    flipscreen: !!this._options.flipscreen,
                     framerate: this._options.framerate,
                     recordVideo: this._options.recordVideo,
                     recordFakeVideo: !this._options.recordVideo,
@@ -7459,6 +7460,8 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                 this._hasVideo = false;
                 this._screen = options.screen;
                 this._flip = !!options.flip;
+                if (this._screen && !options.flipscreen)
+                    this._flip = false;
                 this._videoTrackSettings = {
                     slippedFromOrigin: {
                         height: 1.00,
