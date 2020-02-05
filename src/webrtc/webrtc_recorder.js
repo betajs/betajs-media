@@ -558,6 +558,7 @@ Scoped.define("module:WebRTC.PeerRecorderWrapper", [
                 recorderHeight: this._options.recordResolution.height,
                 videoBitrate: this._options.videoBitrate,
                 audioBitrate: this._options.audioBitrate,
+                framerate: this._options.framerate,
                 audioonly: !this._options.recordVideo
             });
             if (this._localPlaybackRequested && MediaRecorder.supported())

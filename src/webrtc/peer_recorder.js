@@ -20,6 +20,7 @@ Scoped.define("module:WebRTC.PeerRecorder", [
                     options.videoBitrate = Math.round(options.recorderWidth * options.recorderHeight / 250);
                 this._videoBitrate = options.videoBitrate || 1024;
                 this._audioBitrate = options.audioBitrate || 256;
+                this._videoFrameRate = options.framerate; // || "29.97";
                 this._audioonly = options.audioonly;
                 this._started = false;
             },
@@ -77,8 +78,9 @@ Scoped.define("module:WebRTC.PeerRecorder", [
                     Objs.iter(this._stream.getTracks(), function(localTrack) {
                         this._peerConnection.addTrack(localTrack, this._stream);
                     }, this);
-                } else
+                } else {
                     this._peerConnection.addStream(this._stream);
+                }
                 var offer = this._peerConnection.createOffer();
                 offer.then(Functions.as_method(this._offerGotDescription, this));
                 offer['catch'](this._errorCallback("PEER_CREATE_OFFER"));
@@ -118,9 +120,11 @@ Scoped.define("module:WebRTC.PeerRecorder", [
             _offerGotDescription: function(description) {
                 var enhanceData = {};
                 if (this._audioBitrate)
-                    enhanceData.audioBitrate = this._audioBitrate;
+                    enhanceData.audioBitrate = Number(this._audioBitrate);
                 if (this._videoBitrate && !this._audioonly)
-                    enhanceData.videoBitrate = this._videoBitrate;
+                    enhanceData.videoBitrate = Number(this._videoBitrate);
+                if (this._videoFrameRate && !this._audioonly)
+                    enhanceData.videoFrameRate = Number(this._videoFrameRate);
                 description.sdp = this._enhanceSDP(description.sdp, enhanceData);
                 return this._peerConnection.setLocalDescription(description).then(Functions.as_method(function() {
                     this._wsConnection.send(JSON.stringify({
@@ -148,8 +152,12 @@ Scoped.define("module:WebRTC.PeerRecorder", [
                     } else if (sdpLine.indexOf("m=video") === 0) {
                         sdpSection = 'video';
                         hitMID = false;
+                    } else if (sdpLine.indexOf("a=rtpmap") === 0) {
+                        sdpSection = 'bandwidth';
+                        hitMID = false;
                     }
-                    if (sdpLine.indexOf("a=mid:") !== 0)
+                    // Skip i and c lines
+                    if (sdpLine.indexOf("i=") === 0 || sdpLine.indexOf("c=") === 0)
                         return;
                     if (hitMID)
                         return;
@@ -157,16 +165,59 @@ Scoped.define("module:WebRTC.PeerRecorder", [
                         if (enhanceData.audioBitrate !== undefined) {
                             sdpStrRet += 'b=AS:' + enhanceData.audioBitrate + '\r\n';
                             sdpStrRet += 'b=TIAS:' + (enhanceData.audioBitrate * 1024) + '\r\n';
+                            // sdpStrRet += Info.isChrome()
+                            //     ? 'b=CT:' + enhanceData.videoBitrate + '\r\n'
+                            //     : 'b=TIAS:' + (enhanceData.audioBitrate * 1024) + '\r\n';
                         }
                     } else if ('video'.localeCompare(sdpSection) === 0) {
                         if (enhanceData.videoBitrate !== undefined) {
                             sdpStrRet += 'b=AS:' + enhanceData.videoBitrate + '\r\n';
-                            sdpStrRet += 'b=TIAS:' + (enhanceData.videoBitrate * 1024) + '\r\n';
+                            // if (Info.isChrome()) {
+                            // The Conference Total is indicated by giving the modifier
+                            // can co-exist with any other sessions, defined in RFC 2327
+                            sdpStrRet += 'b=CT:' + enhanceData.videoBitrate + '\r\n';
+                            if (enhanceData.videoFrameRate !== undefined) {
+                                sdpStrRet += 'a=framerate:' + enhanceData.videoFrameRate + '\r\n';
+                            }
+                            // } else {
+                            //     // Transport Independent Application Specific Maximum (TIAS)
+                            //     // Therefore, it gives a good indication of the maximum codec bit-
+                            //     // rate required to be supported by the decoder.
+                            //     sdpStrRet += 'b=TIAS:' + (enhanceData.videoBitrate * 1024) + '\r\n';
+                            //     if (enhanceData.videoFrameRate !== undefined) {
+                            //         sdpStrRet += 'a=maxprate:' + enhanceData.videoFrameRate + '\r\n';
+                            //     }
+                            // }
+                        }
+                    } else if ('bandwidth'.localeCompare(sdpSection) === 0 && Info.isChrome()) {
+                        var rtpmapID;
+                        rtpmapID = this._getRTPMapID(sdpLine);
+                        if (rtpmapID !== null) {
+                            var match = rtpmapID[2].toLowerCase();
+                            if (('vp9'.localeCompare(match) === 0) || ('vp8'.localeCompare(match) === 0) || ('h264'.localeCompare(match) === 0) ||
+                                ('red'.localeCompare(match) === 0) || ('ulpfec'.localeCompare(match) === 0) || ('rtx'.localeCompare(match) === 0)) {
+                                if (enhanceData.videoBitrate !== undefined) {
+                                    sdpStrRet += 'a=fmtp:' + rtpmapID[1] + ' x-google-min-bitrate=' + (enhanceData.videoBitrate) + ';x-google-max-bitrate=' + (enhanceData.videoBitrate) + '\r\n';
+                                }
+                            }
+
+                            if (('opus'.localeCompare(match) === 0) || ('isac'.localeCompare(match) === 0) || ('g722'.localeCompare(match) === 0) || ('pcmu'.localeCompare(match) === 0) ||
+                                ('pcma'.localeCompare(match) === 0) || ('cn'.localeCompare(match) === 0)) {
+                                if (enhanceData.audioBitrate !== undefined) {
+                                    sdpStrRet += 'a=fmtp:' + rtpmapID[1] + ' x-google-min-bitrate=' + (enhanceData.audioBitrate) + ';x-google-max-bitrate=' + (enhanceData.audioBitrate) + '\r\n';
+                                }
+                            }
                         }
                     }
                     hitMID = true;
                 }, this);
                 return sdpStrRet;
+            },
+
+            _getRTPMapID: function(line) {
+                var findid = new RegExp('a=rtpmap:(\\d+) (\\w+)/(\\d+)');
+                var found = line.match(findid);
+                return (found && found.length >= 3) ? found : null;
             },
 
             _wsOnClose: function() {},
