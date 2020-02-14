@@ -478,41 +478,41 @@ Scoped.define("module:WebRTC.Support", [
                 case 'TrackStartError':
                     return {
                         key: 'device-already-in-use',
-                            message: 'Web camera or microphone are already in use',
-                            userLevel: true
+                        message: 'Web camera or microphone are already in use',
+                        userLevel: true
                     };
                 case 'NotFoundError':
                 case 'DevicesNotFoundError':
                     return {
                         key: 'missing-track',
-                            message: 'Required audio or video track is missing',
-                            userLevel: true
+                        message: 'Required audio or video track is missing',
+                        userLevel: true
                     };
                 case 'OverconstrainedError':
                 case 'ConstraintNotSatisfiedError':
                     return {
                         key: 'constrains-error',
-                            message: 'Constraints can not be satisfied by available devices',
-                            userLevel: false
+                        message: 'Constraints can not be satisfied by available devices',
+                        userLevel: false
                     };
                 case 'NotAllowedError':
                 case 'PermissionDeniedError':
                     return {
                         key: 'browser-permission-denied',
-                            message: 'Permission denied by browser, please grant access to proceed',
-                            userLevel: true
+                        message: 'Permission denied by browser, please grant access to proceed',
+                        userLevel: true
                     };
                 case 'TypeError':
                     return {
                         key: 'empty-constraints',
-                            message: 'Empty constraints object',
-                            userLevel: false
+                        message: 'Empty constraints object',
+                        userLevel: false
                     };
                 default:
                     return {
                         key: 'unknown-error',
-                            message: 'Unknown Error',
-                            userLevel: false
+                        message: 'Unknown Error',
+                        userLevel: false
                     };
             }
         }
