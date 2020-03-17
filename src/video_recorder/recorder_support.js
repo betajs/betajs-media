@@ -54,9 +54,11 @@ Scoped.define("module:Recorder.Support", [
 
             if (_rotationRequired && this.__detectVerticalSquash(video, canvas.width, canvas.height) !== 1) {
                 this.__rotateToPortrait(video, canvas, context);
-            } else if (_isWebKit && orientation === 'portrait') {
-                context.drawImage(video, 0, -canvas.width, canvas.height, canvas.width);
-            } else {
+            }
+            // Seems Safari Was fixed Canvas draw related bug which were existed before
+            // else if (_isWebKit && orientation === 'portrait') {
+            //     context.drawImage(video, 0, -canvas.width, canvas.height, canvas.width); }
+            else {
                 context.drawImage(video, x, y, canvas.width, canvas.height);
             }
 
