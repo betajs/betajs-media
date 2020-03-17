@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.150 - 2020-02-14
+betajs-media - v0.0.152 - 2020-03-17
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -1010,7 +1010,7 @@ Public.exports();
 	return Public;
 }).call(this);
 /*!
-betajs-media - v0.0.150 - 2020-02-14
+betajs-media - v0.0.152 - 2020-03-17
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -1024,8 +1024,8 @@ Scoped.binding('flash', 'global:BetaJS.Flash');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.150",
-    "datetime": 1581719589515
+    "version": "0.0.152",
+    "datetime": 1584463153684
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.136');
@@ -5814,9 +5814,11 @@ Scoped.define("module:Recorder.Support", [
 
             if (_rotationRequired && this.__detectVerticalSquash(video, canvas.width, canvas.height) !== 1) {
                 this.__rotateToPortrait(video, canvas, context);
-            } else if (_isWebKit && orientation === 'portrait') {
-                context.drawImage(video, 0, -canvas.width, canvas.height, canvas.width);
-            } else {
+            }
+            // Seems Safari Was fixed Canvas draw related bug which were existed before
+            // else if (_isWebKit && orientation === 'portrait') {
+            //     context.drawImage(video, 0, -canvas.width, canvas.height, canvas.width); }
+            else {
                 context.drawImage(video, x, y, canvas.width, canvas.height);
             }
 
