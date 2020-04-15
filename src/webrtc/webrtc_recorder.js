@@ -23,6 +23,7 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                 this._hasAudio = false;
                 this._hasVideo = false;
                 this._screen = options.screen;
+                this._resizeMode = options.resizeMode;
                 this._flip = !!options.flip;
                 if (this._screen && !options.flipscreen)
                     this._flip = false;
@@ -44,7 +45,8 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                         sourceId: this._options.videoId,
                         width: this._options.recordResolution.width,
                         height: this._options.recordResolution.height,
-                        cameraFaceFront: this._options.cameraFaceFront
+                        cameraFaceFront: this._options.cameraFaceFront,
+                        resizeMode: this._resizeMode
                     } : false,
                     screen: this._screen
                 };
@@ -297,8 +299,10 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                         this._videoTrack = stream.getVideoTracks()[0];
                         // Will fix older version Chrome Cropping
                         if (!this._options.getDisplayMediaSupported) {
+                            if (typeof this._resizeMode === 'undefined')
+                                this._resizeMode = 'none';
                             this._videoTrack.applyConstraints({
-                                resizeMode: 'none'
+                                resizeMode: this._resizeMode
                             }).then(function() {
                                 if (typeof self._videoTrack.getSettings !== 'undefined')
                                     self._videoTrackSettings = Objs.extend(sourceVideoSettings, self._videoTrackSettings);

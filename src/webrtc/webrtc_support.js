@@ -218,12 +218,22 @@ Scoped.define("module:WebRTC.Support", [
                  */
                 promise = Promise.create();
                 var _self = this;
+                if (typeof options.video.resizeMode === 'undefined')
+                    options.video.resizeMode = 'none';
+                var videoOptions = {
+                    cursor: 'motion',
+                    resizeMode: options.video.resizeMode,
+                    displaySurface: 'application',
+                    logicalSurface: false
+                };
+                if (options.video.width > 0 && typeof options.video.width === 'number') {
+                    videoOptions.width = options.video.width;
+                }
+                if (options.video.height > 0 && typeof options.video.height === 'number') {
+                    videoOptions.height = options.video.height;
+                }
                 var displayMediaPromise = navigator.mediaDevices.getDisplayMedia({
-                    video: {
-                        cursor: 'motion',
-                        resizeMode: 'none',
-                        displaySurface: 'application'
-                    },
+                    video: videoOptions,
                     audio: true
                 });
                 displayMediaPromise.then(function(videoStream) {
@@ -478,41 +488,41 @@ Scoped.define("module:WebRTC.Support", [
                 case 'TrackStartError':
                     return {
                         key: 'device-already-in-use',
-                        message: 'Web camera or microphone are already in use',
-                        userLevel: true
+                            message: 'Web camera or microphone are already in use',
+                            userLevel: true
                     };
                 case 'NotFoundError':
                 case 'DevicesNotFoundError':
                     return {
                         key: 'missing-track',
-                        message: 'Required audio or video track is missing',
-                        userLevel: true
+                            message: 'Required audio or video track is missing',
+                            userLevel: true
                     };
                 case 'OverconstrainedError':
                 case 'ConstraintNotSatisfiedError':
                     return {
                         key: 'constrains-error',
-                        message: 'Constraints can not be satisfied by available devices',
-                        userLevel: false
+                            message: 'Constraints can not be satisfied by available devices',
+                            userLevel: false
                     };
                 case 'NotAllowedError':
                 case 'PermissionDeniedError':
                     return {
                         key: 'browser-permission-denied',
-                        message: 'Permission denied by browser, please grant access to proceed',
-                        userLevel: true
+                            message: 'Permission denied by browser, please grant access to proceed',
+                            userLevel: true
                     };
                 case 'TypeError':
                     return {
                         key: 'empty-constraints',
-                        message: 'Empty constraints object',
-                        userLevel: false
+                            message: 'Empty constraints object',
+                            userLevel: false
                     };
                 default:
                     return {
                         key: 'unknown-error',
-                        message: 'Unknown Error',
-                        userLevel: false
+                            message: 'Unknown Error',
+                            userLevel: false
                     };
             }
         }

@@ -214,6 +214,7 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
                         width: this._options.recordingWidth,
                         height: this._options.recordingHeight
                     },
+                    resizeMode: this._options.resizeMode,
                     videoBitrate: this._options.videoBitrate,
                     audioBitrate: this._options.audioBitrate,
                     webrtcStreaming: this._options.webrtcStreaming,
