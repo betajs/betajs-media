@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.152 - 2020-03-17
+betajs-media - v0.0.152 - 2020-04-15
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -14,7 +14,7 @@ Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
     "version": "0.0.152",
-    "datetime": 1584463153684
+    "datetime": 1586967904511
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.136');
@@ -5215,6 +5215,7 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
                         width: this._options.recordingWidth,
                         height: this._options.recordingHeight
                     },
+                    resizeMode: this._options.resizeMode,
                     videoBitrate: this._options.videoBitrate,
                     audioBitrate: this._options.audioBitrate,
                     webrtcStreaming: this._options.webrtcStreaming,
@@ -6501,6 +6502,7 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                 this._hasAudio = false;
                 this._hasVideo = false;
                 this._screen = options.screen;
+                this._resizeMode = options.resizeMode;
                 this._flip = !!options.flip;
                 if (this._screen && !options.flipscreen)
                     this._flip = false;
@@ -6522,7 +6524,8 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                         sourceId: this._options.videoId,
                         width: this._options.recordResolution.width,
                         height: this._options.recordResolution.height,
-                        cameraFaceFront: this._options.cameraFaceFront
+                        cameraFaceFront: this._options.cameraFaceFront,
+                        resizeMode: this._resizeMode
                     } : false,
                     screen: this._screen
                 };
@@ -6775,8 +6778,10 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                         this._videoTrack = stream.getVideoTracks()[0];
                         // Will fix older version Chrome Cropping
                         if (!this._options.getDisplayMediaSupported) {
+                            if (typeof this._resizeMode === 'undefined')
+                                this._resizeMode = 'none';
                             this._videoTrack.applyConstraints({
-                                resizeMode: 'none'
+                                resizeMode: this._resizeMode
                             }).then(function() {
                                 if (typeof self._videoTrack.getSettings !== 'undefined')
                                     self._videoTrackSettings = Objs.extend(sourceVideoSettings, self._videoTrackSettings);
@@ -7543,12 +7548,22 @@ Scoped.define("module:WebRTC.Support", [
                  */
                 promise = Promise.create();
                 var _self = this;
+                if (typeof options.video.resizeMode === 'undefined')
+                    options.video.resizeMode = 'none';
+                var videoOptions = {
+                    cursor: 'motion',
+                    resizeMode: options.video.resizeMode,
+                    displaySurface: 'application',
+                    logicalSurface: false
+                };
+                if (options.video.width > 0 && typeof options.video.width === 'number') {
+                    videoOptions.width = options.video.width;
+                }
+                if (options.video.height > 0 && typeof options.video.height === 'number') {
+                    videoOptions.height = options.video.height;
+                }
                 var displayMediaPromise = navigator.mediaDevices.getDisplayMedia({
-                    video: {
-                        cursor: 'motion',
-                        resizeMode: 'none',
-                        displaySurface: 'application'
-                    },
+                    video: videoOptions,
                     audio: true
                 });
                 displayMediaPromise.then(function(videoStream) {
