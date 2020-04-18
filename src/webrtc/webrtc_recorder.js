@@ -313,35 +313,8 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                                 if (typeof this._videoTrackSettings.videoInnerFrame === 'undefined')
                                     this._videoTrackSettings = Objs.extend(sourceVideoSettings, this._videoTrackSettings);
 
-                                this._video.onloadedmetadata = function(v) {
-                                    var _videoElement = v.target;
-                                    var _lookedWidth, _lookedHeight, _slippedWidth, _slippedHeight;
-                                    var _asR = sourceVideoSettings.aspectRatio || (sourceVideoSettings.width / sourceVideoSettings.height);
-                                    if (!isNaN(_asR)) {
-                                        var _maxWidth = _videoElement.offsetWidth;
-                                        var _maxHeight = _videoElement.offsetHeight;
-                                        // FireFox don't calculates aspectRatio like Chrome does
-                                        _lookedWidth = _maxWidth <= _maxHeight * _asR ? _maxWidth : Math.round(_maxHeight * _asR);
-                                        _lookedHeight = _maxWidth > _maxHeight * _asR ? _maxHeight : Math.round(_maxWidth / _asR);
-
-                                        _slippedWidth = sourceVideoSettings.width > _lookedWidth ? sourceVideoSettings.width / _lookedWidth : _lookedWidth / sourceVideoSettings.width;
-                                        _slippedHeight = sourceVideoSettings.height > _lookedHeight ? sourceVideoSettings.height / _lookedHeight : _lookedHeight / sourceVideoSettings.height;
-
-                                        self._videoTrackSettings = Objs.extend(sourceVideoSettings, {
-                                            videoElement: {
-                                                width: _maxWidth,
-                                                height: _maxHeight
-                                            },
-                                            videoInnerFrame: {
-                                                width: _lookedWidth,
-                                                height: _lookedHeight
-                                            },
-                                            slippedFromOrigin: {
-                                                width: _slippedWidth,
-                                                height: _slippedHeight
-                                            }
-                                        });
-                                    }
+                                this._video.onloadedmetadata = function(ev) {
+                                    self.__calculateVideoTrackSettings(sourceVideoSettings, ev.target);
                                 };
                             }
                         }
@@ -353,6 +326,44 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                         if (typeof this._audioTrack.getSettings() !== 'undefined')
                             this._audioTrackSettings = this._audioTrack.getSettings();
                     }
+                }
+            },
+
+
+            /**
+             * Calculate Video Element Settings Settings
+             * @param {MediaTrackSettings} sourceVideoSettings
+             * @param {HTMLVideoElement=} videoElement
+             * @private
+             */
+            __calculateVideoTrackSettings: function(sourceVideoSettings, videoElement) {
+                videoElement = videoElement || this._video;
+                var _lookedWidth, _lookedHeight, _slippedWidth, _slippedHeight;
+                var _asR = sourceVideoSettings.aspectRatio || (sourceVideoSettings.width / sourceVideoSettings.height);
+                if (!isNaN(_asR)) {
+                    var _maxWidth = videoElement.offsetWidth;
+                    var _maxHeight = videoElement.offsetHeight;
+                    // FireFox don't calculates aspectRatio like Chrome does
+                    _lookedWidth = _maxWidth <= _maxHeight * _asR ? _maxWidth : Math.round(_maxHeight * _asR);
+                    _lookedHeight = _maxWidth > _maxHeight * _asR ? _maxHeight : Math.round(_maxWidth / _asR);
+
+                    _slippedWidth = sourceVideoSettings.width > _lookedWidth ? sourceVideoSettings.width / _lookedWidth : _lookedWidth / sourceVideoSettings.width;
+                    _slippedHeight = sourceVideoSettings.height > _lookedHeight ? sourceVideoSettings.height / _lookedHeight : _lookedHeight / sourceVideoSettings.height;
+
+                    this._videoTrackSettings = Objs.extend(sourceVideoSettings, {
+                        videoElement: {
+                            width: _maxWidth,
+                            height: _maxHeight
+                        },
+                        videoInnerFrame: {
+                            width: _lookedWidth,
+                            height: _lookedHeight
+                        },
+                        slippedFromOrigin: {
+                            width: _slippedWidth,
+                            height: _slippedHeight
+                        }
+                    });
                 }
             },
 
@@ -379,6 +390,15 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                     }, this);
                     if ((this._videoElements.length + this._audioInputs.length) === _tracks.length) {
                         try {
+                            var streamSettings = stream.getVideoTracks()[0].getSettings();
+                            if (streamSettings.aspectRatio) {
+                                if (Math.abs(streamSettings.aspectRatio - this._videoTrackSettings.aspectRatio) > 0.1) {
+                                    this._videoTrackSettings.aspectRato = streamSettings.aspectRatio;
+                                    this.__calculateVideoTrackSettings(streamSettings);
+                                    this.__multiStreamCanvas.setAttribute('width', streamSettings.width);
+                                    this.__multiStreamCanvas.setAttribute('height', streamSettings.height);
+                                }
+                            }
                             this._drawingStream = true;
                             this._drawTracksToCanvas();
                             this._startMultiStreaming();
