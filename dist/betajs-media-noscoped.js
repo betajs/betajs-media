@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.155 - 2020-04-19
+betajs-media - v0.0.156 - 2020-04-30
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -13,8 +13,8 @@ Scoped.binding('flash', 'global:BetaJS.Flash');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.155",
-    "datetime": 1587311838735
+    "version": "0.0.156",
+    "datetime": 1588220897566
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.136');
@@ -6592,6 +6592,11 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                     this._multiStreams.push(this._stream);
                 return Support.userMedia2(this._multiStreamConstraints, this).success(function(stream) {
                     this._multiStreams.push(stream);
+                    this.__multiStreamVideoSettings = {
+                        isMainStream: true,
+                        mainStream: {},
+                        smallStream: {}
+                    };
                     this._addNewVideoElement(promise);
                     this.on("multistream-canvas-drawn", function() {
                         return promise.asyncSuccess();
@@ -6793,7 +6798,7 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                                     this._videoTrackSettings = Objs.extend(sourceVideoSettings, this._videoTrackSettings);
 
                                 this._video.onloadedmetadata = function(ev) {
-                                    self.__calculateVideoTrackSettings(sourceVideoSettings, ev.target);
+                                    self.__calculateVideoTrackSettings(sourceVideoSettings, ev.target, true);
                                 };
                             }
                         }
@@ -6808,16 +6813,16 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                 }
             },
 
-
             /**
              * Calculate Video Element Settings Settings
              * @param {MediaTrackSettings} sourceVideoSettings
              * @param {HTMLVideoElement=} videoElement
+             * @param {Boolean =} setInitialSettings
              * @private
              */
-            __calculateVideoTrackSettings: function(sourceVideoSettings, videoElement) {
+            __calculateVideoTrackSettings: function(sourceVideoSettings, videoElement, setInitialSettings) {
                 videoElement = videoElement || this._video;
-                var _lookedWidth, _lookedHeight, _slippedWidth, _slippedHeight;
+                var _lookedWidth, _lookedHeight, _slippedWidth, _slippedHeight, _dimensions;
                 var _asR = sourceVideoSettings.aspectRatio || (sourceVideoSettings.width / sourceVideoSettings.height);
                 if (!isNaN(_asR)) {
                     var _maxWidth = videoElement.offsetWidth;
@@ -6829,7 +6834,7 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                     _slippedWidth = sourceVideoSettings.width > _lookedWidth ? sourceVideoSettings.width / _lookedWidth : _lookedWidth / sourceVideoSettings.width;
                     _slippedHeight = sourceVideoSettings.height > _lookedHeight ? sourceVideoSettings.height / _lookedHeight : _lookedHeight / sourceVideoSettings.height;
 
-                    this._videoTrackSettings = Objs.extend(sourceVideoSettings, {
+                    _dimensions = Objs.extend(sourceVideoSettings, {
                         videoElement: {
                             width: _maxWidth,
                             height: _maxHeight
@@ -6843,8 +6848,13 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                             height: _slippedHeight
                         }
                     });
+
+                    if (setInitialSettings) this.__initialVideoTrackSettings = _dimensions;
+                    this._videoTrackSettings = _dimensions;
+                    return _dimensions;
                 }
             },
+
 
             /**
              * Will add new video DOM Element to draw inside Multi-Stream Canvas
@@ -6858,10 +6868,7 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                         // Will require to stop all existing tracks after recorder stop
                         this._sourceTracks.push(track);
                         if (track.kind === 'video') {
-                            if (track.id !== this._videoTrack.id)
-                                this._videoElements.push(this._singleVideoElement(this.__addedStreamOptions, stream, true));
-                            else
-                                this._videoElements.push(this._singleVideoElement(this._getConstraints().video, stream));
+                            this._videoElements.push(this._singleVideoElement(this.__addedStreamOptions, stream, track.id !== this._videoTrack.id, track));
                         }
                         if (track.kind === 'audio') {
                             this._audioInputs.push(track);
@@ -6872,8 +6879,8 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                             var streamSettings = stream.getVideoTracks()[0].getSettings();
                             if (streamSettings.aspectRatio) {
                                 if (Math.abs(streamSettings.aspectRatio - this._videoTrackSettings.aspectRatio) > 0.1) {
-                                    this._videoTrackSettings.aspectRato = streamSettings.aspectRatio;
-                                    this.__calculateVideoTrackSettings(streamSettings);
+                                    this._videoTrackSettings.aspectRatio = streamSettings.aspectRatio;
+                                    this.__calculateVideoTrackSettings(streamSettings, null, true);
                                     this.__multiStreamCanvas.setAttribute('width', streamSettings.width);
                                     this.__multiStreamCanvas.setAttribute('height', streamSettings.height);
                                 }
@@ -6896,6 +6903,7 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                 }, this);
             },
 
+
             /**
              * Merge streams and draw Canvas.
              * @private
@@ -6904,6 +6912,12 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                 if (!this._drawingStream)
                     return;
                 var _videosCount = this._videoElements.length;
+                var _reversed = false;
+
+                if (typeof this._drawerSetting !== 'undefined')
+                    if (this._drawerSetting.feetToDimensions)
+                        _reversed = true;
+
                 for (var _i = 0; _i < this._videoElements.length; _i++) {
                     var _video, _constraints, _width, _height, _positionX, _positionY;
                     _video = this._videoElements[_i];
@@ -6911,12 +6925,27 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                     _positionX = _constraints.positionX || 0;
                     _positionY = _constraints.positionY || 0;
                     if (_video.__multistreamElement) {
-                        _width = _constraints.width || 360;
-                        _height = _constraints.height || 240;
+                        _width = _reversed ? this._drawerSetting.smallStreamWidth : _constraints.width || 360;
+                        _height = _reversed ? this._drawerSetting.smallStreamHeight : _constraints.height || 240;
                     } else {
-                        _width = this.__multiStreamCanvas.width || _constraints.width || 360;
-                        _height = this.__multiStreamCanvas.height || _constraints.height || 240;
+                        if (_reversed) {
+                            _positionX = this._drawerSetting.positionX;
+                            _positionY = this._drawerSetting.positionY;
+                            _width = this._drawerSetting.width;
+                            _height = this._drawerSetting.height;
+                            if (this.__multiStreamVideoSettings.mainStream) {
+                                if (Objs.keys(this.__multiStreamVideoSettings.mainStream).length > 0) {
+                                    this.__multiStreamCtx.fillStyle = "#000000";
+                                    this.__multiStreamCtx.fillRect(0, 0, this.__multiStreamCanvas.width, this.__multiStreamCanvas.height);
+                                    this.__multiStreamCtx.restore();
+                                }
+                            }
+                        } else {
+                            _width = this.__multiStreamCanvas.width || _constraints.width || 360;
+                            _height = this.__multiStreamCanvas.height || _constraints.height || 240;
+                        }
                     }
+
                     this.__multiStreamCtx.drawImage(_video, _positionX, _positionY, _width, _height);
                     _videosCount--;
                     if (_videosCount === 0) {
@@ -6929,6 +6958,50 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
              * Will change screen sources during multi-record
              */
             reverseVideos: function() {
+                var _self = this;
+                var _isMainBecomeSmall = this.__multiStreamVideoSettings.isMainStream;
+                this.__multiStreamVideoSettings.isMainStream = !_isMainBecomeSmall;
+
+                // Get initial core information about stream dimensions
+                var _mainStream = this.__multiStreamVideoSettings.mainStream.settings;
+                var _smallStream = this.__multiStreamVideoSettings.smallStream.settings;
+
+                var _x = 0,
+                    _y = 0,
+                    _w, _h, _smW, _smH;
+
+                if (_isMainBecomeSmall) {
+                    var _smallStreamAspectRatio = _smallStream.aspectRatio;
+                    var _mainAspectRatio = this._videoTrackSettings.aspectRatio || (this._videoTrackSettings.width / this._videoTrackSettings.height);
+                    var _fitFullWidth = this._videoTrackSettings.videoElement.width === this._videoTrackSettings.videoInnerFrame.width;
+                    if (_fitFullWidth) {
+                        _h = _mainStream.streamHeight;
+                        _w = _h * _smallStreamAspectRatio;
+                        _smW = _smallStream.videoWidth;
+                        _smH = _smW / _mainAspectRatio;
+                    } else {
+                        _w = _mainStream.streamWidth;
+                        _h = _w / _smallStreamAspectRatio;
+                        _smH = _smallStream.videoHeight;
+                        _smW = _smH * _mainAspectRatio;
+                    }
+                    _x = (_mainStream.streamWidth - _w) / 2;
+                    _y = (_mainStream.streamHeight - _h) / 2;
+                    this._drawerSetting = {
+                        feetToDimensions: true,
+                        width: _w,
+                        height: _h,
+                        positionX: _x,
+                        positionY: _y,
+                        smallStreamHeight: _smH,
+                        smallStreamWidth: _smW
+                    };
+                } else {
+                    this._drawerSetting.feetToDimensions = false;
+                    _smW = _smallStream.videoWidth;
+                    _smH = _smallStream.videoHeight;
+                }
+
                 if (this._drawingStream) {
                     var _temp_video = document.createElement('video');
                     for (var _i = 0; _i < this._videoElements.length; _i++) {
@@ -6945,6 +7018,16 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                             this._videoElements[_i].oncanplay = function() {
                                 this.play();
                             };
+                            var _dimensions = {
+                                width: _smW,
+                                height: _smH
+                            };
+                            if (_isMainBecomeSmall) {
+                                _self.__calculateVideoTrackSettings(_dimensions);
+                            } else {
+                                _self._videoTrackSettings = _self.__initialVideoTrackSettings;
+                            }
+                            _self.trigger("multistream-camera-switched", _dimensions, _isMainBecomeSmall);
                             _temp_video.remove();
                         }
                     }
@@ -6970,20 +7053,48 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
              * Generate single video DOM element to draw inside canvas
              * @param {object} options
              * @param stream
-             * @param {Boolean} additionalStream // If it's newly added stream
+             * @param {Boolean=} additionalStream // This is newly added stream, small screen
+             * @param {MediaStreamTrack=} videoTrack
              * @return {HTMLElement}
              * @private
              */
-            _singleVideoElement: function(options, stream, additionalStream) {
+            _singleVideoElement: function(options, stream, additionalStream, videoTrack) {
+                var self = this;
                 var video = Support.bindStreamToVideo(stream);
                 additionalStream = additionalStream || false;
-                if (additionalStream)
+                if (additionalStream) {
                     video.__multistreamElement = true;
+                    video.width = this.__addedStreamOptions.width || options.width || 360;
+                    video.height = this.__addedStreamOptions.height || options.height || 240;
+                } else {
+                    var visibleDimensions = self._videoTrackSettings.videoInnerFrame;
+                    var aspectRatio = self._videoTrackSettings.aspectRatio;
+                }
+                var slippedFromOrigin = self._videoTrackSettings.slippedFromOrigin;
                 video.muted = true;
                 video.volume = 0;
-                video.width = this.__addedStreamOptions.width || options.width || 360;
-                video.height = this.__addedStreamOptions.height || options.height || 240;
                 video.oncanplay = function() {
+                    var s = videoTrack.getSettings();
+                    var values = {
+                        track: videoTrack,
+                        isMainScreen: additionalStream,
+                        settings: {
+                            videoWidth: additionalStream ? this.width : self._videoTrackSettings.videoElement.width,
+                            videoHeight: additionalStream ? this.height : self._videoTrackSettings.videoElement.height,
+                            streamWidth: additionalStream ? s.width : self._videoTrackSettings.width,
+                            streamHeight: additionalStream ? s.height : self._videoTrackSettings.height,
+                            visibleWidth: additionalStream ? (this.width / slippedFromOrigin.width) : visibleDimensions.width,
+                            visibleHeight: additionalStream ? (this.height / slippedFromOrigin.height) : visibleDimensions.height,
+                            deviceId: s.deviceId,
+                            aspectRatio: additionalStream ? (s.aspectRatio || (s.width / s.height)) : aspectRatio
+                        }
+                    };
+
+                    if (additionalStream)
+                        self.__multiStreamVideoSettings.smallStream = values;
+                    else {
+                        self.__multiStreamVideoSettings.mainStream = values;
+                    }
                     this.play();
                 };
                 return video;
