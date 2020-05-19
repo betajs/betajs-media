@@ -561,7 +561,8 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
              */
             _startMultiStreaming: function() {
                 var stream = this.__multiStreamCanvas.captureStream(25);
-                stream.addTrack(this._audioInputs[0]);
+                if (this._audioInputs[0])
+                    stream.addTrack(this._audioInputs[0]);
                 this._stream = stream;
                 Support.bindStreamToVideo(stream, this._video, this._flip);
                 this.trigger("bound", stream);

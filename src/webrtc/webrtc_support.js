@@ -218,6 +218,7 @@ Scoped.define("module:WebRTC.Support", [
                  */
                 promise = Promise.create();
                 var _self = this;
+                var audio = typeof options.audio === 'boolean' ? options.audio : true;
                 if (typeof options.video.resizeMode === 'undefined')
                     options.video.resizeMode = 'none';
                 var videoOptions = {
@@ -233,10 +234,10 @@ Scoped.define("module:WebRTC.Support", [
                 }
                 var displayMediaPromise = navigator.mediaDevices.getDisplayMedia({
                     video: videoOptions,
-                    audio: true
+                    audio: audio
                 });
                 displayMediaPromise.then(function(videoStream) {
-                    if (videoStream.getAudioTracks().length < 1) {
+                    if (videoStream.getAudioTracks().length < 1 && audio) {
                         _self.userMedia({
                                 video: false,
                                 audio: true
