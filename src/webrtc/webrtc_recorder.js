@@ -152,43 +152,45 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                     this._hasAudio = this._options.recordAudio && stream.getAudioTracks().length > 0;
                     this._hasVideo = this._options.recordVideo && stream.getVideoTracks().length > 0;
                     var applyConstraints = {};
-                    var _settings = null;
-                    var _vTrack = stream.getVideoTracks()[0] || {};
+                    var settings = null;
+                    var setConstraints = null;
+                    var capabilities = null;
+                    var vTrack = stream.getVideoTracks()[0] || {};
 
-                    if (this._hasVideo && typeof _vTrack.getSettings === 'function')
-                        _settings = _vTrack.getSettings();
+                    if (this._hasVideo && typeof vTrack.getSettings === 'function')
+                        settings = vTrack.getSettings();
 
                     // Purpose is fix Overconstrained dimensions to correct one
                     // Firefox still not supports getCapabilities
                     // More details: https://bugzilla.mozilla.org/show_bug.cgi?id=1179084
-                    if (this._hasVideo && typeof _vTrack.getCapabilities === 'function' && _settings) {
-                        var _capabilities = _vTrack.getCapabilities();
-                        var _setConstraints = this._getConstraints().video;
+                    if (this._hasVideo && typeof vTrack.getCapabilities === 'function' && settings) {
+                        capabilities = vTrack.getCapabilities();
+                        setConstraints = this._getConstraints().video;
 
-                        if (_capabilities.width.max && _capabilities.height.max)
-                            applyConstraints = this.__checkAndApplyCorrectConstraints(_vTrack, _capabilities, _setConstraints, stream);
+                        if (capabilities.width.max && capabilities.height.max)
+                            applyConstraints = this.__checkAndApplyCorrectConstraints(vTrack, capabilities, setConstraints, stream);
                     }
 
                     // If Browser will set aspect ratio correctly no need draw into canvas
-                    if (_settings && _setConstraints && this._options.cropTheStream) {
-                        var _setRatio = _setConstraints.width / _setConstraints.height;
-                        var _appliedRatio = _settings.width / _settings.height;
+                    if (settings && setConstraints && this._options.cropTheStream) {
+                        var _setRatio = setConstraints.width / setConstraints.height;
+                        var _appliedRatio = settings.width / settings.height;
                         if (Math.abs(_setRatio - _appliedRatio) <= 0.1) {
                             this._options.cropTheStream = false;
                         }
                     }
 
-                    if (this._options.cropTheStream && _settings) {
+                    if (this._options.cropTheStream && settings) {
                         this._canvasStreams.push(stream);
                         if (!this.__initialVideoTrackSettings)
-                            this.__calculateVideoTrackSettings(_settings, this._video, true);
-                        this._videoTrackSettings.capabilities = _capabilities;
+                            this.__calculateVideoTrackSettings(settings, this._video, true);
+                        this._videoTrackSettings.capabilities = capabilities;
                         this._videoTrackSettings.constrainsts = this._getConstraints().video;
                         this._buildVideoElementsArray();
                     } else {
                         this._bound = true;
                         this._stream = stream;
-                        this._setLocalTrackSettings(stream, applyConstraints);
+                        this._setLocalTrackSettings(stream);
                         Support.bindStreamToVideo(stream, this._video, this._flip);
                         this.trigger("bound", stream);
                         this._boundMedia();
@@ -335,7 +337,7 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                     cropTheStream: feetDimension || false,
                     streamsReversed: false,
                     isMultiStream: false
-                }
+                };
                 // document.body.append(this.__recorderStreamCanvas);
             },
 
@@ -418,7 +420,7 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                         // Only possible in below if above not fit correctly
                         if (_newHeight > maxHeight && _desiredAr > 1) {
                             _newHeight = maxHeight;
-                            _newWidth = maxHeight / _desiredAr
+                            _newWidth = maxHeight / _desiredAr;
                         }
                         if (_newWidth > maxWidth && _desiredAr < 1) {
                             _newWidth = maxWidth;
@@ -435,7 +437,7 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                     return {
                         width: _newWidth,
                         height: _newHeight
-                    }
+                    };
                 }
             },
 
@@ -581,18 +583,18 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                                 settings.cw = width;
                                 settings.ch = Math.round(width / _desiredRatio);
                                 settings.cx = 0;
-                                settings.cy = (height - settings.ch) / 2
+                                settings.cy = (height - settings.ch) / 2;
 
                                 settings.w = settings.cw;
                                 settings.h = settings.ch;
                                 settings.x = 0;
-                                settings.y = (height - settings.h) / 2
+                                settings.y = (height - settings.h) / 2;
 
                             } else {
                                 settings.ch = height;
                                 settings.cw = _settingRatio > 1 ? Math.round(height * _desiredRatio) : Math.round(height / _desiredRatio);
                                 settings.cy = 0;
-                                settings.cx = (width - settings.cw) / 2
+                                settings.cx = (width - settings.cw) / 2;
 
                                 settings.w = settings.cw;
                                 settings.h = settings.ch;
@@ -600,11 +602,10 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                                 settings.x = (width - settings.w) / 2;
                             }
                         }
-                        this._drawTracksToCanvas(crop, settings);
-                    } else {
-                        this._drawTracksToCanvas();
+                        this.__cropSettings = settings;
                     }
 
+                    this._drawTracksToCanvas();
                     this._startCanvasStreaming();
                 } catch (e) {
                     console.warn(e);
@@ -615,49 +616,47 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
             /**
              *
              * Merge streams and draw Canvas.
-             * @param {Boolean =} cropVideo
-             * @param {Object =} cropSettings
              * @private
              */
-            _drawTracksToCanvas: function(cropVideo, cropSettings) {
+            _drawTracksToCanvas: function() {
                 if (!this._drawingStream)
                     return;
-                var _videosCount = this._videoElements.length;
-                var _reversed = false;
+                var videosCount = this._videoElements.length;
+                var reversed = false;
 
                 if (typeof this._drawerSetting !== 'undefined') {
                     if (this._drawerSetting.streamsReversed)
-                        _reversed = true;
+                        reversed = true;
                 }
 
                 for (var _i = 0; _i < this._videoElements.length; _i++) {
-                    var _video, _constraints, _width, _height, _positionX, _positionY;
-                    _video = this._videoElements[_i];
+                    var video, constraints, width, height, positionX, positionY;
+                    video = this._videoElements[_i];
 
-                    if (cropVideo) {
+                    if (this._drawerSetting.cropTheStream) {
                         // .videoInnerFrame
-                        _width = cropSettings.w;
-                        _height = cropSettings.h;
-                        _positionX = cropSettings.x;
-                        _positionY = cropSettings.y;
-                        var _cPositionX = cropSettings.cx;
-                        var _cPositionY = cropSettings.cy;
-                        var _cWidth = cropSettings.cw;
-                        var _cHeight = cropSettings.ch;
+                        var _cropSettings = this.__cropSettings;
+                        width = _cropSettings.w;
+                        height = _cropSettings.h;
+                        positionX = _cropSettings.x;
+                        positionY = _cropSettings.y;
+                        this.__recorderStreamCtx.drawImage(
+                            video, _cropSettings.cx, _cropSettings.cy, _cropSettings.cw, _cropSettings.ch,
+                            positionX, positionY, width, height
+                        );
                     } else {
-                        cropVideo = false;
-                        _constraints = _i !== 0 ? this.__addedStreamOptions : {};
-                        _positionX = _constraints.positionX || 0;
-                        _positionY = _constraints.positionY || 0;
-                        if (_video.__multistreamElement) {
-                            _width = _reversed ? this._drawerSetting.smallStreamWidth : _constraints.width || 360;
-                            _height = _reversed ? this._drawerSetting.smallStreamHeight : _constraints.height || 240;
+                        constraints = _i !== 0 ? this.__addedStreamOptions : {};
+                        positionX = constraints.positionX || 0;
+                        positionY = constraints.positionY || 0;
+                        if (video.__multistreamElement) {
+                            width = reversed ? this._drawerSetting.smallStreamWidth : constraints.width || 360;
+                            height = reversed ? this._drawerSetting.smallStreamHeight : constraints.height || 240;
                         } else {
-                            if (_reversed) {
-                                _positionX = this._drawerSetting.positionX;
-                                _positionY = this._drawerSetting.positionY;
-                                _width = this._drawerSetting.width;
-                                _height = this._drawerSetting.height;
+                            if (reversed) {
+                                positionX = this._drawerSetting.positionX;
+                                positionY = this._drawerSetting.positionY;
+                                width = this._drawerSetting.width;
+                                height = this._drawerSetting.height;
                                 if (this.__multiStreamVideoSettings.mainStream) {
                                     if (Objs.keys(this.__multiStreamVideoSettings.mainStream).length > 0) {
                                         this.__recorderStreamCtx.fillStyle = "#000000";
@@ -666,24 +665,16 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                                     }
                                 }
                             } else {
-                                _width = this.__recorderStreamCanvas.width || _constraints.width || 360;
-                                _height = this.__recorderStreamCanvas.height || _constraints.height || 240;
+                                width = this.__recorderStreamCanvas.width || constraints.width || 360;
+                                height = this.__recorderStreamCanvas.height || constraints.height || 240;
                             }
                         }
+                        this.__recorderStreamCtx.drawImage(video, positionX, positionY, width, height);
                     }
 
-                    // _video.style.display = 'none';
-                    if (cropVideo) {
-                        this.__recorderStreamCtx.drawImage(_video, _cPositionX, _cPositionY, _cWidth, _cHeight, _positionX, _positionY, _width, _height);
-                    } else {
-                        this.__recorderStreamCtx.drawImage(_video, _positionX, _positionY, _width, _height);
-                    }
-
-                    _videosCount--;
-                    if (_videosCount === 0) {
-                        Async.eventually(function() {
-                            this._drawTracksToCanvas(cropVideo, cropSettings)
-                        }, this, 1000 / 30); // drawing at 30 fps
+                    videosCount--;
+                    if (videosCount === 0) {
+                        Async.eventually(this._drawTracksToCanvas, this, 1000 / 50); // drawing at 50 fps
                     }
                 }
             },
