@@ -19,7 +19,7 @@ Scoped.define("module:WebRTC.MediaRecorder", [
                 var MediaRecorder = Support.globals().MediaRecorder;
                 /*
                  * This is supposed to work according to the docs, but it is not:
-                 * 
+                 *
                  * https://developer.mozilla.org/en-US/docs/Web/API/MediaRecorder/MediaRecorder#Example
                  */
                 var mediaRecorderOptions = {
@@ -42,8 +42,9 @@ Scoped.define("module:WebRTC.MediaRecorder", [
                             mediaRecorderOptions = {
                                 mimeType: 'video/webm;codecs=vp9'
                             };
-                        } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp8')) {
+                        } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp8') && (Info.isFirefox() && Info.firefoxVersion() < 71)) {
                             // https://bugzilla.mozilla.org/show_bug.cgi?id=1594466
+                            // firefox71 + fixed
                             mediaRecorderOptions = {
                                 mimeType: 'video/webm;codecs=vp8' + (Info.isFirefox() && Info.firefoxVersion() >= 71 ? ",opus" : "")
                             };
@@ -67,7 +68,21 @@ Scoped.define("module:WebRTC.MediaRecorder", [
                 this._mediaRecorder.onstop = Functions.as_method(this._dataStop, this);
                 this._mediaRecorder.onpause = Functions.as_method(this._hasPaused, this);
                 this._mediaRecorder.onresume = Functions.as_method(this._hasResumed, this);
+                this._mediaRecorder.onstart = Functions.as_method(this._recorderStarted, this);
+                this._mediaRecorder.onerror = Functions.as_method(this.onErrorMethod, this);
             },
+
+            _recorderStarted: function(ev) {
+                this._started = true;
+                this.trigger("started");
+                this._startRecPromise.asyncSuccess();
+            },
+
+            onErrorMethod: function(err) {
+                this._startRecPromise.asyncError(err);
+                this.trigger("error", err);
+            },
+
 
             destroy: function() {
                 this.stop();
@@ -77,11 +92,10 @@ Scoped.define("module:WebRTC.MediaRecorder", [
             start: function() {
                 if (this._started)
                     return Promise.value(true);
-                this._started = true;
+                this._startRecPromise = Promise.create();
                 this._chunks = [];
                 this._mediaRecorder.start(10);
-                this.trigger("started");
-                return Promise.value(true);
+                return this._startRecPromise;
             },
 
             pause: function() {
