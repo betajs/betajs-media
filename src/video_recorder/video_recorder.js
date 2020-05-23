@@ -221,7 +221,8 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
                     webrtcStreamingIfNecessary: this._options.webrtcStreamingIfNecessary,
                     localPlaybackRequested: this._options.localPlaybackRequested,
                     screen: this._options.screen,
-                    getDisplayMediaSupported: typeof navigator.mediaDevices.getDisplayMedia !== 'undefined'
+                    getDisplayMediaSupported: typeof navigator.mediaDevices.getDisplayMedia !== 'undefined',
+                    fittodimensions: this._options.fittodimensions
                 });
                 this._recorder.on("bound", function() {
                     if (this._analyser)
