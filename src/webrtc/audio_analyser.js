@@ -40,7 +40,9 @@ Scoped.define("module:WebRTC.AudioAnalyser", [
                 var mx = 0.0;
                 for (var i = 0; i < bufferLength; i++)
                     mx = Math.max(mx, Math.abs(dataArray[i] / 128.0));
-                return mx;
+                // Seems Firefox is Mobile not supports this testing way
+                // getByteFrequencyData && getFloatTimeDomainData also tested with no success
+                return !(Info.isMobile() && Info.isFirefox()) ? mx : mx + 0.1;
             }
 
         };
