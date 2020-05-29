@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.157 - 2020-05-23
+betajs-media - v0.0.157 - 2020-05-29
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -1010,7 +1010,7 @@ Public.exports();
 	return Public;
 }).call(this);
 /*!
-betajs-media - v0.0.157 - 2020-05-23
+betajs-media - v0.0.157 - 2020-05-29
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -1025,7 +1025,7 @@ Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
     "version": "0.0.157",
-    "datetime": 1590255906409
+    "datetime": 1590790927114
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.136');
@@ -6891,7 +6891,9 @@ Scoped.define("module:WebRTC.AudioAnalyser", [
                 var mx = 0.0;
                 for (var i = 0; i < bufferLength; i++)
                     mx = Math.max(mx, Math.abs(dataArray[i] / 128.0));
-                return mx;
+                // Seems Firefox in Mobile not supports this testing way
+                // getByteFrequencyData && getFloatTimeDomainData also tested with no success
+                return !(Info.isMobile() && Info.isFirefox()) ? mx : mx + 0.1;
             }
 
         };
