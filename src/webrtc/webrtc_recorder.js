@@ -808,12 +808,14 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                     var width = this.width;
                     var height = this.height;
                     var aspectRatio = additionalStream ? (s.aspectRatio || (s.width / s.height)) : aspectRatio;
-                    if (!self.__addedStreamOptions._isTrueHeight && additionalStream && aspectRatio) {
-                        height = aspectRatio > 1.00 ?
-                            (width / aspectRatio).toFixed(2) :
-                            (width * aspectRatio).toFixed(2);
-                        self.__addedStreamOptions.height = height;
-                        self.updateMultiStreamPosition();
+                    if (typeof self.__addedStreamOptions !== 'undefined') {
+                        if (!self.__addedStreamOptions._isTrueHeight && additionalStream && aspectRatio) {
+                            height = aspectRatio > 1.00 ?
+                                (width / aspectRatio).toFixed(2) :
+                                (width * aspectRatio).toFixed(2);
+                            self.__addedStreamOptions.height = height;
+                            self.updateMultiStreamPosition();
+                        }
                     }
                     var values = {
                         track: videoTrack,
