@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.157 - 2020-05-29
+betajs-media - v0.0.159 - 2020-06-06
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -13,8 +13,8 @@ Scoped.binding('flash', 'global:BetaJS.Flash');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.157",
-    "datetime": 1590790927114
+    "version": "0.0.159",
+    "datetime": 1591494698312
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.136');
@@ -6565,13 +6565,16 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
             addNewSingleStream: function(device, options) {
                 this._initCanvasStreamSettings();
                 var _options, _positionX, _positionY, _height, _width, _aspectRatio, _constraints;
+                var _isTrueHeight = true;
                 _aspectRatio = this._options.video.aspectRatio;
                 _positionX = options.positionX || 0;
                 _positionY = options.positionY || 0;
                 _width = options.width || (this._options.recordResolution.width * 0.20) || 120;
                 _height = options.height;
-                if (!_height)
+                if (!_height) {
                     _height = _aspectRatio ? Math.floor(_width * _aspectRatio) : Math.floor(_width / 1.33);
+                    _isTrueHeight = false;
+                }
                 _options = {
                     frameRate: this._options.framerate,
                     sourceId: device.id,
@@ -6586,7 +6589,8 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                     positionX: _positionX,
                     positionY: _positionY,
                     width: _width,
-                    height: _height
+                    height: _height,
+                    isTrueHeight: _isTrueHeight
                 });
                 return this.addNewMediaStream();
             },
@@ -7297,26 +7301,37 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                 video.volume = 0;
                 video.oncanplay = function() {
                     var s = videoTrack.getSettings();
+                    var width = this.width;
+                    var height = this.height;
+                    var aspectRatio = additionalStream ? (s.aspectRatio || (s.width / s.height)) : aspectRatio;
+                    if (typeof self.__addedStreamOptions !== 'undefined') {
+                        if (!self.__addedStreamOptions._isTrueHeight && additionalStream && aspectRatio) {
+                            height = aspectRatio > 1.00 ?
+                                (width / aspectRatio).toFixed(2) :
+                                (width * aspectRatio).toFixed(2);
+                            self.__addedStreamOptions.height = height;
+                            self.updateMultiStreamPosition();
+                        }
+                    }
                     var values = {
                         track: videoTrack,
                         isMainScreen: additionalStream,
                         settings: {
-                            videoWidth: additionalStream ? this.width : self._videoTrackSettings.videoElement.width,
-                            videoHeight: additionalStream ? this.height : self._videoTrackSettings.videoElement.height,
+                            videoWidth: additionalStream ? width : self._videoTrackSettings.videoElement.width,
+                            videoHeight: additionalStream ? height : self._videoTrackSettings.videoElement.height,
                             streamWidth: additionalStream ? s.width : self._videoTrackSettings.width,
                             streamHeight: additionalStream ? s.height : self._videoTrackSettings.height,
-                            visibleWidth: additionalStream ? (this.width / slippedFromOrigin.width) : visibleDimensions.width,
-                            visibleHeight: additionalStream ? (this.height / slippedFromOrigin.height) : visibleDimensions.height,
+                            visibleWidth: additionalStream ? (width / slippedFromOrigin.width) : visibleDimensions.width,
+                            visibleHeight: additionalStream ? (height / slippedFromOrigin.height) : visibleDimensions.height,
                             deviceId: s.deviceId,
-                            aspectRatio: additionalStream ? (s.aspectRatio || (s.width / s.height)) : aspectRatio
+                            aspectRatio: aspectRatio
                         }
                     };
 
                     if (additionalStream)
                         self.__multiStreamVideoSettings.smallStream = values;
-                    else {
+                    else
                         self.__multiStreamVideoSettings.mainStream = values;
-                    }
                     this.play();
                 };
                 return video;
