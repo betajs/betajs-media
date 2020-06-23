@@ -4,8 +4,9 @@ Scoped.define("module:WebRTC.MediaRecorder", [
     "base:Functions",
     "base:Promise",
     "browser:Info",
-    "module:WebRTC.Support"
-], function(Class, EventsMixin, Functions, Promise, Info, Support, scoped) {
+    "module:WebRTC.Support",
+    "base:Async"
+], function(Class, EventsMixin, Functions, Promise, Info, Support, Async, scoped) {
     return Class.extend({
         scoped: scoped
     }, [EventsMixin, function(inherited) {
@@ -38,7 +39,12 @@ Scoped.define("module:WebRTC.MediaRecorder", [
                             };
                         }
                     } else {
-                        if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) {
+                        // TODO: it's still experimental feature in Safari, in the feature if isTypeSupported will be applied need change this part of code
+                        if (typeof MediaRecorder.isTypeSupported === 'undefined' && Info.isSafari() && typeof MediaRecorder !== 'undefined') {
+                            mediaRecorderOptions = {
+                                mimeType: 'video/webm;codecs=vp9'
+                            };
+                        } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) {
                             mediaRecorderOptions = {
                                 mimeType: 'video/webm;codecs=vp9'
                             };
@@ -94,7 +100,22 @@ Scoped.define("module:WebRTC.MediaRecorder", [
                     return Promise.value(true);
                 this._startRecPromise = Promise.create();
                 this._chunks = [];
+                // Safari Release 73 implemented non-timeslice mode encoding for MediaRecorder
+                // https://developer.apple.com/safari/technology-preview/release-notes/
                 this._mediaRecorder.start(10);
+                // TODO: it's still experimental feature in Safari, in the feature if onstart will be applied
+                // need change this part of code
+                if (Info.isSafari()) {
+                    this._started = true;
+                    this.trigger("started");
+                    Async.eventually(function() {
+                        if (this._mediaRecorder.state === 'recording') {
+                            this._startRecPromise.asyncSuccess();
+                        } else {
+                            this._startRecPromise.asyncError('Could not start recording');
+                        }
+                    }, this, 1000);
+                }
                 return this._startRecPromise;
             },
 
