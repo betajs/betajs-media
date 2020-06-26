@@ -39,8 +39,7 @@ Scoped.define("module:WebRTC.MediaRecorder", [
                             };
                         }
                     } else {
-                        // TODO: it's still experimental feature in Safari, in the feature if isTypeSupported will be applied need change this part of code
-                        if (typeof MediaRecorder.isTypeSupported === 'undefined' && Info.isSafari() && typeof MediaRecorder !== 'undefined') {
+                        if (!MediaRecorder.isTypeSupported) {
                             mediaRecorderOptions = {
                                 mimeType: 'video/webm;codecs=vp9'
                             };
