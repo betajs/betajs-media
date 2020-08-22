@@ -20,6 +20,9 @@ Scoped.define("module:Player.VideoPlayerWrapper", [
                     sources = sources.split(" ");
                 else if (!Types.is_array(sources))
                     sources = [sources];
+                this._onlyAudio = false;
+                if (typeof options.onlyaudio !== 'undefined')
+                    this._onlyAudio = options.onlyaudio;
                 var sourcesMapped = [];
                 Objs.iter(sources, function(source) {
                     if (Types.is_string(source))
@@ -45,8 +48,11 @@ Scoped.define("module:Player.VideoPlayerWrapper", [
                         source.ext = source.ext.toLowerCase();
                     if (source.type)
                         source.type = source.type.toLowerCase();
+                    var audioSource = null;
+                    if (typeof source.audiosrc !== 'undefined')
+                        audioSource = source.audiosrc;
                     if (typeof Blob !== 'undefined' && source.src instanceof Blob)
-                        source.src = (typeof options.onlyaudio !== 'undefined' && options.onlyaudio) ?
+                        source.src = (this._onlyAudio && audioSource) ?
                         (window.URL || window.webkitURL).createObjectURL(source.audiosrc) :
                         (window.URL || window.webkitURL).createObjectURL(source.src);
                     if (typeof Blob !== 'undefined' && source.audiosrc instanceof Blob)
