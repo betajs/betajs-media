@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.160 - 2020-06-26
+betajs-media - v0.0.161 - 2020-08-24
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -1010,7 +1010,7 @@ Public.exports();
 	return Public;
 }).call(this);
 /*!
-betajs-media - v0.0.160 - 2020-06-26
+betajs-media - v0.0.161 - 2020-08-24
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -1024,8 +1024,8 @@ Scoped.binding('flash', 'global:BetaJS.Flash');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.160",
-    "datetime": 1593203085266
+    "version": "0.0.161",
+    "datetime": 1598307869484
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.136');
@@ -4428,6 +4428,9 @@ Scoped.define("module:Player.VideoPlayerWrapper", [
                     sources = sources.split(" ");
                 else if (!Types.is_array(sources))
                     sources = [sources];
+                this._onlyAudio = false;
+                if (typeof options.onlyaudio !== 'undefined')
+                    this._onlyAudio = options.onlyaudio;
                 var sourcesMapped = [];
                 Objs.iter(sources, function(source) {
                     if (Types.is_string(source))
@@ -4453,9 +4456,12 @@ Scoped.define("module:Player.VideoPlayerWrapper", [
                         source.ext = source.ext.toLowerCase();
                     if (source.type)
                         source.type = source.type.toLowerCase();
+                    var audioSource = null;
+                    if (typeof source.audiosrc !== 'undefined')
+                        audioSource = source.audiosrc;
                     if (typeof Blob !== 'undefined' && source.src instanceof Blob)
-                        source.src = (typeof options.onlyaudio !== 'undefined' && options.onlyaudio) ?
-                        (window.URL || window.webkitURL).createObjectURL(source.audiosrc) :
+                        source.src = (this._onlyAudio && audioSource) ?
+                        (window.URL || window.webkitURL).createObjectURL(audioSource) :
                         (window.URL || window.webkitURL).createObjectURL(source.src);
                     if (typeof Blob !== 'undefined' && source.audiosrc instanceof Blob)
                         source.audiosrc = (window.URL || window.webkitURL).createObjectURL(source.audiosrc);
@@ -9217,41 +9223,41 @@ Scoped.define("module:WebRTC.Support", [
                 case 'TrackStartError':
                     return {
                         key: 'device-already-in-use',
-                        message: 'Web camera or microphone are already in use',
-                        userLevel: true
+                            message: 'Web camera or microphone are already in use',
+                            userLevel: true
                     };
                 case 'NotFoundError':
                 case 'DevicesNotFoundError':
                     return {
                         key: 'missing-track',
-                        message: 'Required audio or video track is missing',
-                        userLevel: true
+                            message: 'Required audio or video track is missing',
+                            userLevel: true
                     };
                 case 'OverconstrainedError':
                 case 'ConstraintNotSatisfiedError':
                     return {
                         key: 'constrains-error',
-                        message: 'Constraints can not be satisfied by available devices',
-                        userLevel: false
+                            message: 'Constraints can not be satisfied by available devices',
+                            userLevel: false
                     };
                 case 'NotAllowedError':
                 case 'PermissionDeniedError':
                     return {
                         key: 'browser-permission-denied',
-                        message: 'Permission denied by browser, please grant access to proceed',
-                        userLevel: true
+                            message: 'Permission denied by browser, please grant access to proceed',
+                            userLevel: true
                     };
                 case 'TypeError':
                     return {
                         key: 'empty-constraints',
-                        message: 'Empty constraints object',
-                        userLevel: false
+                            message: 'Empty constraints object',
+                            userLevel: false
                     };
                 default:
                     return {
                         key: 'unknown-error',
-                        message: 'Unknown Error',
-                        userLevel: false
+                            message: 'Unknown Error',
+                            userLevel: false
                     };
             }
         }
