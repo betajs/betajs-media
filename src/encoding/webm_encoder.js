@@ -50,51 +50,67 @@ Scoped.define("module:Encoding.WebmEncoder.Support", [
             return chunks;
         },
 
+        /**
+         *
+         * @param {HTMLCanvasElement} canvas
+         * @param {object} frame
+         * @param {number} _pixTolerance - 0 - only black pixel color; 1 - all
+         * @param {number} _frameTolerance - 0 - only black frame color; 1 - all
+         * @return {boolean}
+         */
         isBlankFrame: function(canvas, frame, _pixTolerance, _frameTolerance) {
-            var localCanvas = document.createElement('canvas');
-            localCanvas.width = canvas.width;
-            localCanvas.height = canvas.height;
-            var context2d = localCanvas.getContext('2d');
+            if (typeof Array.prototype.some === "function") {
+                return !canvas.getContext('2d')
+                    .getImageData(0, 0, canvas.width, canvas.height).data
+                    .some(function(channel) {
+                        return channel !== 0;
+                    });
+            } else {
+                var localCanvas = document.createElement('canvas');
+                localCanvas.width = canvas.width;
+                localCanvas.height = canvas.height;
+                var context2d = localCanvas.getContext('2d');
 
-            var sampleColor = {
-                r: 0,
-                g: 0,
-                b: 0
-            };
-            var maxColorDifference = Math.sqrt(
-                Math.pow(255, 2) +
-                Math.pow(255, 2) +
-                Math.pow(255, 2)
-            );
-            var pixTolerance = _pixTolerance && _pixTolerance >= 0 && _pixTolerance <= 1 ? _pixTolerance : 0;
-            var frameTolerance = _frameTolerance && _frameTolerance >= 0 && _frameTolerance <= 1 ? _frameTolerance : 0;
-
-            var matchPixCount, endPixCheck, maxPixCount;
-
-            var image = new Image();
-            image.src = frame.image;
-            context2d.drawImage(image, 0, 0, canvas.width, canvas.height);
-            var imageData = context2d.getImageData(0, 0, canvas.width, canvas.height);
-            matchPixCount = 0;
-            endPixCheck = imageData.data.length;
-            maxPixCount = imageData.data.length / 4;
-
-            for (var pix = 0; pix < endPixCheck; pix += 4) {
-                var currentColor = {
-                    r: imageData.data[pix],
-                    g: imageData.data[pix + 1],
-                    b: imageData.data[pix + 2]
+                var sampleColor = {
+                    r: 0,
+                    g: 0,
+                    b: 0
                 };
-                var colorDifference = Math.sqrt(
-                    Math.pow(currentColor.r - sampleColor.r, 2) +
-                    Math.pow(currentColor.g - sampleColor.g, 2) +
-                    Math.pow(currentColor.b - sampleColor.b, 2)
+                var maxColorDifference = Math.sqrt(
+                    Math.pow(255, 2) +
+                    Math.pow(255, 2) +
+                    Math.pow(255, 2)
                 );
-                if (colorDifference <= maxColorDifference * pixTolerance)
-                    matchPixCount++;
-            }
+                var pixTolerance = _pixTolerance && _pixTolerance >= 0 && _pixTolerance <= 1 ? _pixTolerance : 0;
+                var frameTolerance = _frameTolerance && _frameTolerance >= 0 && _frameTolerance <= 1 ? _frameTolerance : 0;
 
-            return maxPixCount - matchPixCount <= maxPixCount * frameTolerance;
+                var matchPixCount, endPixCheck, maxPixCount;
+
+                var image = new Image();
+                image.src = frame.image;
+                context2d.drawImage(image, 0, 0, canvas.width, canvas.height);
+                var imageData = context2d.getImageData(0, 0, canvas.width, canvas.height);
+                matchPixCount = 0;
+                endPixCheck = imageData.data.length;
+                maxPixCount = imageData.data.length / 4;
+
+                for (var pix = 0; pix < endPixCheck; pix += 4) {
+                    var currentColor = {
+                        r: imageData.data[pix],
+                        g: imageData.data[pix + 1],
+                        b: imageData.data[pix + 2]
+                    };
+                    var colorDifference = Math.sqrt(
+                        Math.pow(currentColor.r - sampleColor.r, 2) +
+                        Math.pow(currentColor.g - sampleColor.g, 2) +
+                        Math.pow(currentColor.b - sampleColor.b, 2)
+                    );
+                    if (colorDifference <= maxColorDifference * pixTolerance)
+                        matchPixCount++;
+                }
+
+                return maxPixCount - matchPixCount <= maxPixCount * frameTolerance;
+            }
         },
 
         makeSimpleBlock: function(data) {

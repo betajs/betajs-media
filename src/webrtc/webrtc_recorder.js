@@ -7,8 +7,9 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
     "base:Time",
     "module:WebRTC.Support",
     "module:Recorder.Support",
-    "module:Recorder.PixelSampleMixin"
-], function(ConditionalInstance, EventsMixin, Objs, Async, Promise, Time, Support, RecorderSupport, PixelSampleMixin, scoped) {
+    "module:Recorder.PixelSampleMixin",
+    "browser:Events"
+], function(ConditionalInstance, EventsMixin, Objs, Async, Promise, Time, Support, RecorderSupport, PixelSampleMixin, DomEvents, scoped) {
     return ConditionalInstance.extend({
         scoped: scoped
     }, [EventsMixin, PixelSampleMixin, function(inherited) {
@@ -161,8 +162,16 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                     var capabilities = null;
                     var vTrack = stream.getVideoTracks()[0] || {};
 
-                    if (this._hasVideo && typeof vTrack.getSettings === 'function')
+                    if (this._hasVideo && typeof vTrack.getSettings === 'function') {
                         settings = vTrack.getSettings();
+
+                        if (typeof vTrack.onended !== 'undefined') {
+                            var _onEndedEvent = this.auto_destroy(new DomEvents());
+                            _onEndedEvent.on(vTrack, "ended", function(ev) {
+                                this.trigger("mainvideostreamended");
+                            }, this);
+                        }
+                    }
 
                     // Purpose is fix Overconstrained dimensions to correct one
                     // Firefox still not supports getCapabilities
