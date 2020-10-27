@@ -66,6 +66,7 @@ Scoped.define("module:Player.VideoPlayerWrapper", [
                 this._options = options;
                 this._loop = options.loop || false;
                 this._fullscreenedElement = options.fullscreenedElement;
+                this._preloadMetadata = options.loadmetadata || false;
                 this._loaded = false;
                 this._postererror = false;
                 this._error = 0;
@@ -99,10 +100,32 @@ Scoped.define("module:Player.VideoPlayerWrapper", [
 
             buffered: function() {},
 
-            _eventLoaded: function() {
+            /**
+             * @param {Event} ev
+             * @private
+             */
+            _eventLoaded: function(ev) {
                 this._loaded = true;
                 this.trigger("loaded");
             },
+
+            /**
+             * @param {Event} ev
+             * @private
+             */
+            _eventLoadedMetaData: function(ev) {
+                this._hasMetadata = true;
+                this.trigger("loadedmetadata", ev);
+            },
+
+            /**
+             * @param {HTMLImageElement} image
+             * @private
+             */
+            _eventPosterLoaded: function(image) {
+                this.trigger("posterloaded", image);
+            },
+
 
             _eventPlaying: function() {
                 if (!this._loaded)
@@ -297,7 +320,8 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
                     },
                     delay: 50
                 });
-                this._element.preload = this._preload ? "auto" : "none";
+                var _preloadOption = this._preloadMetadata ? "metadata" : "none";
+                this._element.preload = this._preload ? "auto" : _preloadOption;
                 // Replaced with ended -> play way, to be able get ended listener
                 // Left here to inform don't do on this way in the future
                 // if (this._loop)
@@ -387,6 +411,7 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
             _setup: function() {
                 this._loaded = false;
                 this._domEvents.on(this._element, "canplay", this._eventLoaded, this);
+                this._domEvents.on(this._element, "loadedmetadata", this._eventLoadedMetaData, this);
                 this._domEvents.on(this._element, "playing", this._eventPlaying, this);
                 this._domEvents.on(this._element, "pause", this._eventPaused, this);
                 this._domEvents.on(this._element, "ended", this._eventEnded, this);
@@ -409,6 +434,7 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
                     image.onload = function() {
                         self.__imageWidth = image.width;
                         self.__imageHeight = image.height;
+                        self._eventPosterLoaded(this);
                     };
                 }
                 if (Info.isSafari() && (Info.safariVersion() > 5 || Info.safariVersion() < 9)) {
