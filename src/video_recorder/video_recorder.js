@@ -231,6 +231,9 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
                 this._recorder.on("error", function(errorName, errorData) {
                     this.trigger("error", errorName, errorData);
                 }, this);
+                this._recorder.on("mainvideostreamended", function() {
+                    this.trigger("mainvideostreamended");
+                }, this);
                 this.ready.asyncSuccess(true);
             },
 
