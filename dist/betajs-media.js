@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.161 - 2020-08-24
+betajs-media - v0.0.162 - 2020-10-28
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -1010,7 +1010,7 @@ Public.exports();
 	return Public;
 }).call(this);
 /*!
-betajs-media - v0.0.161 - 2020-08-24
+betajs-media - v0.0.162 - 2020-10-28
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -1024,8 +1024,8 @@ Scoped.binding('flash', 'global:BetaJS.Flash');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.161",
-    "datetime": 1598307869484
+    "version": "0.0.162",
+    "datetime": 1603936619481
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.136');
@@ -2716,51 +2716,67 @@ Scoped.define("module:Encoding.WebmEncoder.Support", [
             return chunks;
         },
 
+        /**
+         *
+         * @param {HTMLCanvasElement} canvas
+         * @param {object} frame
+         * @param {number} _pixTolerance - 0 - only black pixel color; 1 - all
+         * @param {number} _frameTolerance - 0 - only black frame color; 1 - all
+         * @return {boolean}
+         */
         isBlankFrame: function(canvas, frame, _pixTolerance, _frameTolerance) {
-            var localCanvas = document.createElement('canvas');
-            localCanvas.width = canvas.width;
-            localCanvas.height = canvas.height;
-            var context2d = localCanvas.getContext('2d');
+            if (typeof Array.prototype.some === "function") {
+                return !canvas.getContext('2d')
+                    .getImageData(0, 0, canvas.width, canvas.height).data
+                    .some(function(channel) {
+                        return channel !== 0;
+                    });
+            } else {
+                var localCanvas = document.createElement('canvas');
+                localCanvas.width = canvas.width;
+                localCanvas.height = canvas.height;
+                var context2d = localCanvas.getContext('2d');
 
-            var sampleColor = {
-                r: 0,
-                g: 0,
-                b: 0
-            };
-            var maxColorDifference = Math.sqrt(
-                Math.pow(255, 2) +
-                Math.pow(255, 2) +
-                Math.pow(255, 2)
-            );
-            var pixTolerance = _pixTolerance && _pixTolerance >= 0 && _pixTolerance <= 1 ? _pixTolerance : 0;
-            var frameTolerance = _frameTolerance && _frameTolerance >= 0 && _frameTolerance <= 1 ? _frameTolerance : 0;
-
-            var matchPixCount, endPixCheck, maxPixCount;
-
-            var image = new Image();
-            image.src = frame.image;
-            context2d.drawImage(image, 0, 0, canvas.width, canvas.height);
-            var imageData = context2d.getImageData(0, 0, canvas.width, canvas.height);
-            matchPixCount = 0;
-            endPixCheck = imageData.data.length;
-            maxPixCount = imageData.data.length / 4;
-
-            for (var pix = 0; pix < endPixCheck; pix += 4) {
-                var currentColor = {
-                    r: imageData.data[pix],
-                    g: imageData.data[pix + 1],
-                    b: imageData.data[pix + 2]
+                var sampleColor = {
+                    r: 0,
+                    g: 0,
+                    b: 0
                 };
-                var colorDifference = Math.sqrt(
-                    Math.pow(currentColor.r - sampleColor.r, 2) +
-                    Math.pow(currentColor.g - sampleColor.g, 2) +
-                    Math.pow(currentColor.b - sampleColor.b, 2)
+                var maxColorDifference = Math.sqrt(
+                    Math.pow(255, 2) +
+                    Math.pow(255, 2) +
+                    Math.pow(255, 2)
                 );
-                if (colorDifference <= maxColorDifference * pixTolerance)
-                    matchPixCount++;
-            }
+                var pixTolerance = _pixTolerance && _pixTolerance >= 0 && _pixTolerance <= 1 ? _pixTolerance : 0;
+                var frameTolerance = _frameTolerance && _frameTolerance >= 0 && _frameTolerance <= 1 ? _frameTolerance : 0;
 
-            return maxPixCount - matchPixCount <= maxPixCount * frameTolerance;
+                var matchPixCount, endPixCheck, maxPixCount;
+
+                var image = new Image();
+                image.src = frame.image;
+                context2d.drawImage(image, 0, 0, canvas.width, canvas.height);
+                var imageData = context2d.getImageData(0, 0, canvas.width, canvas.height);
+                matchPixCount = 0;
+                endPixCheck = imageData.data.length;
+                maxPixCount = imageData.data.length / 4;
+
+                for (var pix = 0; pix < endPixCheck; pix += 4) {
+                    var currentColor = {
+                        r: imageData.data[pix],
+                        g: imageData.data[pix + 1],
+                        b: imageData.data[pix + 2]
+                    };
+                    var colorDifference = Math.sqrt(
+                        Math.pow(currentColor.r - sampleColor.r, 2) +
+                        Math.pow(currentColor.g - sampleColor.g, 2) +
+                        Math.pow(currentColor.b - sampleColor.b, 2)
+                    );
+                    if (colorDifference <= maxColorDifference * pixTolerance)
+                        matchPixCount++;
+                }
+
+                return maxPixCount - matchPixCount <= maxPixCount * frameTolerance;
+            }
         },
 
         makeSimpleBlock: function(data) {
@@ -4474,6 +4490,7 @@ Scoped.define("module:Player.VideoPlayerWrapper", [
                 this._options = options;
                 this._loop = options.loop || false;
                 this._fullscreenedElement = options.fullscreenedElement;
+                this._preloadMetadata = options.loadmetadata || false;
                 this._loaded = false;
                 this._postererror = false;
                 this._error = 0;
@@ -4507,10 +4524,32 @@ Scoped.define("module:Player.VideoPlayerWrapper", [
 
             buffered: function() {},
 
-            _eventLoaded: function() {
+            /**
+             * @param {Event} ev
+             * @private
+             */
+            _eventLoaded: function(ev) {
                 this._loaded = true;
                 this.trigger("loaded");
             },
+
+            /**
+             * @param {Event} ev
+             * @private
+             */
+            _eventLoadedMetaData: function(ev) {
+                this._hasMetadata = true;
+                this.trigger("loadedmetadata", ev);
+            },
+
+            /**
+             * @param {HTMLImageElement} image
+             * @private
+             */
+            _eventPosterLoaded: function(image) {
+                this.trigger("posterloaded", image);
+            },
+
 
             _eventPlaying: function() {
                 if (!this._loaded)
@@ -4705,7 +4744,8 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
                     },
                     delay: 50
                 });
-                this._element.preload = this._preload ? "auto" : "none";
+                var _preloadOption = this._preloadMetadata ? "metadata" : "none";
+                this._element.preload = this._preload ? "auto" : _preloadOption;
                 // Replaced with ended -> play way, to be able get ended listener
                 // Left here to inform don't do on this way in the future
                 // if (this._loop)
@@ -4795,6 +4835,7 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
             _setup: function() {
                 this._loaded = false;
                 this._domEvents.on(this._element, "canplay", this._eventLoaded, this);
+                this._domEvents.on(this._element, "loadedmetadata", this._eventLoadedMetaData, this);
                 this._domEvents.on(this._element, "playing", this._eventPlaying, this);
                 this._domEvents.on(this._element, "pause", this._eventPaused, this);
                 this._domEvents.on(this._element, "ended", this._eventEnded, this);
@@ -4817,6 +4858,7 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
                     image.onload = function() {
                         self.__imageWidth = image.width;
                         self.__imageHeight = image.height;
+                        self._eventPosterLoaded(this);
                     };
                 }
                 if (Info.isSafari() && (Info.safariVersion() > 5 || Info.safariVersion() < 9)) {
@@ -6249,6 +6291,9 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
                 this._recorder.on("error", function(errorName, errorData) {
                     this.trigger("error", errorName, errorData);
                 }, this);
+                this._recorder.on("mainvideostreamended", function() {
+                    this.trigger("mainvideostreamended");
+                }, this);
                 this.ready.asyncSuccess(true);
             },
 
@@ -6899,7 +6944,7 @@ Scoped.define("module:WebRTC.AudioAnalyser", [
                     mx = Math.max(mx, Math.abs(dataArray[i] / 128.0));
                 // Seems Firefox in Mobile not supports this testing way
                 // getByteFrequencyData && getFloatTimeDomainData also tested with no success
-                return !(Info.isMobile() && Info.isFirefox()) ? mx : mx + 0.1;
+                return !(Info.isMobile() && (Info.isFirefox() || Info.isAndroid())) ? mx : mx + 0.1;
             }
 
         };
@@ -7540,8 +7585,9 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
     "base:Time",
     "module:WebRTC.Support",
     "module:Recorder.Support",
-    "module:Recorder.PixelSampleMixin"
-], function(ConditionalInstance, EventsMixin, Objs, Async, Promise, Time, Support, RecorderSupport, PixelSampleMixin, scoped) {
+    "module:Recorder.PixelSampleMixin",
+    "browser:Events"
+], function(ConditionalInstance, EventsMixin, Objs, Async, Promise, Time, Support, RecorderSupport, PixelSampleMixin, DomEvents, scoped) {
     return ConditionalInstance.extend({
         scoped: scoped
     }, [EventsMixin, PixelSampleMixin, function(inherited) {
@@ -7694,8 +7740,16 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                     var capabilities = null;
                     var vTrack = stream.getVideoTracks()[0] || {};
 
-                    if (this._hasVideo && typeof vTrack.getSettings === 'function')
+                    if (this._hasVideo && typeof vTrack.getSettings === 'function') {
                         settings = vTrack.getSettings();
+
+                        if (typeof vTrack.onended !== 'undefined') {
+                            var _onEndedEvent = this.auto_destroy(new DomEvents());
+                            _onEndedEvent.on(vTrack, "ended", function(ev) {
+                                this.trigger("mainvideostreamended");
+                            }, this);
+                        }
+                    }
 
                     // Purpose is fix Overconstrained dimensions to correct one
                     // Firefox still not supports getCapabilities
