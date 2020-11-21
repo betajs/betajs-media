@@ -305,37 +305,73 @@ Scoped.define("module:WebRTC.Support", [
                 } else
                     return Promise.error("This browser does not support screen recording.");
             } else {
-                opts.video = {
-                    mandatory: {}
-                };
-                if (options.video.width) {
-                    opts.video.mandatory.minWidth = options.video.width;
-                    opts.video.mandatory.maxWidth = options.video.width;
-                }
-                if (!options.video.width && options.video.height) {
-                    opts.video.mandatory.minHeight = options.video.height;
-                    opts.video.mandatory.maxHeight = options.video.height;
+                if (Info.isAndroid()) {
+                    opts.video = {};
+                } else {
+                    opts.video = {
+                        mandatory: {}
+                    };
                 }
                 var as = options.video.aspectRatio ? options.video.aspectRatio : (options.video.width && options.video.height ? options.video.width / options.video.height : null);
-                if (as) {
-                    opts.video.mandatory.minAspectRatio = as;
-                    opts.video.mandatory.maxAspectRatio = as;
+                if (typeof opts.video.mandatory !== 'undefined') {
+                    if (options.video.width) {
+                        opts.video.mandatory.minWidth = options.video.width;
+                        opts.video.mandatory.maxWidth = options.video.width;
+                    }
+
+                    if (!options.video.width && options.video.height) {
+                        opts.video.mandatory.minHeight = options.video.height;
+                        opts.video.mandatory.maxHeight = options.video.height;
+                    }
+
+                    if (options.video.frameRate) {
+                        opts.video.mandatory.minFrameRate = options.video.frameRate;
+                        opts.video.mandatory.maxFrameRate = options.video.frameRate;
+                    }
+
+                    if (options.video.sourceId)
+                        opts.video.mandatory.sourceId = options.video.sourceId;
+                } else {
+                    // We cannot use Mandatory and normal constraints like facingMode together for Chrome
+                    // but Safari also supports it
+                    if (options.video.cameraFaceFront !== undefined && Info.isMobile()) {
+                        // The { exact: } syntax means the constraint is required, and things fail if the user doesn't have the right camera.
+                        // If you leave it out then the constraint is optional, which in Firefox for Android means it only changes the default
+                        // in the camera chooser in the permission prompt.
+                        opts.video.facingMode = {
+                            exact: options.video.cameraFaceFront ? "user" : "environment"
+                        };
+                    }
+
+                    // dictionary MediaTrackConstraintSet
+                    // https://w3c.github.io/mediacapture-main/getusermedia.html#media-track-constraints
+                    if (options.video.width) {
+                        opts.video.width = options.video.width;
+                    }
+
+                    if (!options.video.width && options.video.height) {
+                        opts.video.height = options.video.height;
+                    }
+
+                    if (options.video.frameRate) {
+                        opts.video.frameRate = options.video.frameRate;
+                    }
+
+                    if (options.video.sourceId)
+                        // TODO: test it just in case
+                        opts.video.deviceId = options.video.sourceId;
                 }
-                if (options.video.sourceId)
-                    opts.video.mandatory.sourceId = options.video.sourceId;
-                if (options.video.cameraFaceFront !== undefined && Info.isMobile())
-                    // The { exact: } syntax means the constraint is required, and things fail if the user doesn't have the right camera.
-                    // If you leave it out then the constraint is optional, which in Firefox for Android means it only changes the default
-                    // in the camera chooser in the permission prompt.
-                    opts.video.mandatory.facingMode = {
-                        exact: options.video.cameraFaceFront ? "user" : "environment"
-                    };
-                if (options.video.frameRate) {
-                    opts.video.mandatory.minFrameRate = options.video.frameRate;
-                    opts.video.mandatory.maxFrameRate = options.video.frameRate;
+                if (as) {
+                    if (typeof opts.video.mandatory !== 'undefined') {
+                        opts.video.mandatory.minAspectRatio = as;
+                        opts.video.mandatory.maxAspectRatio = as;
+                    } else {
+                        if (!options.video.aspectRatio)
+                            opts.video.aspectRatio = as;
+                    }
                 }
                 var probe = function(count) {
-                    var mandatory = opts.video.mandatory;
+                    var mandatory = typeof opts.video.mandatory !== 'undefined' ? opts.video.mandatory : opts.video;
                     return this.userMedia(opts).mapError(function(e) {
                         count--;
                         if (e.name !== "ConstraintNotSatisfiedError" && e.name !== "OverconstrainedError")
