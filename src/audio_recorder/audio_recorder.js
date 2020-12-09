@@ -50,10 +50,6 @@ Scoped.define("module:AudioRecorder.AudioRecorderWrapper", [
             startRecord: function(options) {},
             stopRecord: function(options) {},
 
-            isFlash: function() {
-                return false;
-            },
-
             isWebrtcStreaming: function() {
                 return false;
             },
@@ -75,8 +71,6 @@ Scoped.define("module:AudioRecorder.AudioRecorderWrapper", [
 
         _initializeOptions: function(options) {
             return Objs.extend({
-                forceflash: false,
-                noflash: false,
                 recordVideo: false,
                 recordAudio: true
             }, options);
@@ -232,8 +226,6 @@ Scoped.define("module:AudioRecorder.WebRTCAudioRecorderWrapper", [
     }, {
 
         supported: function(options) {
-            if (options.forceflash)
-                return false;
             if (!RecorderWrapper.anySupport(options))
                 return false;
             return true;
@@ -244,179 +236,10 @@ Scoped.define("module:AudioRecorder.WebRTCAudioRecorderWrapper", [
 
 
 
-Scoped.define("module:AudioRecorder.FlashAudioRecorderWrapper", [
-    "module:AudioRecorder.AudioRecorderWrapper",
-    "module:Flash.FlashAudioRecorder",
-    "browser:Dom",
-    "browser:Info",
-    "base:Promise",
-    "base:Objs",
-    "base:Timers.Timer",
-    "browser:Upload.CustomUploader",
-    "browser:Upload.MultiUploader"
-], function(AudioRecorderWrapper, FlashAudioRecorder, Dom, Info, Promise, Objs, Timer, CustomUploader, MultiUploader, scoped) {
-    return AudioRecorderWrapper.extend({
-        scoped: scoped
-    }, function(inherited) {
-        return {
-
-            constructor: function(options) {
-                inherited.constructor.call(this, options);
-                if (this._element.tagName.toLowerCase() !== "div")
-                    this._element = Dom.changeTag(this._element, "div");
-                this._recorder = new FlashAudioRecorder(this._element, {
-                    microphonecodec: this._options.rtmpMicrophoneCodec,
-                    audioRate: this._options.audioBitrate ? Math.floor(this._options.audioBitrate / 1000) : undefined
-                });
-                this._recorder.ready.forwardCallback(this.ready);
-                this._recorder.on("require_display", function() {
-                    this.trigger("require_display");
-                }, this);
-                this._recorder.on("endpoint_connectivity", function(endpoint, connectivity) {
-                    this.trigger("endpoint_connectivity", endpoint, connectivity);
-                }, this);
-            },
-
-            destroy: function() {
-                this._recorder.destroy();
-                inherited.destroy.call(this);
-            },
-
-            _bindMedia: function() {
-                return this._recorder.bindMedia(this._options.flashFullSecurityDialog);
-            },
-
-            _unbindMedia: function() {
-                return this._recorder.unbindMedia();
-            },
-
-            soundLevel: function() {
-                var sl = this._recorder.soundLevel();
-                return sl <= 1 ? 1.0 : (1.0 + (sl - 1) / 100);
-            },
-
-            getVolumeGain: function() {
-                return this._recorder.getVolumeGain();
-            },
-
-            setVolumeGain: function(volumeGain) {
-                this._recorder.setVolumeGain(volumeGain);
-            },
-
-            testSoundLevel: function(activate) {
-                this._recorder.testSoundLevel(activate);
-            },
-
-            enumerateDevices: function() {
-                var result = this._recorder.enumerateDevices();
-                return Promise.value({
-                    audioCount: Objs.count(result.audios),
-                    audio: Objs.map(result.audios, function(value, key) {
-                        return {
-                            id: key,
-                            label: value
-                        };
-                    })
-                });
-            },
-
-            currentDevices: function() {
-                return {
-                    audio: this._recorder.currentMicrophone()
-                };
-            },
-
-            setCurrentDevices: function(devices) {
-                if (devices && devices.audio)
-                    this._recorder.selectMicrophone(devices.audio);
-            },
-
-            startRecord: function(options) {
-                if (this._options.simulate)
-                    return Promise.value(true);
-                var self = this;
-                var ctx = {};
-                var promise = Promise.create();
-                this._recorder.on("recording", function() {
-                    promise.asyncSuccess();
-                    self._recorder.off(null, null, ctx);
-                }, ctx).on("error", function(s) {
-                    promise.asyncError(s);
-                    self._recorder.off(null, null, ctx);
-                }, ctx);
-                this._recorder.startRecord(options.rtmp);
-                return promise;
-            },
-
-            stopRecord: function(options) {
-                if (this._options.simulate)
-                    return Promise.value(new MultiUploader());
-                var self = this;
-                var ctx = {};
-                var uploader = new CustomUploader();
-                var timer = null;
-                timer = new Timer({
-                    delay: 100,
-                    context: this,
-                    fire: function() {
-                        if (!this._recorder || this._recorder.destroyed()) {
-                            timer.destroy();
-                            return;
-                        }
-                        var status = this._recorder.uploadStatus();
-                        uploader.progressCallback(status.total - status.remaining, status.total);
-                    }
-                });
-                this._recorder.on("finished", function() {
-                    uploader.successCallback(true);
-                    self._recorder.off(null, null, ctx);
-                    timer.weakDestroy();
-                }, ctx).on("error", function(s) {
-                    uploader.errorCallback(s);
-                    self._recorder.off(null, null, ctx);
-                    timer.weakDestroy();
-                }, ctx);
-                this._recorder.stopRecord();
-                return Promise.create(uploader);
-            },
-
-            isFlash: function() {
-                return true;
-            },
-
-            _softwareDependencies: function() {
-                return Info.flash().installed() ? Promise.value(true) : Promise.error([{
-                    "title": "Adobe Flash",
-                    "execute": function() {
-                        window.open("https://get.adobe.com/flashplayer");
-                    }
-                }]);
-            }
-
-        };
-    }, {
-
-        supported: function(options) {
-            return !Info.isMobile() && !options.noflash && Info.flash().supported() && !options.screen;
-        }
-
-    });
-});
-
-
 Scoped.extend("module:AudioRecorder.AudioRecorderWrapper", [
     "module:AudioRecorder.AudioRecorderWrapper",
     "module:AudioRecorder.WebRTCAudioRecorderWrapper"
 ], function(AudioRecorderWrapper, WebRTCAudioRecorderWrapper) {
     AudioRecorderWrapper.register(WebRTCAudioRecorderWrapper, 2);
-    return {};
-});
-
-
-Scoped.extend("module:AudioRecorder.AudioRecorderWrapper", [
-    "module:AudioRecorder.AudioRecorderWrapper",
-    "module:AudioRecorder.FlashAudioRecorderWrapper"
-], function(AudioRecorderWrapper, FlashAudioRecorderWrapper) {
-    AudioRecorderWrapper.register(FlashAudioRecorderWrapper, 1);
     return {};
 });

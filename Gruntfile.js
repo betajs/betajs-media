@@ -4,18 +4,17 @@ module.exports = function(grunt) {
 	var gruntHelper = require('betajs-compile');
 	var dist = 'betajs-media';
 
+
 	gruntHelper.init(pkg, grunt)
 	
     /* Compilation */    
 	.scopedclosurerevisionTask(null, "src/**/*.js", "dist/" + dist + "-noscoped.js", {
 		"module": "global:BetaJS.Media",
 		"base": "global:BetaJS",
-		"browser": "global:BetaJS.Browser",
-		"flash": "global:BetaJS.Flash"
+		"browser": "global:BetaJS.Browser"
     }, {
     	"base:version": pkg.devDependencies.betajs,
-    	"browser:version": pkg.devDependencies["betajs-browser"],
-    	"flash:version": pkg.devDependencies["betajs-flash"]
+    	"browser:version": pkg.devDependencies["betajs-browser"]
     })	
     .concatTask('concat-scoped', [require.resolve("betajs-scoped"), 'dist/' + dist + '-noscoped.js'], 'dist/' + dist + '.js')
     .uglifyTask('uglify-noscoped', 'dist/' + dist + '-noscoped.js', 'dist/' + dist + '-noscoped.min.js')
@@ -26,7 +25,7 @@ module.exports = function(grunt) {
 
     /* Testing */
     .browserqunitTask(null, "tests/tests.html", true)
-    .closureTask(null, [require.resolve("betajs-scoped"), require.resolve("betajs"), require.resolve("betajs-browser"), require.resolve("betajs-flash"), "./dist/betajs-media-noscoped.js"], null, { })
+    .closureTask(null, [require.resolve("betajs-scoped"), require.resolve("betajs"), require.resolve("betajs-browser"), "./dist/betajs-media-noscoped.js"], null, { })
     .browserstackTask(null, 'tests/browserstack.html', {desktop: true, mobile: true})
     .lintTask(null, ['./src/**/*.js', './dist/' + dist + '-noscoped.js', './dist/' + dist + '.js', './Gruntfile.js', './tests/**/*.js'])
     

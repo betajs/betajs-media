@@ -231,8 +231,7 @@ Scoped.define("module:Player.VideoPlayerWrapper", [
         };
     }], {
 
-        ERROR_NO_PLAYABLE_SOURCE: 1,
-        ERROR_FLASH_NOT_INSTALLED: 2
+        ERROR_NO_PLAYABLE_SOURCE: 1
 
     });
 });
@@ -261,9 +260,6 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
                     return Promise.error(true);
                 if (Info.isInternetExplorer() && Info.internetExplorerVersion() < 9)
                     return Promise.error(true);
-                if (this._options.forceflash)
-                    return Promise.error(true);
-                var self = this;
                 var promise = Promise.create();
                 this._element.innerHTML = "";
                 var sources = this.sources();
@@ -574,111 +570,10 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
 });
 
 
-Scoped.define("module:Player.FlashPlayerWrapper", [
-    "module:Player.VideoPlayerWrapper",
-    "module:Player.FlashPlayer",
-    "browser:Info",
-    "base:Promise",
-    "browser:Dom"
-], function(VideoPlayerWrapper, FlashPlayer, Info, Promise, Dom, scoped) {
-    return VideoPlayerWrapper.extend({
-        scoped: scoped
-    }, function(inherited) {
-        return {
-
-            _initialize: function() {
-                if (this._options.noflash)
-                    return Promise.error(true);
-                if (this._sources.length < 1)
-                    return Promise.error(true);
-                if (Info.isMobile() || !Info.flash().supported())
-                    return Promise.error(true);
-                if (!Info.flash().installed() && this._options.flashinstallrequired)
-                    return Promise.error(true);
-                if (!Info.flash().installed()) {
-                    this._eventError(this.cls.ERROR_NO_FLASH_INSTALLED);
-                    return Promise.value(true);
-                }
-                var self = this;
-                var promise = Promise.create();
-                if (this._element.tagName.toLowerCase() !== "div") {
-                    this._element = Dom.changeTag(this._element, "div");
-                    this._transitionals.element = this._element;
-                }
-                var opts = {
-                    poster: this.poster(),
-                    sources: this.sources()
-                };
-                if (this._loop)
-                    opts.loop = true;
-                this._flashPlayer = new FlashPlayer(this._element, opts);
-                return this._flashPlayer.ready.success(function() {
-                    this._setup();
-                }, this);
-            },
-
-            destroy: function() {
-                if (this._flashPlayer)
-                    this._flashPlayer.weakDestroy();
-                this._element.innerHTML = "";
-                inherited.destroy.call(this);
-            },
-
-            _setup: function() {
-                this._loaded = true;
-                this._eventLoaded();
-                this._domEvents.on(this._element, "playing", this._eventPlaying, this);
-                this._domEvents.on(this._element, "pause", this._eventPaused, this);
-                this._domEvents.on(this._element, "ended", this._eventEnded, this);
-                this._domEvents.on(this._element, "videoerror", function() {
-                    this._eventError(this.cls.ERROR_NO_PLAYABLE_SOURCE);
-                }, this);
-                this._domEvents.on(this._element, "postererror", this._eventPosterError, this);
-            },
-
-            position: function() {
-                return this._element.get("currentTime");
-            },
-
-            buffered: function() {
-                return this.position();
-            },
-
-            setPosition: function(position) {
-                this._element.set("currentTime", position);
-            },
-
-            setVolume: function(volume) {
-                this._element.set("volume", volume);
-            },
-
-            videoWidth: function() {
-                return this._flashPlayer ? this._flashPlayer.videoWidth() : null;
-            },
-
-            videoHeight: function() {
-                return this._flashPlayer ? this._flashPlayer.videoHeight() : null;
-            }
-
-        };
-    });
-});
-
-
-
 Scoped.extend("module:Player.VideoPlayerWrapper", [
     "module:Player.VideoPlayerWrapper",
     "module:Player.Html5VideoPlayerWrapper"
 ], function(VideoPlayerWrapper, Html5VideoPlayerWrapper) {
     VideoPlayerWrapper.register(Html5VideoPlayerWrapper, 2);
-    return {};
-});
-
-
-Scoped.extend("module:Player.VideoPlayerWrapper", [
-    "module:Player.VideoPlayerWrapper",
-    "module:Player.FlashPlayerWrapper"
-], function(VideoPlayerWrapper, FlashPlayerWrapper) {
-    VideoPlayerWrapper.register(FlashPlayerWrapper, 1);
     return {};
 });

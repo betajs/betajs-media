@@ -2,9 +2,6 @@
 	"media-playback": {
 		"title": "Video Playback",
 		"children": {
-			"media-flash-player": {
-				"title": "Flash Player"
-			},
 			"media-video-player": {
 				"title": "Video Player"
 			}

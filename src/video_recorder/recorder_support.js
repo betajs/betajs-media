@@ -219,34 +219,15 @@ Scoped.define("module:Recorder.Support", [
         },
 
         /**
-         * @param {Boolean} isFlash
          * @param {URI} snapshot
          * @param {string} type
          * @param {Object} uploaderOptions
          * @return {*}
          */
-        createSnapshotUploader: function(isFlash, snapshot, type, uploaderOptions) {
-            if (isFlash) {
-                var uploader = new CustomUploader(Objs.extend({
-                    source: snapshot,
-                    type: type,
-                    recorder: this._recorder
-                }, uploaderOptions));
-                uploader.on("upload", function(options) {
-                    options.recorder.postSnapshot(
-                            options.source,
-                            options.url,
-                            options.type
-                        )
-                        .success(uploader.successCallback, uploader)
-                        .error(uploader.errorCallback, uploader);
-                });
-                return uploader;
-            } else {
-                return FileUploader.create(Objs.extend({
-                    source: snapshot
-                }, uploaderOptions));
-            }
+        createSnapshotUploader: function(snapshot, type, uploaderOptions) {
+            return FileUploader.create(Objs.extend({
+                source: snapshot
+            }, uploaderOptions));
         }
     };
 });

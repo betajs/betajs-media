@@ -10,7 +10,6 @@
 		<script src="../node_modules/betajs-scoped/dist/scoped.js"></script>
         <script src="../node_modules/betajs/dist/beta-noscoped.js"></script>
         <script src="../node_modules/betajs-browser/dist/betajs-browser-noscoped.js"></script>
-        <script src="../node_modules/betajs-flash/dist/betajs-flash-noscoped.js"></script>
         <script src="../dist/betajs-media-noscoped.js"></script>
 	</head>
 	<body>
@@ -36,22 +35,12 @@
 					_method.apply(_ctx);
 				};
 			}
-    	    BetaJS.Flash.options = {
-	            flashFile: window.BrowserStack ? "http://betajs.com/betajs-flash.swf" : "../node_modules/betajs-flash/dist/betajs-flash.swf",
-	            forceReload: true
-	        };
     	    var testasset = function (s) {
     	    	return (window.BrowserStack ? "http://betajs.com/" : (BetaJS.Strings.splitLast(document.location.href, "/").head + "/tests/")) + s;
     	    };
     	    var haveSelenium = !window.BrowserStack;
     	    function mytest(name, callback, opts) {
     	    	opts = opts || {};
-    	    	if (opts.flash) {
-    	    		if (!BetaJS.Browser.Info.flash().installed() || BetaJS.Browser.Info.isMobile())
-    	    			return;
-    	    		if (BetaJS.Browser.Info.isSafari() && BetaJS.Browser.Info.safariVersion() >= 10)
-    	    			return;
-    	    	}
     	    	if (opts.native_video) {
     	    		if (BetaJS.Browser.Info.isInternetExplorer() && BetaJS.Browser.Info.internetExplorerVersion() <= 8)
     	    			return;

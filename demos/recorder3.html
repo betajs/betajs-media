@@ -5,23 +5,17 @@
         <script src="../node_modules/betajs-scoped/dist/scoped.js"></script>
         <script src="../node_modules/betajs/dist/beta-noscoped.js"></script>
         <script src="../node_modules/betajs-browser/dist/betajs-browser-noscoped.js"></script>
-        <script src="../node_modules/betajs-flash/dist/betajs-flash-noscoped.js"></script>
         <script src="../dist/betajs-media-noscoped.js"></script>
 	</head>
 	<body>
 		<video style="width:50%; background-color: #FFF" id="video" playsinline>
 		</video>
 		<script>
-	        BetaJS.Flash.options = {
-                flashFile : "../node_modules/betajs-flash/dist/betajs-flash.swf",
-                forceReload : true
-            };
 		    var instance = BetaJS.Media.Recorder.VideoRecorderWrapper.create({
 				element: document.getElementById("video"),
 				flip: false,
 				webrtcStreaming: true,
 				webrtcStreamingIfNecessary: true
-		    	//forceflash: true
 		    });
 		    
 		    console.log(instance);

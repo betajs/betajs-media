@@ -1,6 +1,6 @@
 {
     "name": "betajs-media",
-    "version": "0.0.163",
+    "version": "0.0.164",
     "description": "BetaJS-Media is a JavaScript media framework",
     "contributors": [
         "Ziggeo",
@@ -29,12 +29,11 @@
         "betajs-shims": "~0.0.12",
         "betajs": "~1.0.136",
         "betajs-browser": "~1.0.61",
-        "betajs-flash": "~0.0.18",
         "js-beautify": ""
     },
     "main": "dist/betajs-media.js",
     "scripts": {
-        "relink": "npm link betajs && npm link betajs-compile && npm link betajs-scoped && npm link betajs-shims && npm link betajs-browser && npm link betajs-flash",
+        "relink": "npm link betajs && npm link betajs-compile && npm link betajs-scoped && npm link betajs-shims && npm link betajs-browser",
         "reinstall": "rm -f package-lock.json && rm -rf node_modules && npm i && npm run relink"
     },
     "repository": {
@@ -66,8 +65,7 @@
         },
         "dependencies": {
             "betajs": "https://github.com/betajs/betajs",
-            "betajs-browser": "https://github.com/betajs/betajs-browser",
-            "betajs-flash": "https://github.com/betajs/betajs-flash"
+            "betajs-browser": "https://github.com/betajs/betajs-browser"
         },
         "compatability": {
             "Firefox": "32 - Latest",

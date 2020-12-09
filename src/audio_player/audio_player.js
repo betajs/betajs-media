@@ -91,7 +91,7 @@ Scoped.define("module:AudioPlayer.AudioPlayerWrapper", [
 
             _eventEnded: function() {
                 // As during loop we will play player after ended event fire, need initial cover will be hidden
-                if (this._loop && !this._options.forceflash)
+                if (this._loop)
                     this.play();
                 this.trigger("ended");
             },
@@ -147,8 +147,7 @@ Scoped.define("module:AudioPlayer.AudioPlayerWrapper", [
         };
     }], {
 
-        ERROR_NO_PLAYABLE_SOURCE: 1,
-        ERROR_FLASH_NOT_INSTALLED: 2
+        ERROR_NO_PLAYABLE_SOURCE: 1
 
     });
 });
@@ -177,9 +176,6 @@ Scoped.define("module:AudioPlayer.Html5AudioPlayerWrapper", [
                     return Promise.error(true);
                 if (Info.isInternetExplorer() && Info.internetExplorerVersion() < 9)
                     return Promise.error(true);
-                if (this._options.forceflash)
-                    return Promise.error(true);
-                var self = this;
                 var promise = Promise.create();
                 this._element.innerHTML = "";
                 var sources = this.sources();
@@ -292,7 +288,6 @@ Scoped.define("module:AudioPlayer.Html5AudioPlayerWrapper", [
                 this._domEvents.on(this._element, "playing", this._eventPlaying, this);
                 this._domEvents.on(this._element, "pause", this._eventPaused, this);
                 this._domEvents.on(this._element, "ended", this._eventEnded, this);
-                var self = this;
                 var sourceEls = this._element.getElementsByTagName("SOURCE");
                 var cb = function() {
                     this._eventError(this.cls.ERROR_NO_PLAYABLE_SOURCE);
@@ -347,86 +342,6 @@ Scoped.define("module:AudioPlayer.Html5AudioPlayerWrapper", [
 });
 
 
-Scoped.define("module:AudioPlayer.FlashPlayerWrapper", [
-    "module:AudioPlayer.AudioPlayerWrapper",
-    "module:AudioPlayer.FlashPlayer",
-    "browser:Info",
-    "base:Promise",
-    "browser:Dom"
-], function(AudioPlayerWrapper, FlashPlayer, Info, Promise, Dom, scoped) {
-    return AudioPlayerWrapper.extend({
-        scoped: scoped
-    }, function(inherited) {
-        return {
-
-            _initialize: function() {
-                if (this._options.noflash)
-                    return Promise.error(true);
-                if (this._sources.length < 1)
-                    return Promise.error(true);
-                if (Info.isMobile() || !Info.flash().supported())
-                    return Promise.error(true);
-                if (!Info.flash().installed() && this._options.flashinstallrequired)
-                    return Promise.error(true);
-                if (!Info.flash().installed()) {
-                    this._eventError(this.cls.ERROR_NO_FLASH_INSTALLED);
-                    return Promise.value(true);
-                }
-                var self = this;
-                var promise = Promise.create();
-                if (this._element.tagName.toLowerCase() !== "div") {
-                    this._element = Dom.changeTag(this._element, "div");
-                    this._transitionals.element = this._element;
-                }
-                var opts = {
-                    sources: this.sources()
-                };
-                if (this._loop)
-                    opts.loop = true;
-                this._flashPlayer = new FlashPlayer(this._element, opts);
-                return this._flashPlayer.ready.success(function() {
-                    this._setup();
-                }, this);
-            },
-
-            destroy: function() {
-                if (this._flashPlayer)
-                    this._flashPlayer.weakDestroy();
-                this._element.innerHTML = "";
-                inherited.destroy.call(this);
-            },
-
-            _setup: function() {
-                this._loaded = true;
-                this._eventLoaded();
-                this._domEvents.on(this._element, "playing", this._eventPlaying, this);
-                this._domEvents.on(this._element, "pause", this._eventPaused, this);
-                this._domEvents.on(this._element, "ended", this._eventEnded, this);
-                this._domEvents.on(this._element, "audioerror", function() {
-                    this._eventError(this.cls.ERROR_NO_PLAYABLE_SOURCE);
-                }, this);
-            },
-
-            position: function() {
-                return this._element.get("currentTime");
-            },
-
-            buffered: function() {
-                return this.position();
-            },
-
-            setPosition: function(position) {
-                this._element.set("currentTime", position);
-            },
-
-            setVolume: function(volume) {
-                this._element.set("volume", volume);
-            }
-
-        };
-    });
-});
-
 
 
 Scoped.extend("module:AudioPlayer.AudioPlayerWrapper", [
@@ -434,14 +349,5 @@ Scoped.extend("module:AudioPlayer.AudioPlayerWrapper", [
     "module:AudioPlayer.Html5AudioPlayerWrapper"
 ], function(AudioPlayerWrapper, Html5AudioPlayerWrapper) {
     AudioPlayerWrapper.register(Html5AudioPlayerWrapper, 2);
-    return {};
-});
-
-
-Scoped.extend("module:AudioPlayer.AudioPlayerWrapper", [
-    "module:AudioPlayer.AudioPlayerWrapper",
-    "module:AudioPlayer.FlashPlayerWrapper"
-], function(AudioPlayerWrapper, FlashPlayerWrapper) {
-    AudioPlayerWrapper.register(FlashPlayerWrapper, 1);
     return {};
 });

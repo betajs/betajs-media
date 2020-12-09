@@ -124,10 +124,6 @@ Scoped.define("module:Recorder.VideoRecorderWrapper", [
 
             errorHandler: function(error) {},
 
-            isFlash: function() {
-                return false;
-            },
-
             isWebrtcStreaming: function() {
                 return false;
             },
@@ -165,8 +161,6 @@ Scoped.define("module:Recorder.VideoRecorderWrapper", [
 
         _initializeOptions: function(options) {
             return Objs.extend({
-                forceflash: false,
-                noflash: false,
                 recordingWidth: 640,
                 recordingHeight: 480,
                 recordVideo: true,
@@ -573,8 +567,6 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
     }, {
 
         supported: function(options) {
-            if (options.forceflash)
-                return false;
             if (!RecorderWrapper.anySupport(options))
                 return false;
             if (options.screen) {
@@ -596,247 +588,11 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
 
 
 
-Scoped.define("module:Recorder.FlashVideoRecorderWrapper", [
-    "module:Recorder.VideoRecorderWrapper",
-    "module:Flash.FlashRecorder",
-    "browser:Dom",
-    "browser:Info",
-    "base:Promise",
-    "base:Objs",
-    "base:Timers.Timer",
-    "browser:Upload.CustomUploader",
-    "browser:Upload.MultiUploader"
-], function(VideoRecorderWrapper, FlashRecorder, Dom, Info, Promise, Objs, Timer, CustomUploader, MultiUploader, scoped) {
-    return VideoRecorderWrapper.extend({
-        scoped: scoped
-    }, function(inherited) {
-        return {
-
-            constructor: function(options) {
-                inherited.constructor.call(this, options);
-                if (this._element.tagName.toLowerCase() !== "div")
-                    this._element = Dom.changeTag(this._element, "div");
-                this._recorder = new FlashRecorder(this._element, {
-                    flip: !!this._options.flip,
-                    disableaudio: !this._options.recordAudio,
-                    disablevideo: !this._options.recordVideo,
-                    streamtype: this._options.rtmpStreamType,
-                    camerawidth: this._options.recordingWidth,
-                    cameraheight: this._options.recordingHeight,
-                    microphonecodec: this._options.rtmpMicrophoneCodec,
-                    fps: this._options.framerate,
-                    audioRate: this._options.audioBitrate ? Math.floor(this._options.audioBitrate / 1000) : undefined,
-                    videoRate: this._options.videoBitrate ? this._options.videoBitrate * 1000 : undefined
-                });
-                this._recorder.ready.forwardCallback(this.ready);
-                this._recorder.on("require_display", function() {
-                    this.trigger("require_display");
-                }, this);
-                this._recorder.on("endpoint_connectivity", function(endpoint, connectivity) {
-                    this.trigger("endpoint_connectivity", endpoint, connectivity);
-                }, this);
-            },
-
-            destroy: function() {
-                this._recorder.destroy();
-                inherited.destroy.call(this);
-            },
-
-            _bindMedia: function() {
-                return this._recorder.bindMedia(this._options.flashFullSecurityDialog);
-            },
-
-            _unbindMedia: function() {
-                return this._recorder.unbindMedia();
-            },
-
-            blankLevel: function() {
-                return this._recorder.blankLevel();
-            },
-
-            deltaCoefficient: function() {
-                return this._recorder.deltaCoefficient();
-            },
-
-            lightLevel: function() {
-                return this._recorder.lightLevel();
-            },
-
-            soundLevel: function() {
-                var sl = this._recorder.soundLevel();
-                return sl <= 1 ? 1.0 : (1.0 + (sl - 1) / 100);
-            },
-
-            getVolumeGain: function() {
-                return this._recorder.getVolumeGain();
-            },
-
-            setVolumeGain: function(volumeGain) {
-                this._recorder.setVolumeGain(volumeGain);
-            },
-
-            testSoundLevel: function(activate) {
-                this._recorder.testSoundLevel(activate);
-            },
-
-            enumerateDevices: function() {
-                var result = this._recorder.enumerateDevices();
-                return Promise.value({
-                    videoCount: Objs.count(result.videos),
-                    audioCount: Objs.count(result.audios),
-                    video: Objs.map(result.videos, function(value, key) {
-                        return {
-                            id: key,
-                            label: value
-                        };
-                    }),
-                    audio: Objs.map(result.audios, function(value, key) {
-                        return {
-                            id: key,
-                            label: value
-                        };
-                    })
-                });
-            },
-
-            currentDevices: function() {
-                return {
-                    video: this._recorder.currentCamera(),
-                    audio: this._recorder.currentMicrophone()
-                };
-            },
-
-            setCurrentDevices: function(devices) {
-                if (devices && devices.video)
-                    this._recorder.selectCamera(devices.video);
-                if (devices && devices.audio)
-                    this._recorder.selectMicrophone(devices.audio);
-            },
-
-            createSnapshot: function(type) {
-                return this._recorder.createSnapshot();
-            },
-
-            createSnapshotDisplay: function(parent, snapshot, x, y, w, h) {
-                return this._recorder.createSnapshotDisplay(snapshot, x, y, w, h);
-            },
-
-            updateSnapshotDisplay: function(snapshot, display, x, y, w, h) {
-                return this._recorder.updateSnapshotDisplay(snapshot, display, x, y, w, h);
-            },
-
-            removeSnapshotDisplay: function(display) {
-                this._recorder.removeSnapshotDisplay(display);
-            },
-
-            createSnapshotUploader: function(snapshot, type, uploaderOptions) {
-                var uploader = new CustomUploader(Objs.extend({
-                    source: snapshot,
-                    type: type,
-                    recorder: this._recorder
-                }, uploaderOptions));
-                uploader.on("upload", function(options) {
-                    options.recorder.postSnapshot(
-                            options.source,
-                            options.url,
-                            options.type
-                        )
-                        .success(uploader.successCallback, uploader)
-                        .error(uploader.errorCallback, uploader);
-                });
-                return uploader;
-            },
-
-            startRecord: function(options) {
-                if (this._options.simulate)
-                    return Promise.value(true);
-                var self = this;
-                var ctx = {};
-                var promise = Promise.create();
-                this._recorder.on("recording", function() {
-                    promise.asyncSuccess();
-                    self._recorder.off(null, null, ctx);
-                }, ctx).on("error", function(s) {
-                    promise.asyncError(s);
-                    self._recorder.off(null, null, ctx);
-                }, ctx);
-                this._recorder.startRecord(options.rtmp);
-                return promise;
-            },
-
-            stopRecord: function(options) {
-                if (this._options.simulate)
-                    return Promise.value(new MultiUploader());
-                var self = this;
-                var ctx = {};
-                var uploader = new CustomUploader();
-                var timer = null;
-                timer = new Timer({
-                    delay: 100,
-                    context: this,
-                    fire: function() {
-                        if (!this._recorder || this._recorder.destroyed()) {
-                            timer.destroy();
-                            return;
-                        }
-                        var status = this._recorder.uploadStatus();
-                        uploader.progressCallback(status.total - status.remaining, status.total);
-                    }
-                });
-                this._recorder.on("finished", function() {
-                    uploader.successCallback(true);
-                    self._recorder.off(null, null, ctx);
-                    timer.weakDestroy();
-                }, ctx).on("error", function(s) {
-                    uploader.errorCallback(s);
-                    self._recorder.off(null, null, ctx);
-                    timer.weakDestroy();
-                }, ctx);
-                this._recorder.stopRecord();
-                return Promise.create(uploader);
-            },
-
-            isFlash: function() {
-                return true;
-            },
-
-            averageFrameRate: function() {
-                return this._recorder.averageFrameRate();
-            },
-
-            _softwareDependencies: function() {
-                return Info.flash().installed() ? Promise.value(true) : Promise.error([{
-                    "title": "Adobe Flash",
-                    "execute": function() {
-                        window.open("https://get.adobe.com/flashplayer");
-                    }
-                }]);
-            }
-
-        };
-    }, {
-
-        supported: function(options) {
-            return !Info.isMobile() && !options.noflash && Info.flash().supported() && !options.screen;
-        }
-
-    });
-});
-
 
 Scoped.extend("module:Recorder.WebRTCVideoRecorderWrapper", [
     "module:Recorder.VideoRecorderWrapper",
     "module:Recorder.WebRTCVideoRecorderWrapper"
 ], function(VideoRecorderWrapper, WebRTCVideoRecorderWrapper) {
     VideoRecorderWrapper.register(WebRTCVideoRecorderWrapper, 2);
-    return {};
-});
-
-
-Scoped.extend("module:Recorder.VideoRecorderWrapper", [
-    "module:Recorder.VideoRecorderWrapper",
-    "module:Recorder.FlashVideoRecorderWrapper"
-], function(VideoRecorderWrapper, FlashVideoRecorderWrapper) {
-    VideoRecorderWrapper.register(FlashVideoRecorderWrapper, 1);
     return {};
 });

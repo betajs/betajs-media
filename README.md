@@ -1,4 +1,4 @@
-# betajs-media 0.0.163
+# betajs-media 0.0.164
 [![Code Climate](https://codeclimate.com/github/betajs/betajs-media/badges/gpa.svg)](https://codeclimate.com/github/betajs/betajs-media)
 [![NPM](https://img.shields.io/npm/v/betajs-media.svg?style=flat)](https://www.npmjs.com/package/betajs-media)
 [![Gitter Chat](https://badges.gitter.im/betajs/betajs-media.svg)](https://gitter.im/betajs/betajs-media)
@@ -18,7 +18,6 @@ You can use the library in the browser and compile it as well.
 	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
 	<script src="betajs/dist/betajs.min.js"></script>
 	<script src="betajs-browser/dist/betajs-browser.min.js"></script>
-	<script src="betajs-flash/dist/betajs-flash.min.js"></script>
 	<script src="betajs-media/dist/betajs-media.min.js"></script>
 ``` 
 
@@ -49,20 +48,6 @@ You can use the library in the browser and compile it as well.
     
 ```
 
-```html
-
-	<video autoplay loop poster="movie.png">
-		<source src="movie.mp4" type="video/mp4" />
-	</video>
-
-```
-
-```js
-
-	BetaJS.Media.Player.FlashPlayer.polyfill($("video").get(0)).success(function (video) {
-	});
-
-```
 
 
 ## Links
@@ -110,7 +95,6 @@ You can use the library in the browser and compile it as well.
 | :----- | -------: |
 | betajs | [Open](https://github.com/betajs/betajs) |
 | betajs-browser | [Open](https://github.com/betajs/betajs-browser) |
-| betajs-flash | [Open](https://github.com/betajs/betajs-flash) |
 
 
 ## Weak Dependencies
