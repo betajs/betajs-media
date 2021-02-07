@@ -46,8 +46,9 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
 
             _getConstraints: function() {
                 return {
+                    // Seems sourceId was deprecated, deviceId is most supported constraint (Fix changing audio source)
                     audio: this._options.recordAudio ? {
-                        sourceId: this._options.audioId
+                        deviceId: this._options.audioId
                     } : false,
                     video: this._options.recordVideo ? {
                         frameRate: this._options.framerate,

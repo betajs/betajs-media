@@ -104,7 +104,7 @@ Scoped.define("module:WebRTC.MediaRecorder", [
                 this._mediaRecorder.start(10);
                 // TODO: it's still experimental feature in Safari, in the feature if onstart will be applied
                 // need change this part of code
-                if (Info.isSafari()) {
+                if (Info.isSafari() && typeof this._mediaRecorder.onstart !== 'undefined') {
                     this._started = true;
                     this.trigger("started");
                     Async.eventually(function() {

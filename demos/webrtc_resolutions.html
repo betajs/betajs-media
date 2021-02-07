@@ -8,29 +8,98 @@
         <script src="../dist/betajs-media-noscoped.js"></script>
 	</head>
 	<body>
-	   <textarea id="constraints" rows=10 cols=50>{"video": {"width":1920, "height":1080}}</textarea>
-	   <button id="go">OK</button>
+	<div>
+		<label for="constraints">Resolutions</label>
+			<!--	{ "video": { "width": { "exact": 240 }, "height": { "exact": 240 } } }-->
+			<!--	{"video": {"width": { "min": 240, "max": 240}, "height":{ "min": 240, "max": 240 }}}-->
+		<textarea id="constraints" rows=5 cols=50>{"video": {"width":340, "height":240}}</textarea>
+	</div>
+	<div>
+		<button id="go">OK</button>
+	</div>
+	<br/>
 	   <div id="result"></div>
-	   <button id="query">Query</button>
-	   <div id="resolution"></div>
+	<br/>
+	   <button id="query" disabled>Query</button>
+		 <div id="resolution"></div>
+		 <h4>Dimensions Info:</h4>
+		 <div id="dimensions-info"></div>
 	   <script>
 		   var streamit;
-	    document.querySelector("#go").onclick = function () {
+		   let mediaRecorder;
+			 const queryButton = document.getElementById("query");
+			 const dimensionsInfo = document.getElementById("dimensions-info");
+			 let info = {};
+			 document.querySelector("#go").onclick = function () {
 	    	var constraints = JSON.parse(document.querySelector("#constraints").value.trim());
 	    	BetaJS.Media.WebRTC.Support.userMedia2(constraints).success(function (stream) {
 	    	    streamit = stream;
-	    		console.log("Success", stream);
-                document.querySelector("#result").innerText = "Success";
-	        }).error(function (error) {
+	    			console.log("Success", stream);
+	    			document.querySelector("#result").innerText = "Success";
+	    			queryButton.removeAttribute("disabled");
+
+				}).error(function (error) {
 	    		console.log("Error", error);
 	    	});
 	    };
-        document.querySelector("#query").onclick = function () {
-			BetaJS.Media.WebRTC.Support.streamQueryResolution(streamit).success(function (resolution) {
-				console.log("Resolution", resolution);
-				document.querySelector("#resolution").innerText = JSON.stringify(resolution);
-			});
-        };
+
+			document.querySelector("#query").onclick = function () {
+				BetaJS.Media.WebRTC.Support.streamQueryResolution(streamit).success(function (resolution) {
+					console.log("Resolution", resolution);
+					document.querySelector("#resolution").innerText = JSON.stringify(resolution);
+
+					const _v = resolution.stream.getVideoTracks()[0];
+					console.log("Settings ", _v.getSettings());
+					console.log("Constraints: ", _v.getConstraints());
+
+					info.constrainsts = _v.getConstraints();
+					dimensionsInfo.innerHTML = ("<p><strong>Stream Constraints: </strong><pre>" + JSON.stringify(info.constrainsts) + "</pre></p>");
+
+					info.settings = _v.getSettings();
+					dimensionsInfo.innerHTML += ("<p><strong>Stream Settings: </strong><pre>" + JSON.stringify(info.settings) + "</pre></p>");
+
+					if (typeof _v.getCapabilities !== "undefined") {
+						console.log("Capabilities", _v.getCapabilities());
+						info.capablities = _v.getCapabilities();
+					}
+
+					const options = {
+						mimeType: 'video/webm;codecs=vp9'
+					};
+					mediaRecorder = new BetaJS.Media.WebRTC.MediaRecorder(resolution.stream, options);
+					setTimeout(() => {
+						mediaRecorder.start();
+					}, 200);
+
+					mediaRecorder.on("started", () => {
+						dimensionsInfo.innerHTML += ("<p>Recorder started and will stop in 2 seconds</p>");
+						setTimeout(() => {
+							mediaRecorder.stop();
+							dimensionsInfo.innerHTML += ("<p>Recorder stopped</p>");
+						}, 2000)
+					}, mediaRecorder);
+
+					mediaRecorder.on("stopped", () => {
+						console.log('Recorder Stopped')
+					}, mediaRecorder);
+
+					mediaRecorder.on("data", (data) => {
+						const video = document.createElement('video');
+						document.body.append(video);
+						video.src = URL.createObjectURL(data);
+						video.play().then((el) => {
+							info.outputDimensions = BetaJS.Browser.Dom.elementDimensions(video);
+							// console.log('eec >', BetaJS.Browser.Dom.elementDimensions(video));
+							dimensionsInfo.innerHTML += (`<p><strong>Actual Recorder Output: </strong><pre>${JSON.stringify(info.outputDimensions)}</pre></p>`);
+							video.style.display = "none";
+						});
+						video.onloadstart = (ev) => {
+							// console.log('Video load starts', ev, video);
+						}
+					}, mediaRecorder);
+
+				});
+			};
 	   </script>
 	</body>
 </html>
