@@ -102,9 +102,7 @@ Scoped.define("module:WebRTC.MediaRecorder", [
                 // Safari Release 73 implemented non-timeslice mode encoding for MediaRecorder
                 // https://developer.apple.com/safari/technology-preview/release-notes/
                 this._mediaRecorder.start(10);
-                // TODO: it's still experimental feature in Safari, in the feature if onstart will be applied
-                // need change this part of code
-                if (Info.isSafari() && typeof this._mediaRecorder.onstart !== 'undefined') {
+                if (Info.isSafari() && !("onstart" in MediaRecorder.prototype)) {
                     this._started = true;
                     this.trigger("started");
                     Async.eventually(function() {

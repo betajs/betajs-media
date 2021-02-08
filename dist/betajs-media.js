@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.164 - 2020-12-09
+betajs-media - v0.0.165 - 2021-02-08
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -1010,7 +1010,7 @@ Public.exports();
 	return Public;
 }).call(this);
 /*!
-betajs-media - v0.0.164 - 2020-12-09
+betajs-media - v0.0.165 - 2021-02-08
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -1023,8 +1023,8 @@ Scoped.binding('browser', 'global:BetaJS.Browser');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.164",
-    "datetime": 1607548246194
+    "version": "0.0.165",
+    "datetime": 1612812470362
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.136');
@@ -4493,9 +4493,7 @@ Scoped.define("module:WebRTC.MediaRecorder", [
                 // Safari Release 73 implemented non-timeslice mode encoding for MediaRecorder
                 // https://developer.apple.com/safari/technology-preview/release-notes/
                 this._mediaRecorder.start(10);
-                // TODO: it's still experimental feature in Safari, in the feature if onstart will be applied
-                // need change this part of code
-                if (Info.isSafari()) {
+                if (Info.isSafari() && !("onstart" in MediaRecorder.prototype)) {
                     this._started = true;
                     this.trigger("started");
                     Async.eventually(function() {
@@ -4889,8 +4887,9 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
 
             _getConstraints: function() {
                 return {
+                    // Seems sourceId was deprecated, deviceId is most supported constraint (Fix changing audio source)
                     audio: this._options.recordAudio ? {
-                        sourceId: this._options.audioId
+                        deviceId: this._options.audioId
                     } : false,
                     video: this._options.recordVideo ? {
                         frameRate: this._options.framerate,
