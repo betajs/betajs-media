@@ -451,7 +451,7 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
             },
 
             supportsLocalPlayback: function() {
-                return !!this.__localPlaybackSource.src;
+                return !Info.isSafari() && !!this.__localPlaybackSource.src;
             },
 
             supportsCameraFace: function() {
