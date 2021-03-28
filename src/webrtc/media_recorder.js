@@ -39,9 +39,9 @@ Scoped.define("module:WebRTC.MediaRecorder", [
                             };
                         }
                     } else {
-                        if (!MediaRecorder.isTypeSupported) {
+                        if (typeof MediaRecorder.isTypeSupported === "undefined") {
                             mediaRecorderOptions = {
-                                mimeType: 'video/webm;codecs=vp9'
+                                mimeType: 'video/webm'
                             };
                         } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) {
                             mediaRecorderOptions = {
@@ -56,6 +56,11 @@ Scoped.define("module:WebRTC.MediaRecorder", [
                         } else if (MediaRecorder.isTypeSupported('video/webm')) {
                             mediaRecorderOptions = {
                                 mimeType: 'video/webm'
+                            };
+                        } else if (MediaRecorder.isTypeSupported('video/mp4')) {
+                            // Safari should support webm format after macOS Big Sur 11.3
+                            mediaRecorderOptions = {
+                                mimeType: 'video/mp4'
                             };
                         }
                     }
