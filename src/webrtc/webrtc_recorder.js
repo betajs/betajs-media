@@ -986,7 +986,7 @@ Scoped.define("module:WebRTC.PeerRecorderWrapper", [
                     */
                 if (options.screen && Info.isFirefox())
                     return false;
-                return options.webrtcStreaming && PeerRecorder.supported() && !options.webrtcStreamingIfNecessary;
+                return options.webrtcStreaming && PeerRecorder.supported();
             }
 
         };

@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.167 - 2021-03-28
+betajs-media - v0.0.167 - 2021-04-12
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -1010,7 +1010,7 @@ Public.exports();
 	return Public;
 }).call(this);
 /*!
-betajs-media - v0.0.167 - 2021-03-28
+betajs-media - v0.0.167 - 2021-04-12
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -1024,7 +1024,7 @@ Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
     "version": "0.0.167",
-    "datetime": 1616951744432
+    "datetime": 1618257856129
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.136');
@@ -5832,7 +5832,7 @@ Scoped.define("module:WebRTC.PeerRecorderWrapper", [
                     */
                 if (options.screen && Info.isFirefox())
                     return false;
-                return options.webrtcStreaming && PeerRecorder.supported() && !options.webrtcStreamingIfNecessary;
+                return options.webrtcStreaming && PeerRecorder.supported();
             }
 
         };
