@@ -42,7 +42,7 @@ module.exports = function(grunt) {
 
 	grunt.initConfig(gruntHelper.config);	
 
-	grunt.registerTask('default', ['autoincreasepackage', 'package', 'readme', 'license', 'githook', 'codeclimate', 'jsbeautify', 'scopedclosurerevision', 'concat-scoped', 'uglify-noscoped', 'uglify-scoped']);
+	grunt.registerTask('default', ['autoincreasepackage', 'package', 'readme', 'license', 'githook', 'codeclimate', 'jsbeautify', 'scopedclosurerevision', 'concat-scoped', 'uglify-noscoped', 'uglify-scoped', 'lint']);
 	grunt.registerTask('check', ['lint', 'browserqunit']);
 
 };
