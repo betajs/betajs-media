@@ -226,7 +226,9 @@ Scoped.define("module:Player.VideoPlayerWrapper", [
 
             videoWidth: function() {},
 
-            videoHeight: function() {}
+            videoHeight: function() {},
+
+            createSnapshotPromise: function(type) {}
 
         };
     }], {
@@ -563,6 +565,43 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
 
             setVolume: function(volume) {
                 (this._audioElement ? this._audioElement : this._element).volume = volume;
+            },
+
+            /**
+             * Create snapshot of current frame.
+             * @param {string} [type] - String representing the image format.
+             * @return {Promise<Blob>}
+             */
+            createSnapshotPromise: function(type) {
+                var video = this._element;
+                var canvas = document.createElement('canvas');
+                var context = canvas.getContext('2d');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+
+                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                function isCanvasBlank(canvas) {
+                    var context = canvas.getContext('2d');
+
+                    var pixelBuffer = new Uint32Array(
+                        context.getImageData(0, 0, canvas.width, canvas.height).data.buffer
+                    );
+
+                    return !pixelBuffer.some(function(color) {
+                        return color !== 0;
+                    });
+                }
+
+                if (!isCanvasBlank(canvas)) {
+                    var promise = Promise.create();
+                    canvas.toBlob(function(blob) {
+                        promise.asyncSuccess(blob);
+                    }, mimeType);
+                    return promise;
+                } else {
+                    return Promise.error(true);
+                }
             }
 
         };
