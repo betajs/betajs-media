@@ -597,7 +597,7 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
                     var promise = Promise.create();
                     canvas.toBlob(function(blob) {
                         promise.asyncSuccess(blob);
-                    }, mimeType);
+                    }, type);
                     return promise;
                 } else {
                     return Promise.error(true);
