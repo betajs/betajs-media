@@ -3,10 +3,11 @@ Scoped.define("module:Recorder.Support", [
     "browser:Upload.FileUploader",
     "browser:Upload.CustomUploader",
     "browser:Dom",
+    "browser:Events",
     "browser:Info",
     "base:Promise",
     "base:Objs"
-], function(Support, FileUploader, CustomUploader, Dom, Info, Promise, Objs) {
+], function(Support, FileUploader, CustomUploader, Dom, Events, Info, Promise, Objs) {
     return {
 
         /**
@@ -24,6 +25,53 @@ Scoped.define("module:Recorder.Support", [
         createSnapshot: function(type, video, isUploader, h, w, x, y, quality) {
             var _data = this._createSnapshot(type, video, isUploader, h, w, x, y, quality);
             return _data ? Support.dataURItoBlob(_data) : _data;
+        },
+
+        /**
+         * 
+         * @param {string} videoSource
+         * @param {string} [type]
+         * @param {string} [time=0]
+         * @param {boolean} [isUploader]
+         * @param {int} [h]
+         * @param {int} [w]
+         * @param {int} [x]
+         * @param {int} [quality]
+         * @return {Promise<Blob>}
+         */
+        createSnapshotFromSource: function(videoSource, type, time, isUploader, h, w, x, y, quality) {
+            var promise = Promise.create();
+            var video = document.createElement("video");
+            video.src = videoSource;
+
+            var events = new Events();
+
+            events.on(video, "loadedmetadata", function() {
+                video.currentTime = time || 0;
+            });
+
+            events.on(video, "seeked", function() {
+                window.requestAnimationFrame(function() {
+                    window.requestAnimationFrame(function() {
+                        var snapshot = this.createSnapshot(type, video, isUploader, h, w, x, y, quality);
+                        if (snapshot) {
+                            promise.asyncSuccess(snapshot);
+                        } else {
+                            promise.asyncError("Could not capture snapshot");
+                        }
+                    }.bind(this));
+                }.bind(this));
+                events.destroy();
+            }, this);
+
+            events.on(video, "error", function() {
+                promise.asyncError("Could not load video to capture snapshot");
+                events.destroy();
+            });
+
+            video.load();
+
+            return promise;
         },
 
         /**
