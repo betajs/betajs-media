@@ -84,8 +84,8 @@ Scoped.define("module:Player.Broadcasting", [
                     chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED
                 ];
 
-                options.receiverApplicationId = applicationIds[2];
                 options.autoJoinPolicy = autoJoinPolicy[1];
+                options.receiverApplicationId = this.options.chromecastReceiverAppId || applicationIds[2];
 
                 cast.framework.CastContext.getInstance().setOptions(options);
 
@@ -128,9 +128,9 @@ Scoped.define("module:Player.Broadcasting", [
                 var self = this;
                 var player = this.player;
                 var options = this.castOptions;
-                var sources = player._options.sources[0];
+                var sources = player._sources;
                 var mediaURL = player._element.currentSrc;
-                var mediaMimeType = sources.type;
+                var mediaMimeType = sources[0].type;
 
                 var castSession = cast.framework.CastContext.getInstance().getCurrentSession();
 
@@ -141,6 +141,11 @@ Scoped.define("module:Player.Broadcasting", [
                 mediaInfo.metadata.images = [{
                     url: this.options.poster
                 }];
+
+                // BUFFERED : Stored media streamed from an existing data store.
+                // LIVE: Live media generated on the fly.
+                // OTHER: None of the above.
+                // mediaInfo.streamType = 'BUFFERED';
 
                 var request = new chrome.cast.media.LoadRequest(mediaInfo);
 
