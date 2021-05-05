@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.171 - 2021-04-26
+betajs-media - v0.0.172 - 2021-05-04
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -12,8 +12,8 @@ Scoped.binding('browser', 'global:BetaJS.Browser');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.171",
-    "datetime": 1619491031277
+    "version": "0.0.172",
+    "datetime": 1620187044387
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.136');
@@ -1440,8 +1440,8 @@ Scoped.define("module:Player.Broadcasting", [
                     chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED
                 ];
 
-                options.receiverApplicationId = applicationIds[2];
                 options.autoJoinPolicy = autoJoinPolicy[1];
+                options.receiverApplicationId = this.options.chromecastReceiverAppId || applicationIds[2];
 
                 cast.framework.CastContext.getInstance().setOptions(options);
 
@@ -1484,9 +1484,9 @@ Scoped.define("module:Player.Broadcasting", [
                 var self = this;
                 var player = this.player;
                 var options = this.castOptions;
-                var sources = player._options.sources[0];
+                var sources = player._sources;
                 var mediaURL = player._element.currentSrc;
-                var mediaMimeType = sources.type;
+                var mediaMimeType = sources[0].type;
 
                 var castSession = cast.framework.CastContext.getInstance().getCurrentSession();
 
@@ -1497,6 +1497,11 @@ Scoped.define("module:Player.Broadcasting", [
                 mediaInfo.metadata.images = [{
                     url: this.options.poster
                 }];
+
+                // BUFFERED : Stored media streamed from an existing data store.
+                // LIVE: Live media generated on the fly.
+                // OTHER: None of the above.
+                // mediaInfo.streamType = 'BUFFERED';
 
                 var request = new chrome.cast.media.LoadRequest(mediaInfo);
 
