@@ -48,7 +48,12 @@ Scoped.define("module:AudioRecorder.AudioRecorderWrapper", [
             setCurrentDevices: function(devices) {},
 
             startRecord: function(options) {},
+            pauseRecord: function() {},
+            resumeRecord: function() {},
             stopRecord: function(options) {},
+            canPause: function() {
+                return false;
+            },
 
             isWebrtcStreaming: function() {
                 return false;
@@ -183,6 +188,10 @@ Scoped.define("module:AudioRecorder.WebRTCAudioRecorderWrapper", [
             setCurrentDevices: function(devices) {
                 if (devices && devices.audio)
                     this._recorder.selectMicrophone(devices.audio);
+            },
+
+            canPause: function() {
+                return this._recorder.canPause();
             },
 
             startRecord: function(options) {
