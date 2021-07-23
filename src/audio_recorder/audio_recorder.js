@@ -199,6 +199,14 @@ Scoped.define("module:AudioRecorder.WebRTCAudioRecorderWrapper", [
                 return this._recorder.startRecord(options);
             },
 
+            pauseRecord: function() {
+                return this._recorder.pauseRecord();
+            },
+
+            resumeRecord: function() {
+                return this._recorder.resumeRecord();
+            },
+
             stopRecord: function(options) {
                 var promise = Promise.create();
                 this._recorder.once("data", function(videoBlob, audioBlob, noUploading) {
