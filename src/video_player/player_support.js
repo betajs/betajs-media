@@ -24,7 +24,11 @@ Scoped.define("module:Player.Support", [
                 var failed = false;
                 var timer = setTimeout(function() {
                     failed = true;
-                    promise.asyncError("Timeout");
+                    if (element.error != undefined) {
+                        promise.asyncError(element.error);
+                    } else {
+                        promise.asyncError("Timeout");
+                    }
                 }, 1000);
                 element[elementEvent] = function() {
                     if (failed)
@@ -50,6 +54,8 @@ Scoped.define("module:Player.Support", [
                     height: video.videoHeight,
                     duration: video.duration
                 };
+            }).mapError(function(error) {
+                return error;
             });
         },
 
