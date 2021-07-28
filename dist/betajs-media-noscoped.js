@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.173 - 2021-06-27
+betajs-media - v0.0.174 - 2021-07-28
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -12,8 +12,8 @@ Scoped.binding('browser', 'global:BetaJS.Browser');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.173",
-    "datetime": 1624827955780
+    "version": "0.0.174",
+    "datetime": 1627486619687
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.136');
@@ -421,7 +421,12 @@ Scoped.define("module:AudioRecorder.AudioRecorderWrapper", [
             setCurrentDevices: function(devices) {},
 
             startRecord: function(options) {},
+            pauseRecord: function() {},
+            resumeRecord: function() {},
             stopRecord: function(options) {},
+            canPause: function() {
+                return false;
+            },
 
             isWebrtcStreaming: function() {
                 return false;
@@ -558,9 +563,21 @@ Scoped.define("module:AudioRecorder.WebRTCAudioRecorderWrapper", [
                     this._recorder.selectMicrophone(devices.audio);
             },
 
+            canPause: function() {
+                return this._recorder.canPause();
+            },
+
             startRecord: function(options) {
                 this.__localPlaybackSource = null;
                 return this._recorder.startRecord(options);
+            },
+
+            pauseRecord: function() {
+                return this._recorder.pauseRecord();
+            },
+
+            resumeRecord: function() {
+                return this._recorder.resumeRecord();
             },
 
             stopRecord: function(options) {
@@ -1697,7 +1714,11 @@ Scoped.define("module:Player.Support", [
                 var failed = false;
                 var timer = setTimeout(function() {
                     failed = true;
-                    promise.asyncError("Timeout");
+                    if (element.error != undefined) {
+                        promise.asyncError(element.error);
+                    } else {
+                        promise.asyncError("Timeout");
+                    }
                 }, 1000);
                 element[elementEvent] = function() {
                     if (failed)
@@ -1723,6 +1744,8 @@ Scoped.define("module:Player.Support", [
                     height: video.videoHeight,
                     duration: video.duration
                 };
+            }).mapError(function(error) {
+                return error;
             });
         },
 
