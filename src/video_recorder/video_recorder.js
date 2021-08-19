@@ -570,7 +570,11 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
             if (!RecorderWrapper.anySupport(options))
                 return false;
             if (options.screen) {
-                if ((Info.isChrome() || Info.isFirefox() || Info.isOpera()) && typeof navigator.mediaDevices.getDisplayMedia !== 'undefined')
+                if (
+                    (Info.isChrome() || Info.isFirefox() || Info.isOpera() ||
+                        (Info.isSafari() && Support.globals().MediaRecorder)
+                    ) && typeof navigator.mediaDevices.getDisplayMedia !== 'undefined'
+                )
                     return true;
                 if (Support.globals().supportedConstraints.mediaSource && Info.isFirefox() && Info.firefoxVersion() > 55)
                     return true;
