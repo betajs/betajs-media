@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.174 - 2021-07-28
+betajs-media - v0.0.175 - 2021-08-19
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -12,8 +12,8 @@ Scoped.binding('browser', 'global:BetaJS.Browser');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.174",
-    "datetime": 1627486619687
+    "version": "0.0.175",
+    "datetime": 1629430438178
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.136');
@@ -3243,7 +3243,11 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
             if (!RecorderWrapper.anySupport(options))
                 return false;
             if (options.screen) {
-                if ((Info.isChrome() || Info.isFirefox() || Info.isOpera()) && typeof navigator.mediaDevices.getDisplayMedia !== 'undefined')
+                if (
+                    (Info.isChrome() || Info.isFirefox() || Info.isOpera() ||
+                        (Info.isSafari() && Support.globals().MediaRecorder)
+                    ) && typeof navigator.mediaDevices.getDisplayMedia !== 'undefined'
+                )
                     return true;
                 if (Support.globals().supportedConstraints.mediaSource && Info.isFirefox() && Info.firefoxVersion() > 55)
                     return true;
