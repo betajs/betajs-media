@@ -3,9 +3,10 @@ Scoped.define("module:AudioPlayer.AudioPlayerWrapper", [
     "base:Events.EventsMixin",
     "base:Types",
     "base:Objs",
+    "base:Promise",
     "base:Strings",
     "browser:Events"
-], function(OptimisticConditionalInstance, EventsMixin, Types, Objs, Strings, DomEvents, scoped) {
+], function(OptimisticConditionalInstance, EventsMixin, Types, Objs, Promise, Strings, DomEvents, scoped) {
     return OptimisticConditionalInstance.extend({
         scoped: scoped
     }, [EventsMixin, function(inherited) {
@@ -117,7 +118,8 @@ Scoped.define("module:AudioPlayer.AudioPlayerWrapper", [
                 if (this._reloadonplay)
                     this._element.load();
                 this._reloadonplay = false;
-                this._element.play();
+                var promise = this._element.play();
+                if (promise) return Promise.fromNativePromise(promise);
             },
 
             pause: function() {
@@ -310,7 +312,7 @@ Scoped.define("module:AudioPlayer.Html5AudioPlayerWrapper", [
             },
 
             play: function() {
-                inherited.play.call(this);
+                return inherited.play.call(this);
             },
 
             pause: function() {
