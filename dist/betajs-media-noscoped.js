@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.175 - 2021-08-19
+betajs-media - v0.0.176 - 2021-09-11
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -12,8 +12,8 @@ Scoped.binding('browser', 'global:BetaJS.Browser');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.175",
-    "datetime": 1629430438178
+    "version": "0.0.176",
+    "datetime": 1631365169924
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.136');
@@ -23,9 +23,10 @@ Scoped.define("module:AudioPlayer.AudioPlayerWrapper", [
     "base:Events.EventsMixin",
     "base:Types",
     "base:Objs",
+    "base:Promise",
     "base:Strings",
     "browser:Events"
-], function(OptimisticConditionalInstance, EventsMixin, Types, Objs, Strings, DomEvents, scoped) {
+], function(OptimisticConditionalInstance, EventsMixin, Types, Objs, Promise, Strings, DomEvents, scoped) {
     return OptimisticConditionalInstance.extend({
         scoped: scoped
     }, [EventsMixin, function(inherited) {
@@ -137,7 +138,8 @@ Scoped.define("module:AudioPlayer.AudioPlayerWrapper", [
                 if (this._reloadonplay)
                     this._element.load();
                 this._reloadonplay = false;
-                this._element.play();
+                var promise = this._element.play();
+                if (promise) return Promise.fromNativePromise(promise);
             },
 
             pause: function() {
@@ -330,7 +332,7 @@ Scoped.define("module:AudioPlayer.Html5AudioPlayerWrapper", [
             },
 
             play: function() {
-                inherited.play.call(this);
+                return inherited.play.call(this);
             },
 
             pause: function() {
