@@ -105,6 +105,7 @@ Scoped.define("module:Recorder.VideoRecorderWrapper", [
             currentDevices: function() {},
             setCurrentDevices: function(devices) {},
             setCameraFace: function(faceFront) {},
+            getCameraFacingMode: function() {},
 
             addMultiStream: function(device, options) {},
             updateMultiStreamPosition: function(x, y, w, h) {},
@@ -373,6 +374,11 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
             setCameraFace: function(faceFront) {
                 if (Info.isMobile())
                     this._recorder.selectCameraFace(faceFront);
+            },
+
+            getCameraFacingMode: function() {
+                if (Info.isMobile())
+                    return this._recorder.getCameraFacingMode();
             },
 
             createSnapshot: function(type) {
