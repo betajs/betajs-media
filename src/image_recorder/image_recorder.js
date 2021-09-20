@@ -52,6 +52,8 @@ Scoped.define("module:ImageRecorder.ImageRecorderWrapper", [
             enumerateDevices: function() {},
             currentDevices: function() {},
             setCurrentDevices: function(devices) {},
+            setCameraFace: function(faceFront) {},
+            getCameraFacingMode: function() {},
 
             createSnapshot: function() {},
             removeSnapshot: function(snapshot) {},
@@ -158,6 +160,16 @@ Scoped.define("module:ImageRecorder.WebRTCImageRecorderWrapper", [
             setCurrentDevices: function(devices) {
                 if (devices && devices.video)
                     this._recorder.selectCamera(devices.video);
+            },
+
+            setCameraFace: function(faceFront) {
+                if (Info.isMobile())
+                    this._recorder.selectCameraFace(faceFront);
+            },
+
+            getCameraFacingMode: function() {
+                if (Info.isMobile())
+                    return this._recorder.getCameraFacingMode();
             },
 
             createSnapshot: function(type) {
