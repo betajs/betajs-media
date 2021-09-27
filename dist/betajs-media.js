@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.176 - 2021-09-11
+betajs-media - v0.0.177 - 2021-09-27
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -1010,7 +1010,7 @@ Public.exports();
 	return Public;
 }).call(this);
 /*!
-betajs-media - v0.0.176 - 2021-09-11
+betajs-media - v0.0.177 - 2021-09-27
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -1023,8 +1023,8 @@ Scoped.binding('browser', 'global:BetaJS.Browser');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.176",
-    "datetime": 1631365169924
+    "version": "0.0.177",
+    "datetime": 1632745536269
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.136');
@@ -2184,6 +2184,8 @@ Scoped.define("module:ImageRecorder.ImageRecorderWrapper", [
             enumerateDevices: function() {},
             currentDevices: function() {},
             setCurrentDevices: function(devices) {},
+            setCameraFace: function(faceFront) {},
+            getCameraFacingMode: function() {},
 
             createSnapshot: function() {},
             removeSnapshot: function(snapshot) {},
@@ -2290,6 +2292,16 @@ Scoped.define("module:ImageRecorder.WebRTCImageRecorderWrapper", [
             setCurrentDevices: function(devices) {
                 if (devices && devices.video)
                     this._recorder.selectCamera(devices.video);
+            },
+
+            setCameraFace: function(faceFront) {
+                if (Info.isMobile())
+                    this._recorder.selectCameraFace(faceFront);
+            },
+
+            getCameraFacingMode: function() {
+                if (Info.isMobile())
+                    return this._recorder.getCameraFacingMode();
             },
 
             createSnapshot: function(type) {
@@ -3791,6 +3803,7 @@ Scoped.define("module:Recorder.VideoRecorderWrapper", [
             currentDevices: function() {},
             setCurrentDevices: function(devices) {},
             setCameraFace: function(faceFront) {},
+            getCameraFacingMode: function() {},
 
             addMultiStream: function(device, options) {},
             updateMultiStreamPosition: function(x, y, w, h) {},
@@ -4059,6 +4072,11 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
             setCameraFace: function(faceFront) {
                 if (Info.isMobile())
                     this._recorder.selectCameraFace(faceFront);
+            },
+
+            getCameraFacingMode: function() {
+                if (Info.isMobile())
+                    return this._recorder.getCameraFacingMode();
             },
 
             createSnapshot: function(type) {
@@ -5202,6 +5220,14 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                     this.unbindMedia();
                     this.bindMedia();
                 }
+            },
+
+            getCameraFacingMode: function() {
+                if (this._options.cameraFaceFront === true)
+                    return "user";
+                if (this._options.cameraFaceFront === false)
+                    return "environment";
+                return undefined;
             },
 
             startRecord: function(options) {
