@@ -237,6 +237,14 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                 }
             },
 
+            getCameraFacingMode: function() {
+                if (this._options.cameraFaceFront === true)
+                    return "user";
+                if (this._options.cameraFaceFront === false)
+                    return "environment";
+                return undefined;
+            },
+
             startRecord: function(options) {
                 if (this._recording)
                     return Promise.value(true);
