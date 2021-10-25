@@ -218,6 +218,7 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                 if (this._bound) {
                     this.unbindMedia();
                     this.bindMedia();
+                    this.trigger("rebound");
                 }
             },
 
@@ -226,6 +227,7 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                 if (this._bound) {
                     this.unbindMedia();
                     this.bindMedia();
+                    this.trigger("rebound");
                 }
             },
 
@@ -234,6 +236,7 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                 if (this._bound) {
                     this.unbindMedia();
                     this.bindMedia();
+                    this.trigger("rebound");
                 }
             },
 
