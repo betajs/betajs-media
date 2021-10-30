@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.177 - 2021-09-27
+betajs-media - v0.0.178 - 2021-10-30
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -12,8 +12,8 @@ Scoped.binding('browser', 'global:BetaJS.Browser');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.177",
-    "datetime": 1632745536269
+    "version": "0.0.178",
+    "datetime": 1635611387327
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.136');
@@ -4192,6 +4192,7 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                 if (this._bound) {
                     this.unbindMedia();
                     this.bindMedia();
+                    this.trigger("rebound");
                 }
             },
 
@@ -4200,6 +4201,7 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                 if (this._bound) {
                     this.unbindMedia();
                     this.bindMedia();
+                    this.trigger("rebound");
                 }
             },
 
@@ -4208,6 +4210,7 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                 if (this._bound) {
                     this.unbindMedia();
                     this.bindMedia();
+                    this.trigger("rebound");
                 }
             },
 
