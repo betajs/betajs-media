@@ -47,7 +47,7 @@ Scoped.define("module:WebRTC.MediaRecorder", [
                             mediaRecorderOptions = {
                                 mimeType: 'video/webm;codecs=vp9'
                             };
-                        } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp8') && (Info.isFirefox() && Info.firefoxVersion() < 71)) {
+                        } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp8')) {
                             // https://bugzilla.mozilla.org/show_bug.cgi?id=1594466
                             // firefox71 + fixed
                             mediaRecorderOptions = {
