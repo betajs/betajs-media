@@ -1042,7 +1042,8 @@ Scoped.define("module:WebRTC.MediaRecorderWrapper", [
             this._recorder = new MediaRecorder(stream, {
                 videoBitrate: this._options.videoBitrate,
                 audioBitrate: this._options.audioBitrate,
-                audioonly: !this._options.recordVideo
+                audioonly: !this._options.recordVideo,
+                cpuFriendly: this._options.cpuFriendly
             });
             this._recorder.on("data", function(blob) {
                 this._dataAvailable(blob);
