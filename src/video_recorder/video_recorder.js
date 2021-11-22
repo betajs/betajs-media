@@ -217,7 +217,8 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
                     localPlaybackRequested: this._options.localPlaybackRequested,
                     screen: this._options.screen,
                     getDisplayMediaSupported: typeof navigator.mediaDevices.getDisplayMedia !== 'undefined',
-                    fittodimensions: this._options.fittodimensions
+                    fittodimensions: this._options.fittodimensions,
+                    cpuFriendly: this._options.cpuFriendly
                 });
                 this._recorder.on("bound", function() {
                     if (this._analyser)
