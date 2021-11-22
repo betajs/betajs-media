@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.179 - 2021-11-06
+betajs-media - v0.0.180 - 2021-11-22
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -12,8 +12,8 @@ Scoped.binding('browser', 'global:BetaJS.Browser');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.179",
-    "datetime": 1636237490231
+    "version": "0.0.180",
+    "datetime": 1637618374530
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.136');
@@ -2904,7 +2904,8 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
                     localPlaybackRequested: this._options.localPlaybackRequested,
                     screen: this._options.screen,
                     getDisplayMediaSupported: typeof navigator.mediaDevices.getDisplayMedia !== 'undefined',
-                    fittodimensions: this._options.fittodimensions
+                    fittodimensions: this._options.fittodimensions,
+                    cpuFriendly: this._options.cpuFriendly
                 });
                 this._recorder.on("bound", function() {
                     if (this._analyser)
@@ -3562,7 +3563,7 @@ Scoped.define("module:WebRTC.MediaRecorder", [
                             mediaRecorderOptions = {
                                 mimeType: 'video/webm'
                             };
-                        } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) {
+                        } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9') && !options.cpuFriendly) {
                             mediaRecorderOptions = {
                                 mimeType: 'video/webm;codecs=vp9'
                             };
@@ -3575,6 +3576,11 @@ Scoped.define("module:WebRTC.MediaRecorder", [
                         } else if (MediaRecorder.isTypeSupported('video/webm')) {
                             mediaRecorderOptions = {
                                 mimeType: 'video/webm'
+                            };
+                        } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) {
+                            // In case if therefore no option will proceed with cpuFriendly as false
+                            mediaRecorderOptions = {
+                                mimeType: 'video/webm;codecs=vp9'
                             };
                         } else if (MediaRecorder.isTypeSupported('video/mp4')) {
                             // Safari should support webm format after macOS Big Sur 11.3
@@ -5016,7 +5022,8 @@ Scoped.define("module:WebRTC.MediaRecorderWrapper", [
             this._recorder = new MediaRecorder(stream, {
                 videoBitrate: this._options.videoBitrate,
                 audioBitrate: this._options.audioBitrate,
-                audioonly: !this._options.recordVideo
+                audioonly: !this._options.recordVideo,
+                cpuFriendly: this._options.cpuFriendly
             });
             this._recorder.on("data", function(blob) {
                 this._dataAvailable(blob);
