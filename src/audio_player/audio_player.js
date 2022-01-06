@@ -75,9 +75,22 @@ Scoped.define("module:AudioPlayer.AudioPlayerWrapper", [
 
             buffered: function() {},
 
+            /**
+             * @private
+             */
             _eventLoaded: function() {
                 this._loaded = true;
                 this.trigger("loaded");
+            },
+
+            /**
+             * With loaded metadata we can get information like duration from passed element
+             * @param {Event} ev
+             * @private
+             */
+            _eventLoadedMetaData: function(ev) {
+                this._hasMetadata = true;
+                this.trigger("loadedmetadata", ev.target);
             },
 
             _eventPlaying: function() {
@@ -214,13 +227,21 @@ Scoped.define("module:AudioPlayer.Html5AudioPlayerWrapper", [
                     }
                     promise.asyncSuccess(true);
                 }, this);
-                var nosourceCounter = 10;
+
+                // Success promise could be late, as events like loaded probably will be dispatched before
+                // So moved loaded related indicators from _setup method to here, these events will fire only
+                // there are no errors related source and load will start
+                this._loaded = false;
+                this._domEvents.on(this._element, "canplay", this._eventLoaded, this);
+                this._domEvents.on(this._element, "loadedmetadata", this._eventLoadedMetaData, this);
+
+                var noSourceCounter = 10;
                 var timer = new Timer({
                     context: this,
                     fire: function() {
                         if (this._element.networkState === this._element.NETWORK_NO_SOURCE) {
-                            nosourceCounter--;
-                            if (nosourceCounter <= 0)
+                            noSourceCounter--;
+                            if (noSourceCounter <= 0)
                                 promise.asyncError(true);
                         } else if (this._element.networkState === this._element.NETWORK_IDLE)
                             promise.asyncSuccess(true);
@@ -285,8 +306,6 @@ Scoped.define("module:AudioPlayer.Html5AudioPlayerWrapper", [
             },
 
             _setup: function() {
-                this._loaded = false;
-                this._domEvents.on(this._element, "canplay", this._eventLoaded, this);
                 this._domEvents.on(this._element, "playing", this._eventPlaying, this);
                 this._domEvents.on(this._element, "pause", this._eventPaused, this);
                 this._domEvents.on(this._element, "ended", this._eventEnded, this);
