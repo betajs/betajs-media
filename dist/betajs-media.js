@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.180 - 2021-11-22
+betajs-media - v0.0.181 - 2022-01-08
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -1010,7 +1010,7 @@ Public.exports();
 	return Public;
 }).call(this);
 /*!
-betajs-media - v0.0.180 - 2021-11-22
+betajs-media - v0.0.181 - 2022-01-08
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -1023,8 +1023,8 @@ Scoped.binding('browser', 'global:BetaJS.Browser');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.180",
-    "datetime": 1637618374530
+    "version": "0.0.181",
+    "datetime": 1641674393831
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.136');
@@ -1106,9 +1106,22 @@ Scoped.define("module:AudioPlayer.AudioPlayerWrapper", [
 
             buffered: function() {},
 
+            /**
+             * @private
+             */
             _eventLoaded: function() {
                 this._loaded = true;
                 this.trigger("loaded");
+            },
+
+            /**
+             * With loaded metadata we can get information like duration from passed element
+             * @param {Event} ev
+             * @private
+             */
+            _eventLoadedMetaData: function(ev) {
+                this._hasMetadata = true;
+                this.trigger("loadedmetadata", ev.target);
             },
 
             _eventPlaying: function() {
@@ -1245,13 +1258,21 @@ Scoped.define("module:AudioPlayer.Html5AudioPlayerWrapper", [
                     }
                     promise.asyncSuccess(true);
                 }, this);
-                var nosourceCounter = 10;
+
+                // Success promise could be late, as events like loaded probably will be dispatched before
+                // So moved loaded related indicators from _setup method to here, these events will fire only
+                // there are no errors related source and load will start
+                this._loaded = false;
+                this._domEvents.on(this._element, "canplay", this._eventLoaded, this);
+                this._domEvents.on(this._element, "loadedmetadata", this._eventLoadedMetaData, this);
+
+                var noSourceCounter = 10;
                 var timer = new Timer({
                     context: this,
                     fire: function() {
                         if (this._element.networkState === this._element.NETWORK_NO_SOURCE) {
-                            nosourceCounter--;
-                            if (nosourceCounter <= 0)
+                            noSourceCounter--;
+                            if (noSourceCounter <= 0)
                                 promise.asyncError(true);
                         } else if (this._element.networkState === this._element.NETWORK_IDLE)
                             promise.asyncSuccess(true);
@@ -1316,8 +1337,6 @@ Scoped.define("module:AudioPlayer.Html5AudioPlayerWrapper", [
             },
 
             _setup: function() {
-                this._loaded = false;
-                this._domEvents.on(this._element, "canplay", this._eventLoaded, this);
                 this._domEvents.on(this._element, "playing", this._eventPlaying, this);
                 this._domEvents.on(this._element, "pause", this._eventPaused, this);
                 this._domEvents.on(this._element, "ended", this._eventEnded, this);
