@@ -1045,6 +1045,9 @@ Scoped.define("module:WebRTC.MediaRecorderWrapper", [
                 audioonly: !this._options.recordVideo,
                 cpuFriendly: this._options.cpuFriendly
             });
+            this._recorder.on("dataavailable", function(e) {
+                this.trigger("dataavailable", e);
+            }, this);
             this._recorder.on("data", function(blob) {
                 this._dataAvailable(blob);
             }, this);

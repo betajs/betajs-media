@@ -159,6 +159,7 @@ Scoped.define("module:WebRTC.MediaRecorder", [
             },
 
             _dataAvailable: function(e) {
+                this.trigger("dataavailable", e);
                 if (e.data && e.data.size > 0)
                     this._chunks.push(e.data);
             },

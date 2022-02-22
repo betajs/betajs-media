@@ -230,6 +230,9 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
                 this._recorder.on("mainvideostreamended", function() {
                     this.trigger("mainvideostreamended");
                 }, this);
+                this._recorder.on("dataavailable", function(e) {
+                    this.trigger("dataavailable", e);
+                }, this);
                 this.ready.asyncSuccess(true);
             },
 
