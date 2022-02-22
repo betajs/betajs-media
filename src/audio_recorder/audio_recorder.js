@@ -214,7 +214,7 @@ Scoped.define("module:AudioRecorder.WebRTCAudioRecorderWrapper", [
                         src: audioBlob || videoBlob
                     };
                     var multiUploader = new MultiUploader();
-                    if (!this._options.simulate && !noUploading) {
+                    if (!this._options.simulate && !noUploading && !options.noUploading) {
                         if (videoBlob) {
                             multiUploader.addUploader(FileUploader.create(Objs.extend({
                                 source: audioBlob || videoBlob
