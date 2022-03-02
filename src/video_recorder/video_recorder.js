@@ -230,6 +230,9 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
                 this._recorder.on("mainvideostreamended", function() {
                     this.trigger("mainvideostreamended");
                 }, this);
+                this._recorder.on("dataavailable", function(e) {
+                    this.trigger("dataavailable", e);
+                }, this);
                 this.ready.asyncSuccess(true);
             },
 
@@ -439,7 +442,7 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
                         audiosrc: audioBlob
                     };
                     var multiUploader = new MultiUploader();
-                    if (!this._options.simulate && !noUploading) {
+                    if (!this._options.simulate && !noUploading && !options.noUploading) {
                         if (videoBlob) {
                             multiUploader.addUploader(FileUploader.create(Objs.extend({
                                 source: videoBlob
