@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.181 - 2022-01-08
+betajs-media - v0.0.182 - 2022-03-02
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -1010,7 +1010,7 @@ Public.exports();
 	return Public;
 }).call(this);
 /*!
-betajs-media - v0.0.181 - 2022-01-08
+betajs-media - v0.0.182 - 2022-03-02
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -1023,8 +1023,8 @@ Scoped.binding('browser', 'global:BetaJS.Browser');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.181",
-    "datetime": 1641674393831
+    "version": "0.0.182",
+    "datetime": 1646198421558
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.136');
@@ -1619,7 +1619,7 @@ Scoped.define("module:AudioRecorder.WebRTCAudioRecorderWrapper", [
                         src: audioBlob || videoBlob
                     };
                     var multiUploader = new MultiUploader();
-                    if (!this._options.simulate && !noUploading) {
+                    if (!this._options.simulate && !noUploading && !options.noUploading) {
                         if (videoBlob) {
                             multiUploader.addUploader(FileUploader.create(Objs.extend({
                                 source: audioBlob || videoBlob
@@ -3947,6 +3947,9 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
                 this._recorder.on("mainvideostreamended", function() {
                     this.trigger("mainvideostreamended");
                 }, this);
+                this._recorder.on("dataavailable", function(e) {
+                    this.trigger("dataavailable", e);
+                }, this);
                 this.ready.asyncSuccess(true);
             },
 
@@ -4156,7 +4159,7 @@ Scoped.define("module:Recorder.WebRTCVideoRecorderWrapper", [
                         audiosrc: audioBlob
                     };
                     var multiUploader = new MultiUploader();
-                    if (!this._options.simulate && !noUploading) {
+                    if (!this._options.simulate && !noUploading && !options.noUploading) {
                         if (videoBlob) {
                             multiUploader.addUploader(FileUploader.create(Objs.extend({
                                 source: videoBlob
@@ -4709,6 +4712,7 @@ Scoped.define("module:WebRTC.MediaRecorder", [
             },
 
             _dataAvailable: function(e) {
+                this.trigger("dataavailable", e);
                 if (e.data && e.data.size > 0)
                     this._chunks.push(e.data);
             },
@@ -6055,6 +6059,9 @@ Scoped.define("module:WebRTC.MediaRecorderWrapper", [
                 audioonly: !this._options.recordVideo,
                 cpuFriendly: this._options.cpuFriendly
             });
+            this._recorder.on("dataavailable", function(e) {
+                this.trigger("dataavailable", e);
+            }, this);
             this._recorder.on("data", function(blob) {
                 this._dataAvailable(blob);
             }, this);
@@ -6521,8 +6528,13 @@ Scoped.define("module:WebRTC.Support", [
                         ideal: options.video.frameRate
                     };
                 }
-                if (options.video.sourceId)
+                if (options.video.sourceId) {
                     opts.video.sourceId = options.video.sourceId;
+                    // Will fix change camera on FF
+                    opts.video.deviceId = {
+                        exact: options.video.sourceId
+                    };
+                }
                 if (options.video.cameraFaceFront !== undefined && Info.isMobile())
                     opts.video.facingMode = {
                         exact: options.video.cameraFaceFront ? "user" : "environment"
@@ -6546,6 +6558,15 @@ Scoped.define("module:WebRTC.Support", [
                     opts.video = {
                         mandatory: {}
                     };
+                }
+                // Will fix camera selection on change
+                if (Info.isSafari()) {
+                    if (options.video.sourceId) {
+                        opts.video.sourceId = options.video.sourceId;
+                        opts.video.deviceId = {
+                            exact: options.video.sourceId
+                        };
+                    }
                 }
                 var as = options.video.aspectRatio ? options.video.aspectRatio : (options.video.width && options.video.height ? options.video.width / options.video.height : null);
                 if (typeof opts.video.mandatory !== 'undefined') {

@@ -289,7 +289,9 @@ Scoped.define("module:WebRTC.Support", [
                 if (options.video.sourceId) {
                     opts.video.sourceId = options.video.sourceId;
                     // Will fix change camera on FF
-                    opts.video.deviceId = { exact: options.video.sourceId};
+                    opts.video.deviceId = {
+                        exact: options.video.sourceId
+                    };
                 }
                 if (options.video.cameraFaceFront !== undefined && Info.isMobile())
                     opts.video.facingMode = {
@@ -316,10 +318,12 @@ Scoped.define("module:WebRTC.Support", [
                     };
                 }
                 // Will fix camera selection on change
-                if(Info.isSafari()) {
+                if (Info.isSafari()) {
                     if (options.video.sourceId) {
                         opts.video.sourceId = options.video.sourceId;
-                        opts.video.deviceId = { exact: options.video.sourceId};
+                        opts.video.deviceId = {
+                            exact: options.video.sourceId
+                        };
                     }
                 }
                 var as = options.video.aspectRatio ? options.video.aspectRatio : (options.video.width && options.video.height ? options.video.width / options.video.height : null);
