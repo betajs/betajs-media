@@ -86,8 +86,11 @@ Scoped.define("module:Player.Broadcasting", [
 
                 options.autoJoinPolicy = autoJoinPolicy[1];
                 options.receiverApplicationId = this.options.chromecastReceiverAppId || applicationIds[2];
+                /** The following flag enables Cast Connect(requires Chrome 87 or higher) */
+                options.androidReceiverCompatible = true;
 
-                cast.framework.CastContext.getInstance().setOptions(options);
+                var context = cast.framework.CastContext.getInstance();
+                context.setOptions(options);
 
                 var castRemotePlayer = new cast.framework.RemotePlayer();
                 castRemotePlayer.title = this.options.title;
@@ -110,6 +113,28 @@ Scoped.define("module:Player.Broadcasting", [
                 // seek(), setVolumeLevel(), stop()
 
 
+                var availableStates = cast.framework.CastState;
+                var stateConnecting = cast.framework.CastState.CONNECTING;
+                var stateNoDevice = cast.framework.CastState.NO_DEVICES_AVAILABLE;
+                var stateEventType = cast.framework.CastContextEventType.CAST_STATE_CHANGED;
+
+                context.addEventListener(stateEventType, function(ev) {
+                    var _currentState = ev.castState;
+                    self.player.trigger("cast-state-changed", _currentState, availableStates);
+                    if (_currentState !== stateNoDevice) {
+                        // var castRemotePlayer = new cast.framework.RemotePlayer();
+                        // self._initCastPlayer(castRemotePlayer, googleCastInitialOptions);
+                        if (_currentState === stateConnecting)
+                            castRemotePlayer.displayStatus = "Please wait connecting";
+                        else
+                            castRemotePlayer.displayStatus = "";
+                    } else {
+                        /* We can remove here player event as well*/
+                    }
+                });
+
+                // Will listen to remote player connection
+                // DON'T move inside state change event
                 castRemotePlayerController.addEventListener(
                     cast.framework.RemotePlayerEventType.IS_CONNECTED_CHANGED,
                     function() {
@@ -142,7 +167,7 @@ Scoped.define("module:Player.Broadcasting", [
                     url: this.options.poster
                 }];
 
-                // BUFFERED : Stored media streamed from an existing data store.
+                // BUFFERED: Stored media streamed from an existing data store.
                 // LIVE: Live media generated on the fly.
                 // OTHER: None of the above.
                 // mediaInfo.streamType = 'BUFFERED';
@@ -154,22 +179,32 @@ Scoped.define("module:Player.Broadcasting", [
                 this.googleCast.castMediaInfo = mediaInfo;
                 this.googleCast.castSession = castSession;
 
+                castRemotePlayerController.addEventListener(
+                    cast.framework.RemotePlayerEventType.MEDIA_INFO_CHANGED,
+                    function() {
+                        if (!castSession) return;
+
+                        var media = castSession.getMediaSession();
+                        if (!media) return;
+
+                        // On un-connect and re-connect to cast-player,
+                        // this part will provide correct player state
+                        player.trigger("cast-paused", media.playerState === 'PAUSED');
+                    }
+                );
+
                 castSession.loadMedia(request).then(
                     function() {
 
                         player._broadcastingState.googleCastConnected = true;
                         player.trigger("cast-loaded", castRemotePlayer, castRemotePlayerController);
 
-
-                        var currentPosition = self.options.currentPosition;
-                        if (currentPosition > 0) self._seekToGoogleCast(currentPosition);
-
                         // Listeners available for further actions with remote player
                         // https://developers.google.com/cast/docs/reference/chrome/cast.framework#.RemotePlayerEventType
                         castRemotePlayerController.addEventListener(
                             cast.framework.RemotePlayerEventType.IS_PAUSED_CHANGED,
                             function() {
-                                player.trigger("cast-playpause", castRemotePlayer.isPaused);
+                                player.trigger("cast-paused", castRemotePlayer.isPaused);
                             }
                         );
 
@@ -186,18 +221,27 @@ Scoped.define("module:Player.Broadcasting", [
                         console.warn('Remote media load error : ' + self._googleCastPlayerErrorMessages(errorCode));
                     }
                 );
-
             },
 
             _destroyCastRemotePlayer: function(castRemotePlayer, castRemotePlayerController) {
                 var player = this.player;
                 var currentPosition = this._getGoogleCastCurrentMediaTime(castRemotePlayer);
 
+                castRemotePlayerController.removeEventListener(
+                    cast.framework.RemotePlayerEventType.MEDIA_INFO_CHANGED
+                );
+                castRemotePlayerController.removeEventListener(
+                    cast.framework.RemotePlayerEventType.IS_PAUSED_CHANGED
+                );
+                castRemotePlayerController.removeEventListener(
+                    cast.framework.RemotePlayerEventType.CURRENT_TIME_CHANGED
+                );
+
                 if (castRemotePlayer.savedPlayerState && !castRemotePlayer.isConnected)
                     currentPosition = castRemotePlayer.savedPlayerState.currentTime;
 
                 if (player._broadcastingState.googleCastConnected && currentPosition > 0)
-                    player.trigger("proceed-when-ending-googlecast", currentPosition);
+                    player.trigger("proceed-when-ending-googlecast", currentPosition, castRemotePlayer.isPaused);
 
                 this.player._broadcastingState.googleCastConnected = false;
             },
@@ -234,8 +278,8 @@ Scoped.define("module:Player.Broadcasting", [
                 if (!this.player._broadcastingState.googleCastConnected)
                     return;
 
-                return remotePlayer.currentTime;
-
+                // Sometimes getting error: "The provided double value is non-finite"
+                return Math.floor(remotePlayer.currentTime * 10) / 10;
             },
 
             _getGoogleCastMediaDuration: function(remotePlayer) {
@@ -311,7 +355,6 @@ Scoped.define("module:Player.Broadcasting", [
             lookForAirplayDevices: function(videoElement) {
                 return videoElement.webkitShowPlaybackTargetPicker();
             }
-
         };
     });
 });
