@@ -1,11 +1,12 @@
 Scoped.define("module:Player.VideoPlayerWrapper", [
     "base:Classes.OptimisticConditionalInstance",
     "base:Events.EventsMixin",
+    "base:MediaTypes",
     "base:Types",
     "base:Objs",
     "base:Strings",
     "browser:Events"
-], function(OptimisticConditionalInstance, EventsMixin, Types, Objs, Strings, DomEvents, scoped) {
+], function(OptimisticConditionalInstance, EventsMixin, MediaTypes, Types, Objs, Strings, DomEvents, scoped) {
     return OptimisticConditionalInstance.extend({
         scoped: scoped
     }, [EventsMixin, function(inherited) {
@@ -34,14 +35,14 @@ Scoped.define("module:Player.VideoPlayerWrapper", [
                             src: source
                         };
                     if (source.ext && !source.type)
-                        source.type = "video/" + source.ext;
+                        source.type = MediaTypes.getType(source.ext);
                     if (!source.ext && source.type)
-                        source.ext = Strings.last_after(source.type, "/");
+                        source.ext = MediaTypes.getExtension(source.type);
                     if (!source.ext && !source.type && Types.is_string(source.src)) {
                         var temp = Strings.splitFirst(source.src, "?").head;
                         if (temp.indexOf(".") >= 0) {
                             source.ext = Strings.last_after(temp, ".");
-                            source.type = "video/" + source.ext;
+                            source.type = MediaTypes.getType(source.ext);
                         }
                     }
                     if (source.ext)
