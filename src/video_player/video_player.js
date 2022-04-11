@@ -191,8 +191,10 @@ Scoped.define("module:Player.VideoPlayerWrapper", [
             },
 
             play: function() {
-                if (this._reloadonplay)
-                    this._element.load();
+                if (this._reloadonplay) {
+                    if (this._hls) this._hls.startLoad();
+                    else this._element.load();
+                }
                 this._reloadonplay = false;
                 try {
                     var result = this._element.play();
@@ -241,6 +243,7 @@ Scoped.define("module:Player.VideoPlayerWrapper", [
 
 
 Scoped.define("module:Player.Html5VideoPlayerWrapper", [
+    "module:Hls",
     "module:Player.VideoPlayerWrapper",
     "browser:Info",
     "base:Promise",
@@ -250,7 +253,7 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
     "base:Async",
     "browser:Dom",
     "browser:Events"
-], function(VideoPlayerWrapper, Info, Promise, Objs, Timer, Strings, Async, Dom, DomEvents, scoped) {
+], function(Hls, VideoPlayerWrapper, Info, Promise, Objs, Timer, Strings, Async, Dom, DomEvents, scoped) {
     return VideoPlayerWrapper.extend({
         scoped: scoped
     }, function(inherited) {
@@ -333,6 +336,40 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
                 } else if (!ie9) {
                     Objs.iter(sources, function(source) {
                         var sourceEl = document.createElement("source");
+                        if (source.ext === "m3u8") {
+                            if (Hls.isSupported()) {
+                                this._hls = new Hls();
+                                this._hls.on(Hls.Events.MEDIA_ATTACHED, function() {
+                                    this._hls.loadSource(source.src);
+                                    this._hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                                        promise.asyncSuccess(true);
+                                    });
+                                }.bind(this));
+                                this._hls.on(Hls.Events.ERROR, function(e, data) {
+                                    var error;
+                                    if (data.fatal) {
+                                        switch (data.type) {
+                                            case Hls.ErrorTypes.NETWORK_ERROR:
+                                                this._hls.startLoad();
+                                                error = "HLS Network Error";
+                                                break;
+                                            case Hls.ErrorTypes.MEDIA_ERROR:
+                                                this._hls.recoverMediaError();
+                                                error = "HLS Media Error";
+                                                break;
+                                            default:
+                                                this._hls.destroy();
+                                                error = "HLS Fatal Error";
+
+                                        }
+                                    }
+                                    promise.asyncError(error || true);
+                                }.bind(this));
+                                this._hls.attachMedia(this._element);
+                                return;
+                            }
+                            if (!video.canPlayType(source.type)) return;
+                        }
                         if (source.type)
                             sourceEl.type = source.type;
                         this._element.appendChild(sourceEl);
@@ -389,6 +426,7 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
             },
 
             destroy: function() {
+                if (this._hls) this._hls.destroy();
                 if (this._audioElement)
                     this._audioElement.remove();
                 if (this.supportsFullscreen() && this.__fullscreenListener)
