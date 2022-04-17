@@ -1,5 +1,3 @@
-var path = require("path");
-
 module.exports = function(grunt) {
 
 	var pkg = grunt.file.readJSON('package.json');
@@ -11,9 +9,6 @@ module.exports = function(grunt) {
 	
     /* Compilation */    
 	.scopedclosurerevisionTask(null, [
-		"supplements/hls/pre-hls-fragment.js",
-		path.join(path.dirname(require.resolve("hls.js")), "hls.light.min.js"),
-		"supplements/hls/post-hls-fragment.js",
 		"src/**/*.js"
 	], "dist/" + dist + "-noscoped.js", {
 		"module": "global:BetaJS.Media",

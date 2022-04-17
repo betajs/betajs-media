@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.184 - 2022-04-13
+betajs-media - v0.0.185 - 2022-04-17
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -12,8 +12,8 @@ Scoped.binding('browser', 'global:BetaJS.Browser');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.184",
-    "datetime": 1649853840750
+    "version": "0.0.185",
+    "datetime": 1650169573848
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.136');
@@ -1764,6 +1764,62 @@ Scoped.define("module:Player.Broadcasting", [
         };
     });
 });
+Scoped.define("module:HlsSupportMixin", [
+    "base:Promise"
+], function(Promise) {
+    var Hls = window.Hls;
+    return {
+        _hlsIsSupported: function() {
+            console.log(Hls && Hls.isSupported());
+            return Hls && Hls.isSupported();
+        },
+
+        _loadHls: function(source) {
+            var promise = Promise.create();
+            this._hls = new Hls();
+            this._hls.on(Hls.Events.MEDIA_ATTACHED, function() {
+                this._hls.loadSource(source.src);
+                this._hls.on(Hls.Events.MANIFEST_PARSED, function(_, data) {
+                    this._qualityOptions = data.levels.map(function(level, index) {
+                        return {
+                            id: index,
+                            label: level.width + "x" + level.height + " (" + Math.round(level.bitrate / 1024) + " kbps)"
+                        };
+                    });
+                    this._currentQuality = this._qualityOptions[this._hls.startLevel];
+                    this._hls.on(Hls.Events.LEVEL_SWITCHED, function(_, data) {
+                        this._currentQuality = this._qualityOptions[data.level];
+                        this.trigger("qualityswitched", this._qualityOptions[data.level]);
+                    }.bind(this));
+                    this.on("setsourcequality", function(quality) {
+                        this._hls.currentLevel = quality;
+                    });
+                    promise.asyncSuccess(true);
+                }.bind(this));
+            }.bind(this));
+            this._hls.on(Hls.Events.ERROR, function(e, data) {
+                var error;
+                if (data.fatal) {
+                    switch (data.type) {
+                        case Hls.ErrorTypes.NETWORK_ERROR:
+                            this._hls.startLoad();
+                            error = "HLS Network Error";
+                            break;
+                        case Hls.ErrorTypes.MEDIA_ERROR:
+                            this._hls.recoverMediaError();
+                            error = "HLS Media Error";
+                            break;
+                        default:
+                            this._hls.destroy();
+                            error = "HLS Fatal Error";
+                    }
+                }
+            }.bind(this));
+            this._hls.attachMedia(this._element);
+            return promise;
+        }
+    };
+});
 Scoped.define("module:Player.Support", [
     "base:Promise",
     "base:Objs"
@@ -1851,11 +1907,12 @@ Scoped.define("module:Player.Support", [
 Scoped.define("module:Player.VideoPlayerWrapper", [
     "base:Classes.OptimisticConditionalInstance",
     "base:Events.EventsMixin",
+    "base:MediaTypes",
     "base:Types",
     "base:Objs",
     "base:Strings",
     "browser:Events"
-], function(OptimisticConditionalInstance, EventsMixin, Types, Objs, Strings, DomEvents, scoped) {
+], function(OptimisticConditionalInstance, EventsMixin, MediaTypes, Types, Objs, Strings, DomEvents, scoped) {
     return OptimisticConditionalInstance.extend({
         scoped: scoped
     }, [EventsMixin, function(inherited) {
@@ -1884,14 +1941,14 @@ Scoped.define("module:Player.VideoPlayerWrapper", [
                             src: source
                         };
                     if (source.ext && !source.type)
-                        source.type = "video/" + source.ext;
+                        source.type = MediaTypes.getType(source.ext);
                     if (!source.ext && source.type)
-                        source.ext = Strings.last_after(source.type, "/");
+                        source.ext = MediaTypes.getExtension(source.type);
                     if (!source.ext && !source.type && Types.is_string(source.src)) {
                         var temp = Strings.splitFirst(source.src, "?").head;
                         if (temp.indexOf(".") >= 0) {
                             source.ext = Strings.last_after(temp, ".");
-                            source.type = "video/" + source.ext;
+                            source.type = MediaTypes.getType(source.ext);
                         }
                     }
                     if (source.ext)
@@ -2040,8 +2097,10 @@ Scoped.define("module:Player.VideoPlayerWrapper", [
             },
 
             play: function() {
-                if (this._reloadonplay)
-                    this._element.load();
+                if (this._reloadonplay) {
+                    if (this._hls) this._hls.startLoad();
+                    else this._element.load();
+                }
                 this._reloadonplay = false;
                 try {
                     var result = this._element.play();
@@ -2090,6 +2149,7 @@ Scoped.define("module:Player.VideoPlayerWrapper", [
 
 
 Scoped.define("module:Player.Html5VideoPlayerWrapper", [
+    "module:HlsSupportMixin",
     "module:Player.VideoPlayerWrapper",
     "browser:Info",
     "base:Promise",
@@ -2099,10 +2159,10 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
     "base:Async",
     "browser:Dom",
     "browser:Events"
-], function(VideoPlayerWrapper, Info, Promise, Objs, Timer, Strings, Async, Dom, DomEvents, scoped) {
+], function(HlsSupportMixin, VideoPlayerWrapper, Info, Promise, Objs, Timer, Strings, Async, Dom, DomEvents, scoped) {
     return VideoPlayerWrapper.extend({
         scoped: scoped
-    }, function(inherited) {
+    }, [HlsSupportMixin, function(inherited) {
         return {
 
             _initialize: function() {
@@ -2182,6 +2242,13 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
                 } else if (!ie9) {
                     Objs.iter(sources, function(source) {
                         var sourceEl = document.createElement("source");
+                        if (source.ext === "m3u8") {
+                            if (this._hlsIsSupported()) {
+                                this._loadHls(source).forwardSuccess(promise);
+                                return;
+                            }
+                            if (!video.canPlayType(source.type)) return;
+                        }
                         if (source.type)
                             sourceEl.type = source.type;
                         this._element.appendChild(sourceEl);
@@ -2238,6 +2305,7 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
             },
 
             destroy: function() {
+                if (this._hls) this._hls.destroy();
                 if (this._audioElement)
                     this._audioElement.remove();
                 if (this.supportsFullscreen() && this.__fullscreenListener)
@@ -2455,7 +2523,7 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
             }
 
         };
-    });
+    }]);
 });
 
 

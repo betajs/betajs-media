@@ -1,10 +1,11 @@
 Scoped.define("module:HlsSupportMixin", [
-    "module:Hls",
     "base:Promise"
-], function(Hls, Promise) {
+], function(Promise) {
+    var Hls = window.Hls;
     return {
         _hlsIsSupported: function() {
-            return Hls.isSupported();
+            console.log(Hls && Hls.isSupported());
+            return Hls && Hls.isSupported();
         },
 
         _loadHls: function(source) {
