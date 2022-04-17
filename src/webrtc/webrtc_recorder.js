@@ -311,9 +311,13 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
             },
 
             _pixelSample: function(samples, callback, context) {
+                if (!this._video.videoWidth) {
+                    callback.call(context || this, 0, 0, 0);
+                    return;
+                }
                 samples = samples || 100;
-                var w = this._video.videoWidth || this._video.clientWidth;
-                var h = this._video.videoHeight || this._video.clientHeight;
+                var w = this._video.videoWidth;
+                var h = this._video.videoHeight;
                 var wc = Math.ceil(Math.sqrt(w / h * samples));
                 var hc = Math.ceil(Math.sqrt(h / w * samples));
                 var canvas = document.createElement('canvas');
