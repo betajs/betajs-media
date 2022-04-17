@@ -4,7 +4,6 @@ Scoped.define("module:HlsSupportMixin", [
     var Hls = window.Hls;
     return {
         _hlsIsSupported: function() {
-            console.log(Hls && Hls.isSupported());
             return Hls && Hls.isSupported();
         },
 

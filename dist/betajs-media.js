@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.185 - 2022-04-17
+betajs-media - v0.0.186 - 2022-04-17
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -1010,7 +1010,7 @@ Public.exports();
 	return Public;
 }).call(this);
 /*!
-betajs-media - v0.0.185 - 2022-04-17
+betajs-media - v0.0.186 - 2022-04-17
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -1023,8 +1023,8 @@ Scoped.binding('browser', 'global:BetaJS.Browser');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.185",
-    "datetime": 1650169573848
+    "version": "0.0.186",
+    "datetime": 1650190340734
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.136');
@@ -2781,7 +2781,6 @@ Scoped.define("module:HlsSupportMixin", [
     var Hls = window.Hls;
     return {
         _hlsIsSupported: function() {
-            console.log(Hls && Hls.isSupported());
             return Hls && Hls.isSupported();
         },
 
