@@ -342,7 +342,7 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
                                 return;
                             }
                             if (this._element instanceof HTMLMediaElement)
-                                if (!video.canPlayType(source.type)) return;
+                                if (!this._element.canPlayType(source.type)) return;
                                 else return;
                         }
                         if (source.type)
