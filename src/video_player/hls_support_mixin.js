@@ -1,14 +1,37 @@
 Scoped.define("module:HlsSupportMixin", [
-    "base:Promise"
-], function(Promise) {
-    var Hls = window.Hls;
+    "base:Promise",
+    "base:Async",
+    "browser:Loader"
+], function(Promise, Async, Loader) {
+    var lazyLoadUrl = "https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.1.5/hls.light.min.js";
+    var lazyLoaded = false;
     return {
+
+        _hls: function() {
+            return window.Hls;
+        },
+
         _hlsIsSupported: function() {
-            return Hls && Hls.isSupported();
+            return !!this._hls() && this._hls().isSupported();
+        },
+
+        _lazyLoadHls: function() {
+            if (!lazyLoaded) {
+                var promise = Promise.create();
+                Loader.loadScript(lazyLoadUrl, function() {
+                    lazyLoaded = true;
+                    Async.eventually(function() {
+                        promise.asyncSuccess(this._hlsIsSupported());
+                    }, this);
+                }, this);
+                return promise;
+            } else
+                return Promise.value(this._hlsIsSupported());
         },
 
         _loadHls: function(source) {
             var promise = Promise.create();
+            var Hls = this._hls();
             this._hls = new Hls();
             this._hls.on(Hls.Events.MEDIA_ATTACHED, function() {
                 this._hls.loadSource(source.src);
@@ -47,6 +70,7 @@ Scoped.define("module:HlsSupportMixin", [
                             error = "HLS Fatal Error";
                     }
                 }
+                promise.asyncError(error);
             }.bind(this));
             this._hls.attachMedia(this._element);
             return promise;

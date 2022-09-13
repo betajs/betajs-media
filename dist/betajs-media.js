@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.188 - 2022-09-09
+betajs-media - v0.0.189 - 2022-09-12
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -1010,7 +1010,7 @@ Public.exports();
 	return Public;
 }).call(this);
 /*!
-betajs-media - v0.0.188 - 2022-09-09
+betajs-media - v0.0.189 - 2022-09-12
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -1023,8 +1023,8 @@ Scoped.binding('browser', 'global:BetaJS.Browser');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.188",
-    "datetime": 1662731041851
+    "version": "0.0.189",
+    "datetime": 1663027266138
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.136');
@@ -2776,16 +2776,39 @@ Scoped.define("module:Player.Broadcasting", [
     });
 });
 Scoped.define("module:HlsSupportMixin", [
-    "base:Promise"
-], function(Promise) {
-    var Hls = window.Hls;
+    "base:Promise",
+    "base:Async",
+    "browser:Loader"
+], function(Promise, Async, Loader) {
+    var lazyLoadUrl = "https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.1.5/hls.light.min.js";
+    var lazyLoaded = false;
     return {
+
+        _hls: function() {
+            return window.Hls;
+        },
+
         _hlsIsSupported: function() {
-            return Hls && Hls.isSupported();
+            return !!this._hls() && this._hls().isSupported();
+        },
+
+        _lazyLoadHls: function() {
+            if (!lazyLoaded) {
+                var promise = Promise.create();
+                Loader.loadScript(lazyLoadUrl, function() {
+                    lazyLoaded = true;
+                    Async.eventually(function() {
+                        promise.asyncSuccess(this._hlsIsSupported());
+                    }, this);
+                }, this);
+                return promise;
+            } else
+                return Promise.value(this._hlsIsSupported());
         },
 
         _loadHls: function(source) {
             var promise = Promise.create();
+            var Hls = this._hls();
             this._hls = new Hls();
             this._hls.on(Hls.Events.MEDIA_ATTACHED, function() {
                 this._hls.loadSource(source.src);
@@ -2824,6 +2847,7 @@ Scoped.define("module:HlsSupportMixin", [
                             error = "HLS Fatal Error";
                     }
                 }
+                promise.asyncError(error);
             }.bind(this));
             this._hls.attachMedia(this._element);
             return promise;
@@ -3253,6 +3277,12 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
                     Objs.iter(sources, function(source) {
                         var sourceEl = document.createElement("source");
                         if (source.ext === "m3u8") {
+                            this._lazyLoadHls().success(function(isSupported) {
+                                if (isSupported)
+                                    this._loadHls(source).forwardSuccess(promise);
+                            }, this);
+                            return;
+                            /*
                             if (this._hlsIsSupported()) {
                                 this._loadHls(source).forwardSuccess(promise);
                                 return;
@@ -3260,6 +3290,8 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
                             if (this._element instanceof HTMLMediaElement)
                                 if (!this._element.canPlayType(source.type)) return;
                                 else return;
+
+                             */
                         }
                         if (source.type)
                             sourceEl.type = source.type;

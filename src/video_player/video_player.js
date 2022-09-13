@@ -337,6 +337,12 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
                     Objs.iter(sources, function(source) {
                         var sourceEl = document.createElement("source");
                         if (source.ext === "m3u8") {
+                            this._lazyLoadHls().success(function(isSupported) {
+                                if (isSupported)
+                                    this._loadHls(source).forwardSuccess(promise);
+                            }, this);
+                            return;
+                            /*
                             if (this._hlsIsSupported()) {
                                 this._loadHls(source).forwardSuccess(promise);
                                 return;
@@ -344,6 +350,8 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
                             if (this._element instanceof HTMLMediaElement)
                                 if (!this._element.canPlayType(source.type)) return;
                                 else return;
+
+                             */
                         }
                         if (source.type)
                             sourceEl.type = source.type;
