@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.189 - 2022-09-12
+betajs-media - v0.0.190 - 2022-09-13
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -12,8 +12,8 @@ Scoped.binding('browser', 'global:BetaJS.Browser');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.189",
-    "datetime": 1663027266138
+    "version": "0.0.190",
+    "datetime": 1663067811253
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.136');
@@ -1773,12 +1773,12 @@ Scoped.define("module:HlsSupportMixin", [
     var lazyLoaded = false;
     return {
 
-        _hls: function() {
+        _hlsObj: function() {
             return window.Hls;
         },
 
         _hlsIsSupported: function() {
-            return !!this._hls() && this._hls().isSupported();
+            return !!this._hlsObj() && this._hlsObj().isSupported();
         },
 
         _lazyLoadHls: function() {
@@ -1797,7 +1797,7 @@ Scoped.define("module:HlsSupportMixin", [
 
         _loadHls: function(source) {
             var promise = Promise.create();
-            var Hls = this._hls();
+            var Hls = this._hlsObj();
             this._hls = new Hls();
             this._hls.on(Hls.Events.MEDIA_ATTACHED, function() {
                 this._hls.loadSource(source.src);

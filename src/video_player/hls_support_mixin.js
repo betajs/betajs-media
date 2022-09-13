@@ -7,12 +7,12 @@ Scoped.define("module:HlsSupportMixin", [
     var lazyLoaded = false;
     return {
 
-        _hls: function() {
+        _hlsObj: function() {
             return window.Hls;
         },
 
         _hlsIsSupported: function() {
-            return !!this._hls() && this._hls().isSupported();
+            return !!this._hlsObj() && this._hlsObj().isSupported();
         },
 
         _lazyLoadHls: function() {
@@ -31,7 +31,7 @@ Scoped.define("module:HlsSupportMixin", [
 
         _loadHls: function(source) {
             var promise = Promise.create();
-            var Hls = this._hls();
+            var Hls = this._hlsObj();
             this._hls = new Hls();
             this._hls.on(Hls.Events.MEDIA_ATTACHED, function() {
                 this._hls.loadSource(source.src);
