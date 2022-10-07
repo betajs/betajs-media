@@ -150,7 +150,11 @@ Scoped.define("module:Recorder.Support", [
          * @private
          */
         __isCanvasBlank: function(canvas) {
-            return !canvas.getContext('2d')
+            var canvasContext = canvas.getContext('2d');
+            if (canvasContext && canvas.width <= 0 && canvas.height <= 0) {
+                return true;
+            }
+            return !canvasContext
                 .getImageData(0, 0, canvas.width, canvas.height).data
                 .some(function(channel) {
                     return channel !== 0;
