@@ -92,6 +92,8 @@ Scoped.define("module:Recorder.Support", [
             quality = quality || 1.0;
             isUploader = isUploader || false;
             var canvas = document.createElement('canvas');
+            if (this.__isCanvasBlank(canvas))
+                return null;
             canvas.width = w || (video.videoWidth || video.clientWidth);
             canvas.height = h || (video.videoHeight || video.clientHeight);
             var ratio = +(canvas.width / canvas.height);
@@ -112,10 +114,7 @@ Scoped.define("module:Recorder.Support", [
 
             var data = canvas.toDataURL(type, quality);
 
-            if (!this.__isCanvasBlank(canvas))
-                return data;
-            else
-                return null;
+            return data;
         },
 
         /**
