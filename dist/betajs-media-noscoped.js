@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.190 - 2022-09-13
+betajs-media - v0.0.191 - 2022-10-24
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -12,8 +12,8 @@ Scoped.binding('browser', 'global:BetaJS.Browser');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.190",
-    "datetime": 1663067811253
+    "version": "0.0.191",
+    "datetime": 1666638243213
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.136');
@@ -2656,13 +2656,16 @@ Scoped.define("module:Recorder.Support", [
          * @return {Data URL}
          */
         _createSnapshot: function(type, video, isUploader, h, w, x, y, quality) {
+            var width = w || (video.videoWidth || video.clientWidth);
+            var height = h || (video.videoHeight || video.clientHeight);
+            if (!width || !height) return null;
             x = x || 0;
             y = y || 0;
             quality = quality || 1.0;
             isUploader = isUploader || false;
             var canvas = document.createElement('canvas');
-            canvas.width = w || (video.videoWidth || video.clientWidth);
-            canvas.height = h || (video.videoHeight || video.clientHeight);
+            canvas.width = width;
+            canvas.height = height;
             var ratio = +(canvas.width / canvas.height);
             var orientation = ratio > 1.00 ? 'landscape' : 'portrait';
             var _isWebKit = (Info.isSafari() || (Info.isMobile() && Info.isiOS()));
@@ -2681,10 +2684,8 @@ Scoped.define("module:Recorder.Support", [
 
             var data = canvas.toDataURL(type, quality);
 
-            if (!this.__isCanvasBlank(canvas))
-                return data;
-            else
-                return null;
+            if (this.__isCanvasBlank(canvas)) return null;
+            return data;
         },
 
         /**
@@ -2719,7 +2720,11 @@ Scoped.define("module:Recorder.Support", [
          * @private
          */
         __isCanvasBlank: function(canvas) {
-            return !canvas.getContext('2d')
+            var canvasContext = canvas.getContext('2d');
+            if (canvasContext && canvas.width <= 0 && canvas.height <= 0) {
+                return true;
+            }
+            return !canvasContext
                 .getImageData(0, 0, canvas.width, canvas.height).data
                 .some(function(channel) {
                     return channel !== 0;
