@@ -87,13 +87,16 @@ Scoped.define("module:Recorder.Support", [
          * @return {Data URL}
          */
         _createSnapshot: function(type, video, isUploader, h, w, x, y, quality) {
+            var width = w || (video.videoWidth || video.clientWidth);
+            var height = h || (video.videoHeight || video.clientHeight);
+            if (!width || !height) return null;
             x = x || 0;
             y = y || 0;
             quality = quality || 1.0;
             isUploader = isUploader || false;
             var canvas = document.createElement('canvas');
-            canvas.width = w || (video.videoWidth || video.clientWidth);
-            canvas.height = h || (video.videoHeight || video.clientHeight);
+            canvas.width = width;
+            canvas.height = height;
             var ratio = +(canvas.width / canvas.height);
             var orientation = ratio > 1.00 ? 'landscape' : 'portrait';
             var _isWebKit = (Info.isSafari() || (Info.isMobile() && Info.isiOS()));
@@ -112,10 +115,8 @@ Scoped.define("module:Recorder.Support", [
 
             var data = canvas.toDataURL(type, quality);
 
-            if (!this.__isCanvasBlank(canvas))
-                return data;
-            else
-                return null;
+            if (this.__isCanvasBlank(canvas)) return null;
+            return data;
         },
 
         /**
@@ -150,7 +151,11 @@ Scoped.define("module:Recorder.Support", [
          * @private
          */
         __isCanvasBlank: function(canvas) {
-            return !canvas.getContext('2d')
+            var canvasContext = canvas.getContext('2d');
+            if (canvasContext && canvas.width <= 0 && canvas.height <= 0) {
+                return true;
+            }
+            return !canvasContext
                 .getImageData(0, 0, canvas.width, canvas.height).data
                 .some(function(channel) {
                     return channel !== 0;
