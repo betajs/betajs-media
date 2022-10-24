@@ -87,15 +87,16 @@ Scoped.define("module:Recorder.Support", [
          * @return {Data URL}
          */
         _createSnapshot: function(type, video, isUploader, h, w, x, y, quality) {
+            var width = w || (video.videoWidth || video.clientWidth);
+            var height = h || (video.videoHeight || video.clientHeight);
+            if (!width || !height) return null;
             x = x || 0;
             y = y || 0;
             quality = quality || 1.0;
             isUploader = isUploader || false;
             var canvas = document.createElement('canvas');
-            if (this.__isCanvasBlank(canvas))
-                return null;
-            canvas.width = w || (video.videoWidth || video.clientWidth);
-            canvas.height = h || (video.videoHeight || video.clientHeight);
+            canvas.width = width;
+            canvas.height = height;
             var ratio = +(canvas.width / canvas.height);
             var orientation = ratio > 1.00 ? 'landscape' : 'portrait';
             var _isWebKit = (Info.isSafari() || (Info.isMobile() && Info.isiOS()));
@@ -114,6 +115,7 @@ Scoped.define("module:Recorder.Support", [
 
             var data = canvas.toDataURL(type, quality);
 
+            if (this.__isCanvasBlank(canvas)) return null;
             return data;
         },
 
