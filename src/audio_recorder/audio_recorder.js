@@ -123,6 +123,9 @@ Scoped.define("module:AudioRecorder.WebRTCAudioRecorderWrapper", [
                 this._recorder.on("error", function(errorName, errorData) {
                     this.trigger("error", errorName, errorData);
                 }, this);
+                this._recorder.on("dataavailable", function(e) {
+                    this.trigger("dataavailable", e);
+                }, this);
                 this.ready.asyncSuccess(true);
             },
 
