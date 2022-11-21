@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.191 - 2022-10-24
+betajs-media - v0.0.192 - 2022-11-21
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -1010,7 +1010,7 @@ Public.exports();
 	return Public;
 }).call(this);
 /*!
-betajs-media - v0.0.191 - 2022-10-24
+betajs-media - v0.0.192 - 2022-11-21
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -1023,8 +1023,8 @@ Scoped.binding('browser', 'global:BetaJS.Browser');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.191",
-    "datetime": 1666638243213
+    "version": "0.0.192",
+    "datetime": 1669069247824
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.136');
@@ -1527,6 +1527,9 @@ Scoped.define("module:AudioRecorder.WebRTCAudioRecorderWrapper", [
                 }, this);
                 this._recorder.on("error", function(errorName, errorData) {
                     this.trigger("error", errorName, errorData);
+                }, this);
+                this._recorder.on("dataavailable", function(e) {
+                    this.trigger("dataavailable", e);
                 }, this);
                 this.ready.asyncSuccess(true);
             },
