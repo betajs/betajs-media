@@ -1,4 +1,4 @@
-# betajs-media 0.0.192
+# betajs-media 0.0.193
 [![Code Climate](https://codeclimate.com/github/betajs/betajs-media/badges/gpa.svg)](https://codeclimate.com/github/betajs/betajs-media)
 [![NPM](https://img.shields.io/npm/v/betajs-media.svg?style=flat)](https://www.npmjs.com/package/betajs-media)
 [![Gitter Chat](https://badges.gitter.im/betajs/betajs-media.svg)](https://gitter.im/betajs/betajs-media)
@@ -121,7 +121,7 @@ This software may include modified and unmodified portions of:
 - TypedArray, From microphone to .WAV with: getUserMedia and Web Audio, (c) Thibault Imbert
 - Media Stream Recorder, https://github.com/streamproc/MediaStreamRecorder
 - Whammy Recorder, https://github.com/antimatter15/whammy
-- Media Element autoplay detection https://github.com/video-dev/can-autoplay
+
 
 
 
