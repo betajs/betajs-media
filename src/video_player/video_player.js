@@ -244,6 +244,7 @@ Scoped.define("module:Player.VideoPlayerWrapper", [
 
 Scoped.define("module:Player.Html5VideoPlayerWrapper", [
     "module:HlsSupportMixin",
+    "module:Recorder.PixelSampleMixin",
     "module:Player.VideoPlayerWrapper",
     "browser:Info",
     "base:Promise",
@@ -253,10 +254,10 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
     "base:Async",
     "browser:Dom",
     "browser:Events"
-], function(HlsSupportMixin, VideoPlayerWrapper, Info, Promise, Objs, Timer, Strings, Async, Dom, DomEvents, scoped) {
+], function(HlsSupportMixin, PixelSampleMixin, VideoPlayerWrapper, Info, Promise, Objs, Timer, Strings, Async, Dom, DomEvents, scoped) {
     return VideoPlayerWrapper.extend({
         scoped: scoped
-    }, [HlsSupportMixin, function(inherited) {
+    }, [HlsSupportMixin, PixelSampleMixin, function(inherited) {
         return {
 
             _initialize: function() {

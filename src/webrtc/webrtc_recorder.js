@@ -310,29 +310,6 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
                 return RecorderSupport.createSnapshot(type, this._video);
             },
 
-            _pixelSample: function(samples, callback, context) {
-                if (!this._video.videoWidth) {
-                    callback.call(context || this, 0, 0, 0);
-                    return;
-                }
-                samples = samples || 100;
-                var w = this._video.videoWidth;
-                var h = this._video.videoHeight;
-                var wc = Math.ceil(Math.sqrt(w / h * samples));
-                var hc = Math.ceil(Math.sqrt(h / w * samples));
-                var canvas = document.createElement('canvas');
-                canvas.width = wc;
-                canvas.height = hc;
-                var ctx = canvas.getContext('2d');
-                ctx.drawImage(this._video, 0, 0, wc, hc);
-                for (var i = 0; i < samples; ++i) {
-                    var x = i % wc;
-                    var y = Math.floor(i / wc);
-                    var data = ctx.getImageData(x, y, 1, 1).data;
-                    callback.call(context || this, data[0], data[1], data[2]);
-                }
-            },
-
             /**
              * Initialize multi-stream related variables
              * @private
