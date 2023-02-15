@@ -15,7 +15,9 @@ Scoped.define("module:Recorder.PixelSampleMixin", [], function() {
             var canvas = document.createElement('canvas');
             canvas.width = wc;
             canvas.height = hc;
-            var ctx = canvas.getContext('2d');
+            var ctx = canvas.getContext('2d', {
+                willReadFrequently: true
+            });
             ctx.drawImage(this._video, 0, 0, wc, hc);
             for (var i = 0; i < samples; ++i) {
                 var x = i % wc;
