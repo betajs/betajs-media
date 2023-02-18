@@ -244,7 +244,7 @@ Scoped.define("module:Player.VideoPlayerWrapper", [
 
 Scoped.define("module:Player.Html5VideoPlayerWrapper", [
     "module:HlsSupportMixin",
-    "module:Recorder.PixelSampleMixin",
+    "module:Common.Video.PixelSampleMixin",
     "module:Player.VideoPlayerWrapper",
     "browser:Info",
     "base:Promise",

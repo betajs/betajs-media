@@ -7,7 +7,7 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
     "base:Time",
     "module:WebRTC.Support",
     "module:Recorder.Support",
-    "module:Recorder.PixelSampleMixin",
+    "module:Common.Video.PixelSampleMixin",
     "browser:Events"
 ], function(ConditionalInstance, EventsMixin, Objs, Async, Promise, Time, Support, RecorderSupport, PixelSampleMixin, DomEvents, scoped) {
     return ConditionalInstance.extend({
