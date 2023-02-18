@@ -23,7 +23,6 @@ Scoped.define("module:Common.Video.PixelSampler", [
                     this._canvas = document.createElement("canvas");
                     this._canvas.width = this._video.videoWidth;
                     this._canvas.height = this._video.videoHeight;
-                    document.body.appendChild(this._canvas);
                 }
                 this._getCanvasCtx().drawImage(this._video, 0, 0, this._video.videoWidth, this._video.videoHeight);
             },
