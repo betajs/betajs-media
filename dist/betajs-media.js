@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.193 - 2023-01-25
+betajs-media - v0.0.193 - 2023-02-19
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -1010,7 +1010,7 @@ Public.exports();
 	return Public;
 }).call(this);
 /*!
-betajs-media - v0.0.193 - 2023-01-25
+betajs-media - v0.0.193 - 2023-02-19
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -1024,7 +1024,7 @@ Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
     "version": "0.0.193",
-    "datetime": 1674677775399
+    "datetime": 1676831438693
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.136');
@@ -1667,6 +1667,149 @@ Scoped.extend("module:AudioRecorder.AudioRecorderWrapper", [
 ], function(AudioRecorderWrapper, WebRTCAudioRecorderWrapper) {
     AudioRecorderWrapper.register(WebRTCAudioRecorderWrapper, 2);
     return {};
+});
+Scoped.define("module:Common.Video.PixelSampler", [
+    "base:Class",
+    "base:Maths"
+], function(Class, Maths, scoped) {
+    return Class.extend({
+        scoped: scoped
+    }, function(inherited) {
+        return {
+            constructor: function(video, options) {
+                inherited.constructor.call(this);
+                this._video = video;
+                this._areas = options && options.areas || [
+                    [
+                        [0, 1], // x0, x1
+                        [0, 1] // y0, y1
+                    ]
+                ];
+                this._samples = options && options.samples || 100;
+            },
+            _prepareCanvas: function() {
+                if (!this._video.videoWidth) return;
+                if (!this._canvas) {
+                    this._canvas = document.createElement("canvas");
+                    this._canvas.width = this._video.videoWidth;
+                    this._canvas.height = this._video.videoHeight;
+                }
+                this._getCanvasCtx().drawImage(this._video, 0, 0, this._video.videoWidth, this._video.videoHeight);
+            },
+            _getCanvasCtx: function() {
+                if (!this._canvas) return;
+                return this._canvas.getContext("2d", {
+                    willReadFrequently: true
+                });
+            },
+            _pixelSample: function(samples, area, callback, context) {
+                var ctx = this._getCanvasCtx();
+                if (!ctx) {
+                    callback.call(context || this, 0, 0, 0);
+                    return;
+                }
+                samples = samples || this._samples;
+                area = area || this._areas[0];
+                var w = this._video.videoWidth;
+                var h = this._video.videoHeight;
+                for (var i = 0; i < samples; i++) {
+                    var x = Maths.randomInt(area[0][0] * w, Math.min(area[0][1] * w, w - 1));
+                    var y = Maths.randomInt(area[1][0] * h, Math.min(area[1][1] * h, h - 1));
+                    data = ctx.getImageData(x, y, 1, 1).data;
+                    callback.call(context || this, data[0], data[1], data[2]);
+                }
+            },
+            _materializePixelSample: function(samples, area) {
+                var result = [];
+                this._pixelSample(samples, area, function(r, g, b) {
+                    result.push([r, g, b]);
+                });
+                return result;
+            },
+            lightLevel: function(samples, areas) {
+                this._prepareCanvas();
+                areas = areas || this._areas;
+                if (areas.length === 1) return this._singleLightLevel(samples, areas[0]);
+                var result = [];
+                for (var i = 0; i < areas.length; i++) {
+                    result.push(this._singleLightLevel(samples, areas[i]));
+                }
+                return result;
+            },
+            _singleLightLevel: function(samples, area) {
+                var total_light = 0.0;
+                samples = samples || this._samples;
+                this._pixelSample(samples, area, function(r, g, b) {
+                    total_light += r + g + b;
+                });
+                return total_light / (3 * samples);
+            },
+            blankLevel: function(samples, areas) {
+                this._prepareCanvas();
+                areas = areas || this._areas;
+                if (areas.length === 1) return this._singleBlankLevel(samples, areas[0]);
+                var result = [];
+                for (var i = 0; i < areas.length; i++) {
+                    result.push(this._singleBlankLevel(samples, areas[i]));
+                }
+                return result;
+            },
+            _singleBlankLevel: function(samples, area) {
+                var total_light = 0.0;
+                samples = samples || this._samples;
+                this._pixelSample(samples, area, function(r, g, b) {
+                    total_light += Math.pow(r, 2) + Math.pow(g, 2) + Math.pow(b, 2);
+                });
+                return Math.sqrt(total_light / (3 * samples));
+            },
+            deltaCoefficient: function(samples, areas) {
+                this._prepareCanvas();
+                areas = areas || this._areas;
+                if (areas.length === 1) return this._singleDeltaCoefficient(samples, areas[0]);
+                var result = [];
+                for (var i = 0; i < areas.length; i++) {
+                    result.push(this._singleDeltaCoefficient(samples, areas[i]));
+                }
+                return result;
+            },
+            _singleDeltaCoefficient: function(samples, area) {
+                samples = samples || this._samples;
+                var current = this._materializePixelSample(samples, area);
+                if (!this.__deltaSample) {
+                    this.__deltaSample = current;
+                    return null;
+                }
+                var delta_total = 0.0;
+                for (var i = 0; i < current.length; i++)
+                    for (var j = 0; j < 3; j++)
+                        delta_total += Math.pow(current[i][j] - this.__deltaSample[i][j], 2);
+                this.__deltaSample = current;
+                return Math.sqrt(delta_total / (3 * samples));
+            }
+        };
+    });
+});
+
+Scoped.define("module:Common.Video.PixelSampleMixin", [
+    "module:Common.Video.PixelSampler"
+], function(PixelSampler) {
+    return {
+        _createPixelSampler: function() {
+            return this.__pixelSampler = this.auto_destroy(new PixelSampler(this._video || this._element, this._options.pixelSamplerOptions));
+        },
+        _getPixelSampler: function() {
+            return this.__pixelSampler || this._createPixelSampler();
+        },
+        lightLevel: function(samples, areas) {
+            return this._getPixelSampler().lightLevel(samples, areas);
+        },
+        blankLevel: function(samples, areas) {
+            return this._getPixelSampler().blankLevel(samples, areas);
+        },
+        deltaCoefficient: function(samples, areas) {
+            return this._getPixelSampler().deltaCoefficient(samples, areas);
+        }
+    };
 });
 Scoped.define("module:Encoding.WaveEncoder.Support", [
     "base:Promise",
@@ -3305,6 +3448,7 @@ Scoped.define("module:Player.VideoPlayerWrapper", [
 
 Scoped.define("module:Player.Html5VideoPlayerWrapper", [
     "module:HlsSupportMixin",
+    "module:Common.Video.PixelSampleMixin",
     "module:Player.VideoPlayerWrapper",
     "browser:Info",
     "base:Promise",
@@ -3314,10 +3458,10 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
     "base:Async",
     "browser:Dom",
     "browser:Events"
-], function(HlsSupportMixin, VideoPlayerWrapper, Info, Promise, Objs, Timer, Strings, Async, Dom, DomEvents, scoped) {
+], function(HlsSupportMixin, PixelSampleMixin, VideoPlayerWrapper, Info, Promise, Objs, Timer, Strings, Async, Dom, DomEvents, scoped) {
     return VideoPlayerWrapper.extend({
         scoped: scoped
-    }, [HlsSupportMixin, function(inherited) {
+    }, [HlsSupportMixin, PixelSampleMixin, function(inherited) {
         return {
 
             _initialize: function() {
@@ -3985,53 +4129,6 @@ Scoped.define("module:Recorder.Support", [
         }
     };
 });
-Scoped.define("module:Recorder.PixelSampleMixin", [], function() {
-    return {
-
-        lightLevel: function(samples) {
-            samples = samples || 100;
-            var total_light = 0.0;
-            this._pixelSample(samples, function(r, g, b) {
-                total_light += r + g + b;
-            });
-            return total_light / (3 * samples);
-        },
-
-        blankLevel: function(samples) {
-            samples = samples || 100;
-            var total_light = 0.0;
-            this._pixelSample(samples, function(r, g, b) {
-                total_light += Math.pow(r, 2) + Math.pow(g, 2) + Math.pow(b, 2);
-            });
-            return Math.sqrt(total_light / (3 * samples));
-        },
-
-        _materializePixelSample: function(sample) {
-            var result = [];
-            this._pixelSample(sample, function(r, g, b) {
-                result.push([r, g, b]);
-            });
-            return result;
-        },
-
-        deltaCoefficient: function(samples) {
-            samples = samples || 100;
-            var current = this._materializePixelSample(samples);
-            if (!this.__deltaSample) {
-                this.__deltaSample = current;
-                return null;
-            }
-            var delta_total = 0.0;
-            for (var i = 0; i < current.length; ++i)
-                for (var j = 0; j < 3; ++j)
-                    delta_total += Math.pow(current[i][j] - this.__deltaSample[i][j], 2);
-            this.__deltaSample = current;
-            return Math.sqrt(delta_total / (3 * samples));
-        }
-
-    };
-});
-
 Scoped.define("module:Recorder.VideoRecorderWrapper", [
     "base:Classes.ConditionalInstance",
     "base:Events.EventsMixin",
@@ -5291,7 +5388,7 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
     "base:Time",
     "module:WebRTC.Support",
     "module:Recorder.Support",
-    "module:Recorder.PixelSampleMixin",
+    "module:Common.Video.PixelSampleMixin",
     "browser:Events"
 ], function(ConditionalInstance, EventsMixin, Objs, Async, Promise, Time, Support, RecorderSupport, PixelSampleMixin, DomEvents, scoped) {
     return ConditionalInstance.extend({
@@ -5592,29 +5689,6 @@ Scoped.define("module:WebRTC.RecorderWrapper", [
 
             createSnapshot: function(type) {
                 return RecorderSupport.createSnapshot(type, this._video);
-            },
-
-            _pixelSample: function(samples, callback, context) {
-                if (!this._video.videoWidth) {
-                    callback.call(context || this, 0, 0, 0);
-                    return;
-                }
-                samples = samples || 100;
-                var w = this._video.videoWidth;
-                var h = this._video.videoHeight;
-                var wc = Math.ceil(Math.sqrt(w / h * samples));
-                var hc = Math.ceil(Math.sqrt(h / w * samples));
-                var canvas = document.createElement('canvas');
-                canvas.width = wc;
-                canvas.height = hc;
-                var ctx = canvas.getContext('2d');
-                ctx.drawImage(this._video, 0, 0, wc, hc);
-                for (var i = 0; i < samples; ++i) {
-                    var x = i % wc;
-                    var y = Math.floor(i / wc);
-                    var data = ctx.getImageData(x, y, 1, 1).data;
-                    callback.call(context || this, data[0], data[1], data[2]);
-                }
             },
 
             /**
