@@ -153,9 +153,20 @@ Scoped.define("module:WebRTC.MediaRecorder", [
             stop: function() {
                 if (!this._started)
                     return;
-                this._started = false;
-                this._mediaRecorder.stop();
-                this.trigger("stopped");
+                try {
+                    this._mediaRecorder.stop();
+                    this._started = false;
+                    this.trigger("stopped");
+                } catch (err) {
+                    // "inactive", raise a DOM InvalidState error and terminate these steps.
+                    if ((err.message && err.message.indexOf('inactive') !== -1) && this._mediaRecorder.state !== 'inactive') {
+                        this._mediaRecorder.state = 'inactive';
+                        this.stop();
+                    } else {
+                        // console.log("Error when try to stop the recorder. Details: ", e);
+                        this.trigger("error", err.message);
+                    }
+                }
             },
 
             _dataAvailable: function(e) {
