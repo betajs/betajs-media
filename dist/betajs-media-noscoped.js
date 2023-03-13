@@ -1,5 +1,5 @@
 /*!
-betajs-media - v0.0.195 - 2023-02-19
+betajs-media - v0.0.196 - 2023-03-13
 Copyright (c) Ziggeo,Oliver Friedmann,Rashad Aliyev
 Apache-2.0 Software License.
 */
@@ -12,8 +12,8 @@ Scoped.binding('browser', 'global:BetaJS.Browser');
 Scoped.define("module:", function () {
 	return {
     "guid": "8475efdb-dd7e-402e-9f50-36c76945a692",
-    "version": "0.0.195",
-    "datetime": 1676831945680
+    "version": "0.0.196",
+    "datetime": 1678722347606
 };
 });
 Scoped.assumeVersion('base:version', '~1.0.136');
@@ -4062,9 +4062,20 @@ Scoped.define("module:WebRTC.MediaRecorder", [
             stop: function() {
                 if (!this._started)
                     return;
-                this._started = false;
-                this._mediaRecorder.stop();
-                this.trigger("stopped");
+                try {
+                    this._mediaRecorder.stop();
+                    this._started = false;
+                    this.trigger("stopped");
+                } catch (err) {
+                    // "inactive", raise a DOM InvalidState error and terminate these steps.
+                    if ((err.message && err.message.indexOf('inactive') !== -1) && this._mediaRecorder.state !== 'inactive') {
+                        this._mediaRecorder.state = 'inactive';
+                        this.stop();
+                    } else {
+                        // console.log("Error when try to stop the recorder. Details: ", e);
+                        this.trigger("error", err.message);
+                    }
+                }
             },
 
             _dataAvailable: function(e) {
