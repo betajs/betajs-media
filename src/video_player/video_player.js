@@ -297,7 +297,7 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
                 	loadevent = "loadstart";
                 	*/
                 var loadevent = "loadstart";
-                this._domEvents.on(this._element, "loadevent", function() {
+                this._domEvents.on(this._element, loadevent, function() {
                     if ( /*loadevent === "loadstart" && */ this._element.networkState === this._element.NETWORK_NO_SOURCE) {
                         promise.asyncError(true);
                         return;
