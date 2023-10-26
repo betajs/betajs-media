@@ -337,7 +337,7 @@ Scoped.define("module:Player.Html5VideoPlayerWrapper", [
                 } else if (!ie9) {
                     Objs.iter(sources, function(source) {
                         var sourceEl = document.createElement("source");
-                        if (source.ext === "m3u8") {
+                        if (source.ext === "m3u8" && !this._element.canPlayType(source.type || "application/vnd.apple.mpegURL")) {
                             this._lazyLoadHls().success(function(isSupported) {
                                 if (isSupported)
                                     this._loadHls(source).forwardSuccess(promise);
